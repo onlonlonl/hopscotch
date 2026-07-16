@@ -23,7 +23,7 @@ const CONNECTIONS = [
   ['home', 'airport'],
 ]
 
-function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIONS, fullscreen = false }) {
+function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIONS, fullscreen = false, onLocationTap }) {
   const canvasRef = useRef(null)
   const [nameMode, setNameMode] = useState(0) // 0: display_name, 1: label, 2: story
 
@@ -139,6 +139,21 @@ function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIO
   return (
     <canvas
       ref={canvasRef}
+      onClick={(e) => {
+        if (!onLocationTap) return
+        const rect = canvasRef.current.getBoundingClientRect()
+        const cx = e.clientX - rect.left
+        const cy = e.clientY - rect.top
+        const W = rect.width, H = rect.height, pad = 40
+        const mapW = W - pad*2, mapH = H - pad*2
+        for (const loc of locations) {
+          const lx = pad + (loc.lux_x / 100) * mapW
+          const ly = pad + (loc.lux_y / 100) * mapH
+          const dist = Math.hypot(cx - lx, cy - ly)
+          if (dist < 25) { onLocationTap(loc, e.clientX, e.clientY); return }
+        }
+        onLocationTap(null)
+      }}
       style={{
         display: 'block',
         width: '100%',
@@ -162,7 +177,7 @@ const HandDrawnMap = forwardRef(function HandDrawnMap(props, ref) {
       return { lux_x, lux_y }
     }
   }))
-  return <HandDrawnMapInner {...props} />
+  return <HandDrawnMapInner {...props} onLocationTap={props.onLocationTap} />
 })
 
 export default HandDrawnMap
