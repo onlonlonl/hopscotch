@@ -28,7 +28,23 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [locations, setLocations] = useState(INITIAL)
   const [card, setCard] = useState(null)
+  const [dimIndex, setDimIndex] = useState(0)
+  const [flipping, setFlipping] = useState(false)
+  const swipeRef = useRef({ startX: 0, startY: 0 })
   const mapRef = useRef(null)
+
+  const flipTo = useCallback((dir) => {
+    setFlipping(true)
+    setCard(null)
+    setPanelOpen(false)
+    setDimIndex(prev => {
+      const next = prev + dir
+      if (next < 0) return 2
+      if (next > 2) return 0
+      return next
+    })
+    setTimeout(() => setFlipping(false), 650)
+  }, [])
 
   const enterInk = useCallback(() => {
     setExpanding(true)
@@ -77,16 +93,90 @@ export default function App() {
     )
   }
 
-  // Ink map fullscreen
+  // Dimension flipper: Ink / Thread / Compass
+  const dimensions = ['ink', 'thread', 'compass']
+  const dimLabels = { ink: 'Ink', thread: 'Thread', compass: 'Compass' }
+
   return (
     <div style={{
-      width: '100vw', height: '100vh', background: '#FAF6F0', position: 'relative',
+      width: '100vw', height: '100vh', position: 'relative',
+      perspective: '1200px',
       opacity: collapsing ? 0 : 1,
-      transform: collapsing ? 'scale(0.95)' : 'scale(1)',
-      transition: 'opacity 0.35s ease, transform 0.35s ease',
+      transition: 'opacity 0.35s ease',
     }}>
-      <HandDrawnMap ref={mapRef} locations={locations} connections={CONNS}
-        fullscreen={true} onLocationTap={handleLocationTap} />
+      {/* Flip container */}
+      <div style={{
+        width: '100%', height: '100%',
+        transformStyle: 'preserve-3d',
+        transform: `rotateY(${dimIndex * -120}deg)`,
+        transition: flipping ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
+      }}>
+        {/* Ink face */}
+        <div style={{
+          position: 'absolute', width: '100%', height: '100%',
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(0deg)',
+          background: '#FAF6F0',
+        }}>
+          <HandDrawnMap ref={mapRef} locations={locations} connections={CONNS}
+            fullscreen={true} onLocationTap={handleLocationTap} />
+        </div>
+
+        {/* Thread face */}
+        <div style={{
+          position: 'absolute', width: '100%', height: '100%',
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(120deg)',
+          background: '#13100C',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{color:'#D8D0C8',fontFamily:"'-apple-system',sans-serif",textAlign:'center'}}>
+            <div style={{fontSize:32,marginBottom:8}}>\u221e</div>
+            <div style={{fontSize:13,letterSpacing:2,opacity:0.5}}>Thread</div>
+          </div>
+        </div>
+
+        {/* Compass face */}
+        <div style={{
+          position: 'absolute', width: '100%', height: '100%',
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(240deg)',
+          background: '#E8E4DE',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{color:'#5A5A58',fontFamily:"'-apple-system',sans-serif",textAlign:'center'}}>
+            <div style={{fontSize:32,marginBottom:8}}>\u25ce</div>
+            <div style={{fontSize:13,letterSpacing:2,opacity:0.5}}>Compass</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Swipe overlay for dimension switching */}
+      <div
+        onTouchStart={e => { swipeRef.current.startX = e.touches[0].clientX; swipeRef.current.startY = e.touches[0].clientY }}
+        onTouchEnd={e => {
+          const dx = e.changedTouches[0].clientX - swipeRef.current.startX
+          const dy = e.changedTouches[0].clientY - swipeRef.current.startY
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && !flipping && !panelOpen) {
+            flipTo(dx < 0 ? 1 : -1)
+          }
+        }}
+        style={{ position:'absolute', inset:0, zIndex:105, pointerEvents: panelOpen ? 'none' : 'auto' }}
+      />
+
+      {/* Dimension indicator dots */}
+      <div style={{
+        position:'fixed', bottom: panelOpen ? 'calc(42vh + 12px)' : 12, left:'50%', transform:'translateX(-50%)',
+        display:'flex', gap:8, zIndex:106, transition:'bottom 0.3s ease',
+      }}>
+        {['ink','thread','compass'].map((d, i) => (
+          <div key={d} style={{
+            width: dimIndex === i ? 16 : 6, height: 6, borderRadius: 3,
+            background: dimIndex === i ? '#2E94B9' : 'rgba(0,0,0,0.15)',
+            transition: 'all 0.3s ease',
+          }} />
+        ))}
+      </div>
 
       {/* Exit button — top left */}
       <button onClick={exitInk} style={{
@@ -140,8 +230,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Stamps button */}
-      {!panelOpen && !card && (
+      {/* Stamps button — only in Ink */}
+      {!panelOpen && !card && dimIndex === 0 && (
         <button onClick={() => setPanelOpen(true)} style={{
           position:'fixed', bottom:16, right:16, width:44, height:44,
           background:'#2E94B9', border:'none', borderRadius:12,
