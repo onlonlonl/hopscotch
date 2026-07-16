@@ -23,8 +23,18 @@ export default function App() {
   const handleDragToMap = useCallback((type, sx, sy) => {
     if (!mapRef.current) return
     const { lux_x, lux_y } = mapRef.current.screenToLoc(sx, sy)
+    // Look up Chinese label from stamps
+    const stampLabels = {
+      house:'\u5bb6',building:'\u516c\u53f8',train:'\u5730\u9435',plane:'\u6a5f\u5834',
+      shop:'\u5546\u5e97',school:'\u5b78\u6821',hospital:'\u91ab\u9662',
+      cafe:'\u5496\u5561',restaurant:'\u9910\u5ef3',bar:'\u9152\u5427',
+      park:'\u516c\u5712',mountain:'\u5c71',beach:'\u6d77\u7058',hotel:'\u9152\u5e97',
+      cinema:'\u96fb\u5f71\u9662',torii:'\u9ce5\u5c45',temple:'\u5bfa\u5edf',
+      church:'\u6559\u5802',flag:'\u65d7\u5b50',heart:'\u2764',
+    }
+    const cLabel = stampLabels[type] || type
     setLocations(prev => [...prev, {
-      id: 'loc_' + Date.now(), label: type, display_name: type,
+      id: 'loc_' + Date.now(), label: cLabel, display_name: cLabel,
       story_name: '', story: '', icon_type: type,
       color: nodeColors[locations.length % nodeColors.length],
       lux_x, lux_y, scale: 0.85, errands: 0,
@@ -68,17 +78,16 @@ export default function App() {
           fontFamily: "'-apple-system','PingFang SC',sans-serif",
           animation: 'cardIn 0.2s ease-out',
         }}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-            <span onClick={() => setNameMode((nameMode+1)%3)}
-              style={{fontSize:16,fontWeight:600,color:card.color,cursor:'pointer'}}>
-              {getDisplayName(card)}
-            </span>
-            <span style={{fontSize:8,color:'#C0B8A8',letterSpacing:1}}>
-              {nameLabels[nameMode].toUpperCase()}
-            </span>
+          <div style={{marginBottom:6}}>
+            <div style={{fontSize:15,fontWeight:600,color:card.color}}>
+              {card.display_name || card.label}
+            </div>
+            {card.label !== card.display_name && (
+              <div style={{fontSize:11,color:'#B0A898',marginTop:2}}>{card.label}</div>
+            )}
           </div>
-          {card.story_name && nameMode !== 2 && (
-            <div style={{fontSize:12,color:'#A09888',marginBottom:6,fontStyle:'italic'}}>
+          {card.story_name && (
+            <div style={{fontSize:12,color:'#8A7A68',marginBottom:6,lineHeight:1.6}}>
               {card.story_name}
             </div>
           )}
@@ -87,17 +96,14 @@ export default function App() {
               {card.errands} times
             </div>
           )}
-          <div style={{
-            width:'100%',height:1,background:'#EAE4DC',margin:'8px 0'
-          }} />
-          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          <div style={{display:'flex',gap:4,marginTop:8,alignItems:'center'}}>
             {nodeColors.map(c => (
               <div key={c} onClick={() => {
                 setLocations(prev => prev.map(l => l.id === card.id ? {...l, color: c} : l))
                 setCard(prev => ({...prev, color: c}))
               }} style={{
-                width:20,height:20,borderRadius:10,background:c,
-                border: c === card.color ? '2px solid #5A4A38' : '2px solid transparent',
+                width:14,height:14,borderRadius:7,background:c,
+                border: c === card.color ? '2px solid #5A4A38' : '1.5px solid #E0D8D0',
                 cursor:'pointer',
               }} />
             ))}
