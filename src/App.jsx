@@ -38,7 +38,7 @@ export default function App() {
     // Bounce animation
     setDropAnim({ x: screenX, y: screenY })
     setTimeout(() => setDropAnim(null), 400)
-    setPanelOpen(false)
+    // panel stays open
   }, [locations])
 
   return (

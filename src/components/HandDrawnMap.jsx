@@ -4,80 +4,7 @@
 
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
 import rough from 'roughjs'
-
-// Icon recipes: each is a function (rc, ctx, x, y, scale, color) => void
-const recipes = {
-  house: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.5 * s, roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
-    const fillOpt = { ...opt, fill: color, fillStyle: 'solid', fillWeight: 0.15 }
-    // roof
-    rc.path(`M ${x} ${y - 14 * s} L ${x + 10 * s} ${y - 6 * s} L ${x - 10 * s} ${y - 6 * s} Z`, fillOpt)
-    // walls
-    rc.rectangle(x - 8 * s, y - 6 * s, 16 * s, 14 * s, fillOpt)
-    // door (white)
-    rc.rectangle(x - 2 * s, y + 1 * s, 5 * s, 7 * s, { stroke: '#FAF6F0', strokeWidth: 1.2 * s, roughness: 0.4, disableMultiStroke: true })
-    // window (white)
-    rc.rectangle(x + 3 * s, y - 4 * s, 4 * s, 4 * s, { stroke: '#FAF6F0', strokeWidth: 1.2 * s, roughness: 0.4, disableMultiStroke: true })
-    // chimney
-    rc.line(x + 6 * s, y - 10 * s, x + 6 * s, y - 16 * s, opt)
-  },
-  building: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.5 * s, roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
-    const fillOpt = { ...opt, fill: color, fillStyle: 'solid', fillWeight: 0.15 }
-    rc.rectangle(x - 8 * s, y - 18 * s, 16 * s, 26 * s, fillOpt)
-    // windows
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 2; col++) {
-        rc.rectangle(x - 6 * s + col * 8 * s, y - 15 * s + row * 7 * s, 4 * s, 4 * s, { stroke: '#FAF6F0', strokeWidth: 1 * s, roughness: 0.4, disableMultiStroke: true })
-      }
-    }
-    // door
-    rc.rectangle(x - 3 * s, y + 2 * s, 6 * s, 6 * s, { stroke: '#FAF6F0', strokeWidth: 1 * s, roughness: 0.4, disableMultiStroke: true })
-  },
-  train: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.5 * s, roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
-    rc.circle(x, y, 20 * s, { ...opt, fill: color, fillStyle: 'solid', fillWeight: 0.15 })
-    ctx.fillStyle = "#FAF6F0"
-    ctx.font = `bold ${10 * s}px 'DotGothic16', monospace`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('M', x, y + 1 * s)
-  },
-  plane: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.2 * s, roughness: 0.5, disableMultiStroke: true }
-    // body
-    rc.line(x, y - 8 * s, x, y + 6 * s, opt)
-    // wings
-    rc.line(x - 10 * s, y, x + 10 * s, y, opt)
-    // tail
-    rc.line(x - 4 * s, y + 5 * s, x + 4 * s, y + 5 * s, opt)
-    // runway
-    rc.line(x - 12 * s, y + 10 * s, x + 12 * s, y + 10 * s, { ...opt, strokeWidth: 1 * s })
-  },
-  torii: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.5 * s, roughness: 0.5, disableMultiStroke: true }
-    // pillars
-    rc.line(x - 8 * s, y + 8 * s, x - 6 * s, y - 8 * s, opt)
-    rc.line(x + 8 * s, y + 8 * s, x + 6 * s, y - 8 * s, opt)
-    // top beam curved
-    rc.path(`M ${x - 12 * s} ${y - 8 * s} Q ${x} ${y - 13 * s} ${x + 12 * s} ${y - 8 * s}`, { ...opt, strokeWidth: 2 * s })
-    // second beam
-    rc.line(x - 9 * s, y - 4 * s, x + 9 * s, y - 4 * s, opt)
-  },
-  lantern: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.2 * s, roughness: 0.4, disableMultiStroke: true }
-    const fillOpt = { ...opt, fill: color, fillStyle: 'solid', fillWeight: 0.2 }
-    rc.line(x, y - 12 * s, x, y - 8 * s, opt)
-    rc.ellipse(x, y, 12 * s, 16 * s, fillOpt)
-    rc.line(x, y - 8 * s, x, y + 8 * s, { ...opt, strokeWidth: 0.5 * s })
-  },
-  flag: (rc, ctx, x, y, s, color) => {
-    const opt = { stroke: color, strokeWidth: 1.2 * s, roughness: 0.5, disableMultiStroke: true }
-    rc.line(x, y + 8 * s, x, y - 10 * s, opt)
-    rc.path(`M ${x} ${y - 10 * s} L ${x + 8 * s} ${y - 7 * s} L ${x} ${y - 4 * s} Z`,
-      { ...opt, fill: color, fillStyle: 'solid', fillWeight: 0.3 })
-  },
-}
+import { recipes } from './IconGallery'
 
 // Mock location data (will come from Supabase)
 const MOCK_LOCATIONS = [
@@ -180,7 +107,7 @@ function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIO
     }
 
     // Draw location icons
-    const baseScale = Math.min(W, H) / 400
+    const baseScale = Math.min(W, H) / 300
     for (const loc of locations) {
       const [x, y] = locToScreen(loc.lux_x, loc.lux_y)
       const s = baseScale * (loc.scale || 1)
