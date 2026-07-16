@@ -2,7 +2,7 @@
 // Renders inside the map zone or fullscreen
 // Uses Rough.js for location icons, Canvas 2D for paths and footprints
 
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
 import rough from 'roughjs'
 
 // Icon recipes: each is a function (rc, ctx, x, y, scale, color) => void
@@ -96,7 +96,7 @@ const CONNECTIONS = [
   ['home', 'airport'],
 ]
 
-export default function HandDrawnMap({ locations = MOCK_LOCATIONS, connections = CONNECTIONS, fullscreen = false }) {
+function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIONS, fullscreen = false }) {
   const canvasRef = useRef(null)
   const [nameMode, setNameMode] = useState(0) // 0: display_name, 1: label, 2: story
 
@@ -221,3 +221,21 @@ export default function HandDrawnMap({ locations = MOCK_LOCATIONS, connections =
     />
   )
 }
+
+
+const HandDrawnMap = forwardRef(function HandDrawnMap(props, ref) {
+  useImperativeHandle(ref, () => ({
+    screenToLoc: (sx, sy) => {
+      const canvas = document.querySelector('canvas')
+      if (!canvas) return { lux_x: 50, lux_y: 50 }
+      const rect = canvas.getBoundingClientRect()
+      const W = rect.width, H = rect.height, pad = 40
+      const lux_x = Math.max(5, Math.min(95, (sx - rect.left - pad) / (W - pad*2) * 100))
+      const lux_y = Math.max(5, Math.min(95, (sy - rect.top - pad) / (H - pad*2) * 100))
+      return { lux_x, lux_y }
+    }
+  }))
+  return <HandDrawnMapInner {...props} />
+})
+
+export default HandDrawnMap
