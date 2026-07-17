@@ -31,21 +31,9 @@ export default function App() {
   const [card, setCard] = useState(null)
   const [dimIndex, setDimIndex] = useState(0)
   const [flipping, setFlipping] = useState(false)
-  const swipeRef = useRef({ startX: 0, startY: 0 })
   const mapRef = useRef(null)
 
-  const flipTo = useCallback((dir) => {
-    setFlipping(true)
-    setCard(null)
-    setPanelOpen(false)
-    setDimIndex(prev => {
-      const next = prev + dir
-      if (next < 0) return 2
-      if (next > 2) return 0
-      return next
-    })
-    setTimeout(() => setFlipping(false), 650)
-  }, [])
+  // flipTo removed — using direct setDimIndex in label buttons
 
   const enterInk = useCallback(() => {
     setExpanding(true)
@@ -147,30 +135,28 @@ export default function App() {
         </div>
       </div>
 
-      {/* Swipe overlay for dimension switching */}
-      <div
-        onTouchStart={e => { swipeRef.current.startX = e.touches[0].clientX; swipeRef.current.startY = e.touches[0].clientY }}
-        onTouchEnd={e => {
-          const dx = e.changedTouches[0].clientX - swipeRef.current.startX
-          const dy = e.changedTouches[0].clientY - swipeRef.current.startY
-          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && !flipping && !panelOpen) {
-            flipTo(dx < 0 ? 1 : -1)
-          }
-        }}
-        style={{ position:'absolute', inset:0, zIndex:105, pointerEvents: panelOpen ? 'none' : 'auto' }}
-      />
 
-      {/* Dimension indicator dots */}
+
+      {/* Dimension switcher labels */}
       <div style={{
-        position:'fixed', bottom: panelOpen ? 'calc(42vh + 12px)' : 12, left:'50%', transform:'translateX(-50%)',
-        display:'flex', gap:8, zIndex:106, transition:'bottom 0.3s ease',
+        position:'fixed', bottom: panelOpen ? 'calc(42vh + 12px)' : 16, left:'50%', transform:'translateX(-50%)',
+        display:'flex', gap:0, zIndex:106, transition:'bottom 0.3s ease',
+        background: 'rgba(255,255,255,0.7)',
+        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: 8, overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
-        {['ink','thread','compass'].map((d, i) => (
-          <div key={d} style={{
-            width: dimIndex === i ? 16 : 6, height: 6, borderRadius: 3,
-            background: dimIndex === i ? '#2E94B9' : 'rgba(0,0,0,0.15)',
-            transition: 'all 0.3s ease',
-          }} />
+        {[{key:'ink',label:'Ink'},{key:'thread',label:'Thread'},{key:'compass',label:'Compass'}].map((d, i) => (
+          <button key={d.key} onClick={() => { if (dimIndex !== i && !flipping) { setFlipping(true); setCard(null); setPanelOpen(false); setDimIndex(i); setTimeout(() => setFlipping(false), 650) } }} style={{
+            padding: '7px 16px',
+            fontSize: 11, letterSpacing: 1,
+            fontFamily: "'-apple-system','PingFang SC',sans-serif",
+            fontWeight: dimIndex === i ? 600 : 400,
+            color: dimIndex === i ? '#2E94B9' : '#A0A098',
+            background: dimIndex === i ? 'rgba(46,148,185,0.08)' : 'transparent',
+            border: 'none', cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}>{d.label}</button>
         ))}
       </div>
 

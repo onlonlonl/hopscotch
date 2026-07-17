@@ -208,7 +208,7 @@ export default function ThreadView({ locations = [], activeErrand = null, onNode
       const animId = requestAnimationFrame(animate)
       sceneRef.current = { animId }
       time += 0.016
-      if (!isDrag) ry += vy
+      // no auto-rotation
       group.rotation.x = rx
       group.rotation.y = ry
 
