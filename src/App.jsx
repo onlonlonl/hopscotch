@@ -89,13 +89,15 @@ export default function App() {
   return (
     <div style={{
       width: '100vw', height: '100vh', position: 'relative',
-      perspective: '1200px', overflow: 'hidden',
+      overflow: 'hidden',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
     }}>
+      {/* Perspective wrapper — only affects flip, not UI overlays */}
+      <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, perspective: '1200px' }}>
       {/* Flip container */}
       <div style={{
-        width: '100%', height: '100%', position: 'absolute', top: 0, left: 0,
+        width: '100%', height: '100%',
         transformStyle: 'preserve-3d',
         transform: `rotateY(${dimIndex * -120}deg)`,
         transition: flipping ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
@@ -134,7 +136,7 @@ export default function App() {
           </div>
         </div>
       </div>
-
+      </div>
 
 
       {/* Dimension switcher labels */}
