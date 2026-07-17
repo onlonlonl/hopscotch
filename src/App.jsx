@@ -89,13 +89,13 @@ export default function App() {
   return (
     <div style={{
       width: '100vw', height: '100vh', position: 'relative',
-      perspective: '1200px',
+      perspective: '1200px', overflow: 'hidden',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
     }}>
       {/* Flip container */}
       <div style={{
-        width: '100%', height: '100%',
+        width: '100%', height: '100%', position: 'absolute', top: 0, left: 0,
         transformStyle: 'preserve-3d',
         transform: `rotateY(${dimIndex * -120}deg)`,
         transition: flipping ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
@@ -105,7 +105,7 @@ export default function App() {
           position: 'absolute', width: '100%', height: '100%',
           backfaceVisibility: 'hidden',
           transform: 'rotateY(0deg)',
-          background: '#FAF6F0',
+          background: '#FAF6F0', overflow: 'hidden',
         }}>
           <HandDrawnMap ref={mapRef} locations={locations} connections={CONNS}
             fullscreen={true} onLocationTap={handleLocationTap} />
@@ -140,7 +140,7 @@ export default function App() {
       {/* Dimension switcher labels */}
       <div style={{
         position:'fixed', bottom: panelOpen ? 'calc(42vh + 12px)' : 16, left:'50%', transform:'translateX(-50%)',
-        display:'flex', gap:0, zIndex:106, transition:'bottom 0.3s ease',
+        display:'flex', gap:0, zIndex:115, transition:'bottom 0.3s ease',
         background: 'rgba(255,255,255,0.7)',
         backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
         borderRadius: 8, overflow: 'hidden',
