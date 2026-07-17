@@ -4,6 +4,7 @@ import HopscotchCanvas from './components/HopscotchCanvas'
 import HandDrawnMap from './components/HandDrawnMap'
 import StampsPanel from './components/StampsPanel'
 import { recipes } from './components/IconGallery'
+import ThreadView from './components/ThreadView'
 
 const INITIAL = [
   { id: 'home', label: '\u5bb6', display_name: '\u5bb6', story_name: '\u6bcf\u6b21\u8d70\u5230\u9580\u53e3\u90fd\u89ba\u5f97\u5b89\u5fc3', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9 },
@@ -127,13 +128,8 @@ export default function App() {
           position: 'absolute', width: '100%', height: '100%',
           backfaceVisibility: 'hidden',
           transform: 'rotateY(120deg)',
-          background: '#13100C',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <div style={{color:'#D8D0C8',fontFamily:"'-apple-system',sans-serif",textAlign:'center'}}>
-            <div style={{fontSize:32,marginBottom:8}}>\u221e</div>
-            <div style={{fontSize:13,letterSpacing:2,opacity:0.5}}>Thread</div>
-          </div>
+          {dimIndex === 1 && <ThreadView locations={locations} activeErrand={null} />}
         </div>
 
         {/* Compass face */}
