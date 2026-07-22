@@ -5,11 +5,12 @@ import HandDrawnMap from './components/HandDrawnMap'
 import StampsPanel from './components/StampsPanel'
 import { recipes } from './components/IconGallery'
 import ThreadView from './components/ThreadView'
+import CompassView from './components/CompassView'
 
 const INITIAL = [
-  { id: 'home', label: '\u5bb6', display_name: '\u5bb6', story_name: '\u6bcf\u6b21\u8d70\u5230\u9580\u53e3\u90fd\u89ba\u5f97\u5b89\u5fc3', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9 },
-  { id: 'office', label: '\u65b0\u516c\u53f8', display_name: '\u516c\u53f8', story_name: '\u7b2c\u4e8c\u500b\u5bb6', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5 },
-  { id: 'metro', label: '\u5730\u9435\u7ad9', display_name: '\u5730\u9435', story_name: '\u5730\u4e0b\u7684\u98a8\u7e3d\u662f\u5f88\u5927', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3 },
+  { id: 'home', label: '\u5bb6', display_name: '\u5bb6', story_name: '\u6bcf\u6b21\u8d70\u5230\u9580\u53e3\u90fd\u89ba\u5f97\u5b89\u5fc3', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9, lat: 30.33, lng: 120.06, weather: 'warm', story_name: 'Honey Jar', display_name: 'Home', inf_t: 0.127, inf_w: 0.94, story: 'The place where mornings start slow and the light is always golden.' },
+  { id: 'office', label: '\u65b0\u516c\u53f8', display_name: '\u516c\u53f8', story_name: '\u7b2c\u4e8c\u500b\u5bb6', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5, lat: 30.30, lng: 120.04, weather: 'cloudy', story_name: 'The Hive', display_name: 'Office', inf_t: 0.456, inf_w: 0.52, story: 'Busy bees. Coffee machine hums at 2pm.' },
+  { id: 'metro', label: '\u5730\u9435\u7ad9', display_name: '\u5730\u9435', story_name: '\u5730\u4e0b\u7684\u98a8\u7e3d\u662f\u5f88\u5927', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3, lat: 30.28, lng: 120.33, weather: 'drizzle', story_name: 'Waiting Room', display_name: 'Metro', inf_t: 0.831, inf_w: 0.33, story: 'Always raining here somehow.' },
 ]
 const CONNS = [['home','office'],['home','metro']]
 const nodeColors = ['#E8A87C','#7BA7BC','#9BB89C','#C4A6D0','#D4B896','#B8C4D0','#D0A0A0','#A8B89A']
@@ -127,13 +128,9 @@ export default function App() {
           position: 'absolute', width: '100%', height: '100%',
           backfaceVisibility: 'hidden',
           transform: 'rotateY(240deg)',
-          background: '#E8E4DE',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
         }}>
-          <div style={{color:'#5A5A58',fontFamily:"'-apple-system',sans-serif",textAlign:'center'}}>
-            <div style={{fontSize:32,marginBottom:8}}>\u25ce</div>
-            <div style={{fontSize:13,letterSpacing:2,opacity:0.5}}>Compass</div>
-          </div>
+          {dimIndex === 2 && <CompassView locations={locations} />}
         </div>
       </div>
       </div>
