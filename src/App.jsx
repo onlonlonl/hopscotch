@@ -126,7 +126,7 @@ export default function App() {
     if (view !== 'ink') return
     if (tabRef.current) drawTabs(tabRef.current, dimIndex)
     if (backRef.current) drawBack(backRef.current)
-  }, [view, dimIndex])
+  }, [view, dimIndex, panelOpen, card])
 
   const handleTabClick = useCallback((e) => {
     var rect = tabRef.current.getBoundingClientRect()
@@ -197,10 +197,11 @@ export default function App() {
       </div>
 
       {/* Left-side dimension tabs */}
-      {!panelOpen && !card && <canvas ref={tabRef} onClick={handleTabClick} style={{
+      <canvas ref={tabRef} onClick={handleTabClick} style={{
         position: 'fixed', left: 10, top: '50%', transform: 'translateY(-50%)',
         zIndex: 115, cursor: 'pointer',
-      }} />}
+        display: panelOpen || card ? 'none' : 'block',
+      }} />
 
       {/* Back button */}
       <canvas ref={backRef} onClick={exitInk} style={{

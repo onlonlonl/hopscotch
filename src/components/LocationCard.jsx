@@ -212,6 +212,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
           <div style={{flex:1,minWidth:0,paddingRight:4}}>
             <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3}}>{storyName}</div>
             <div style={{fontSize:11,color:'#A09888',marginTop:3}}>{displayName}</div>
+            {loc.errands > 0 && <div style={{fontSize:9,color:'#B8B0A0',marginTop:2}}>{loc.errands + ' errands'}</div>}
             {hasInf && (
               <div onClick={function(){setShowTranslate(!showTranslate)}} style={{fontSize:10,marginTop:5,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
                 <span style={{marginRight:3}}>∞</span>
