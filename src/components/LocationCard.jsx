@@ -153,7 +153,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     // Badge 1: Thread
     var bx = 0, by = 0
     var thC = activeDim===1 ? c : '#D0C8C0'
-    rc.rectangle(bx, by, unitW, bh, ro({stroke: thC, strokeWidth: activeDim===1 ? 0.8 : 0.6}))
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: thC, strokeWidth: activeDim===1 ? 1.2 : 1.0}))
     var icx = bx + unitW/2, icy = by + bh/2 - 2, is2 = unitW * 0.32
     ctx.save(); ctx.strokeStyle = c; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.5
     ctx.beginPath()
@@ -167,7 +167,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     // Badge 2: Ink
     bx = unitW + gap
     var inC = activeDim===0 ? c : '#D0C8C0'
-    rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 1.2 : 1.0}))
     icx = bx + unitW/2
     rc.rectangle(bx+6, by+4, unitW-12, bh-14, ro({stroke: '#C0B8A8', strokeWidth: 0.4, roughness: 0.8}))
     ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = c
@@ -180,7 +180,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     // Badge 3: Compass
     bx = (unitW + gap) * 2
     var coC = activeDim===2 ? c : '#D0C8C0'
-    rc.rectangle(bx, by, unitW, bh, ro({stroke: coC, strokeWidth: activeDim===2 ? 0.8 : 0.6}))
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: coC, strokeWidth: activeDim===2 ? 1.2 : 1.0}))
     icx = bx + unitW/2; icy = by + bh/2 - 2
     ctx.save(); ctx.strokeStyle = '#B0A898'; ctx.lineWidth = 0.4; ctx.globalAlpha = 0.35
     ctx.beginPath(); ctx.arc(icx, icy, 9, 0, Math.PI*2); ctx.stroke()
@@ -239,7 +239,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             <canvas ref={stampRef} style={{width:44,height:44}} />
           </div>
         </div>
-        <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'4px 0'}}>
+        <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'2px 0 4px'}}>
           <canvas ref={dividerRef} />
         </div>
         <div style={{flex:1,overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
