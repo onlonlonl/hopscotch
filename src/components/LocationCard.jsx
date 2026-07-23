@@ -236,7 +236,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
             <div onClick={onClose} style={{width:24,height:16,cursor:'pointer'}} />
-            <canvas ref={stampRef} />
+            <canvas ref={stampRef} style={{width:44,height:44}} />
           </div>
         </div>
         <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'8px 0'}}>
