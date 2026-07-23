@@ -4,7 +4,7 @@ import rough from 'roughjs'
 var RO = {roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:2}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var ks=Object.keys(x);for(var i=0;i<ks.length;i++)o[ks[i]]=x[ks[i]]};return o}
 
-var CW=230, CH=240, M=6
+var CW=230, CH=280, M=6
 
 function translateT(t){if(t<0.15)return'at the origin';if(t<0.3)return'near the start';if(t<0.5)return'first crossing';if(t<0.7)return'far side';if(t<0.85)return'second crossing';return'almost home'}
 function translateW(w){if(w<0.2)return'distant';if(w<0.4)return'cool';if(w<0.6)return'mild';if(w<0.8)return'warm';return'glowing'}
@@ -93,6 +93,7 @@ function drawBorder(rc, wt, c) {
 export default function LocationCard({ location, position, onClose, weatherDraw, weatherColor, weatherType }) {
   var borderRef = useRef(null)
   var stampRef = useRef(null)
+  var badgesRef = useRef(null)
   var infState = useState(false)
   var showTranslate = infState[0]
   var setShowTranslate = infState[1]
@@ -136,6 +137,63 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.restore()
   }, [weatherDraw, weatherColor])
 
+  // Dimension badges
+  useEffect(function() {
+    var cvs = badgesRef.current
+    if (!cvs || !location) return
+    var loc = location
+    if (loc.inf_t == null) return
+    var bw = CW - M*2 - 24, bh = 36
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = bw * dpr; cvs.height = bh * dpr
+    cvs.style.width = bw + 'px'; cvs.style.height = bh + 'px'
+    var ctx = cvs.getContext('2d')
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    var c = loc.color || '#8A7A68'
+    var unitW = Math.floor(bw / 3) - 4
+    var gap = (bw - unitW * 3) / 2
+
+    // Badge 1: Thread
+    var bx = 0, by = 0
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: c, strokeWidth: 0.8}))
+    var icx = bx + unitW/2, icy = by + bh/2 - 2, is2 = unitW * 0.32
+    ctx.save(); ctx.strokeStyle = c; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.5
+    ctx.beginPath()
+    for (var i = 0; i <= 60; i++) { var t = i/60, a = t*Math.PI*2, si = Math.sin(a), co = Math.cos(a), d = 1+si*si; var px = icx + is2*co/d, py = icy + is2*0.8*si*co/d; i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py) }
+    ctx.stroke()
+    var a2 = loc.inf_t*Math.PI*2, s2 = Math.sin(a2), c2 = Math.cos(a2), d2 = 1+s2*s2
+    ctx.globalAlpha = 1; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(icx+is2*c2/d2, icy+is2*0.8*s2*c2/d2, 2, 0, Math.PI*2); ctx.fill()
+    ctx.globalAlpha = 0.45; ctx.fillStyle = '#7A5C3C'; ctx.font = '7px -apple-system,sans-serif'; ctx.textAlign = 'center'
+    ctx.fillText('Thread', icx, by+bh-3); ctx.restore()
+
+    // Badge 2: Ink
+    bx = unitW + gap
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: '#D0C8C0', strokeWidth: 0.6}))
+    icx = bx + unitW/2
+    rc.rectangle(bx+6, by+4, unitW-12, bh-14, ro({stroke: '#C0B8A8', strokeWidth: 0.4, roughness: 0.8}))
+    ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = c
+    var mapX = bx+8+(unitW-16)*Math.min(1,Math.max(0,((loc.lng||120)-119.9)/0.6))
+    var mapY = by+6+(bh-18)*Math.min(1,Math.max(0,((loc.lat||30.3)-30.2)/0.3))
+    ctx.beginPath(); ctx.arc(mapX, mapY, 1.8, 0, Math.PI*2); ctx.fill()
+    ctx.globalAlpha = 0.45; ctx.fillStyle = '#7A5C3C'; ctx.font = '7px -apple-system,sans-serif'; ctx.textAlign = 'center'
+    ctx.fillText('Ink', bx+unitW/2, by+bh-3); ctx.restore()
+
+    // Badge 3: Compass
+    bx = (unitW + gap) * 2
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: '#D0C8C0', strokeWidth: 0.6}))
+    icx = bx + unitW/2; icy = by + bh/2 - 2
+    ctx.save(); ctx.strokeStyle = '#B0A898'; ctx.lineWidth = 0.4; ctx.globalAlpha = 0.35
+    ctx.beginPath(); ctx.arc(icx, icy, 9, 0, Math.PI*2); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(icx-11,icy); ctx.lineTo(icx+11,icy); ctx.moveTo(icx,icy-11); ctx.lineTo(icx,icy+11); ctx.stroke()
+    ctx.globalAlpha = 0.7; ctx.fillStyle = c
+    var cAngle = ((loc.lng||120)-120)*8, cDist = ((loc.lat||30.3)-30.3)*15
+    ctx.beginPath(); ctx.arc(icx+Math.max(-7,Math.min(7,cAngle)), icy-Math.max(-7,Math.min(7,cDist)), 1.8, 0, Math.PI*2); ctx.fill()
+    ctx.globalAlpha = 0.45; ctx.fillStyle = '#7A5C3C'; ctx.font = '7px -apple-system,sans-serif'; ctx.textAlign = 'center'
+    ctx.fillText('Compass', icx, by+bh-3); ctx.restore()
+  }, [location])
+
+
   if (!location || !position) return null
   var loc = location
   var storyName = loc.story_name || loc.label || ''
@@ -167,6 +225,11 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
         <div style={{flex:1,overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
           {story || ''}
         </div>
+        {hasInf && (
+          <div style={{flexShrink:0,paddingTop:8,display:'flex',justifyContent:'center'}}>
+            <canvas ref={badgesRef} />
+          </div>
+        )}
       </div>
     </div>
   )

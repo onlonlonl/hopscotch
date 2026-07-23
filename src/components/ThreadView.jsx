@@ -1,264 +1,249 @@
 
 // ThreadView.jsx — the infinity dimension
-// 3D lemniscate silk thread with color knots, flowing particles, errand light pulse
-import { useRef, useEffect, useCallback } from 'react'
-import * as THREE from 'three'
+// Rough.js hand-drawn lemniscate with color dye, CSS 3D rotation, bottom nav panel
+import { useRef, useEffect, useState, useCallback } from 'react'
+import rough from 'roughjs'
 
-// Lemniscate parametric curve
-const SCALE = 1.3
-function lemnPoint(t) {
-  const angle = t * Math.PI * 2
-  const s = Math.sin(angle), c = Math.cos(angle)
-  const d = 1 + s * s
-  return new THREE.Vector3(SCALE * c / d, SCALE * s * c / d, 0.05 * Math.sin(angle * 2))
+// === Lemniscate math ===
+function lem(t, ox, oy, sc, yOff) {
+  const a = t * Math.PI * 2
+  const s = Math.sin(a), c = Math.cos(a), d = 1 + s * s
+  return [ox + sc * c / d, oy + sc * s * c / d + (yOff || 0)]
 }
 
-class LemnCurve extends THREE.Curve {
-  getPoint(f) { return lemnPoint(f) }
+function parseHex(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]
 }
 
-export default function ThreadView({ locations = [], activeErrand = null, onNodeTap }) {
-  const containerRef = useRef(null)
-  const sceneRef = useRef(null)
+function getColor(t, alpha, locations, baseRGB) {
+  let tw = 0, r = 0, g = 0, b = 0
+  for (const loc of locations) {
+    const d = Math.min(Math.abs(t - loc.inf_t), Math.abs(t - loc.inf_t + 1), Math.abs(t - loc.inf_t - 1))
+    const sp = 0.005 + (loc.inf_w || 0.5) * 0.012
+    if (d < sp) {
+      const raw = 1 - d / sp, w = raw * raw * (3 - 2 * raw)
+      const [cr, cg, cb] = parseHex(loc.color || '#C0B0A0')
+      r += cr * w; g += cg * w; b += cb * w; tw += w
+    }
+  }
+  const [br, bg, bb] = baseRGB
+  if (tw > 0) {
+    r /= tw; g /= tw; b /= tw
+    const bl = Math.min(tw, 1)
+    r = br*(1-bl) + r*bl; g = bg*(1-bl) + g*bl; b = bb*(1-bl) + b*bl
+  } else { r = br; g = bg; b = bb }
+  return 'rgba('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+','+alpha+')'
+}
+
+function getTimeBg() {
+  const h = new Date().getHours()
+  let r = 250, g = 246, b = 240
+  if (h >= 17 && h < 19) { r += 3; g -= 2; b -= 5 }
+  else if (h >= 19 && h < 23) { r -= 4; g -= 2; b += 3 }
+  else if (h >= 23 || h < 5) { r -= 6; g -= 4; b += 4 }
+  return 'rgb('+r+','+g+','+b+')'
+}
+
+// === Drawing ===
+const SAMPLES = 180, SEG = 6
+const LINE_PASSES = [
+  { seed: 1, rough: 1.2, sw: 0.9, yOff: -3, alpha: 0.35 },
+  { seed: 13, rough: 0.8, sw: 1.1, yOff: 0, alpha: 0.45 },
+  { seed: 25, rough: 1.0, sw: 0.85, yOff: 3.5, alpha: 0.3 },
+]
+const BASE_RGB = [205, 195, 182]
+
+function drawInfinity(canvas, locs, sc, ox, oy) {
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  const rc = rough.canvas(canvas)
+  for (const pass of LINE_PASSES) {
+    for (let s = 0; s < SAMPLES; s += SEG) {
+      const pts = []
+      for (let i = s; i <= Math.min(s + SEG, SAMPLES); i++) pts.push(lem(i / SAMPLES, ox, oy, sc, pass.yOff))
+      if (pts.length >= 2)
+        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw, stroke: getColor((s + SEG/2) / SAMPLES, pass.alpha, locs, BASE_RGB), disableMultiStroke: true, bowing: 0.8 })
+    }
+  }
+  // Decorations
+  ctx.save()
+  ctx.strokeStyle = 'rgb(170,160,148)'; ctx.fillStyle = 'rgb(170,160,148)'
+  ctx.lineWidth = 1; ctx.lineCap = 'round'
+  const decos = [
+    { x: ox-sc*1.3, y: oy-sc*0.6, t: 'star' }, { x: ox+sc*1.35, y: oy+sc*0.5, t: 'spiral' },
+    { x: ox-sc*0.3, y: oy-sc*1.15, t: 'dot' }, { x: ox+sc*0.5, y: oy+sc*1.1, t: 'dot' },
+    { x: ox+sc*1.2, y: oy-sc*0.8, t: 'star' }, { x: ox-sc*1.1, y: oy+sc*0.9, t: 'spiral' },
+  ]
+  for (const d of decos) {
+    ctx.globalAlpha = d.t === 'dot' ? 0.08 : 0.1
+    if (d.t === 'star') {
+      ctx.beginPath()
+      for (let i = 0; i < 4; i++) { const a = i*Math.PI/4; ctx.moveTo(d.x-6*Math.cos(a),d.y-6*Math.sin(a)); ctx.lineTo(d.x+6*Math.cos(a),d.y+6*Math.sin(a)) }
+      ctx.stroke()
+    } else if (d.t === 'spiral') {
+      ctx.beginPath()
+      for (let i = 0; i < 50; i++) { const a=i*0.2, r=1.5+a*0.8; i===0?ctx.moveTo(d.x+r*Math.cos(a),d.y+r*Math.sin(a)):ctx.lineTo(d.x+r*Math.cos(a),d.y+r*Math.sin(a)) }
+      ctx.stroke()
+    } else { ctx.beginPath(); ctx.arc(d.x,d.y,2.5,0,Math.PI*2); ctx.fill() }
+  }
+  ctx.restore()
+}
+
+function drawHighlight(canvas, locs, idx, sc, ox, oy) {
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  if (idx < 0 || !locs[idx]) return
+  const loc = locs[idx], rc = rough.canvas(canvas)
+  const spread = 0.005 + (loc.inf_w || 0.5) * 0.012
+  const segStart = Math.max(0, Math.floor((loc.inf_t - spread) * SAMPLES))
+  const segEnd = Math.min(SAMPLES, Math.ceil((loc.inf_t + spread) * SAMPLES))
+  for (const pass of LINE_PASSES) {
+    for (let s = segStart; s < segEnd; s += SEG) {
+      const pts = []
+      for (let i = s; i <= Math.min(s + SEG, segEnd); i++) pts.push(lem(i / SAMPLES, ox, oy, sc, pass.yOff))
+      if (pts.length >= 2)
+        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw + 0.3, stroke: loc.color || '#C0B0A0', disableMultiStroke: true, bowing: 0.8 })
+    }
+  }
+}
+
+function drawTrack(canvas, locs, trackPad, trackW) {
+  const rc = rough.canvas(canvas)
+  const trackPasses = [
+    { seed: 100, rough: 1.0, sw: 0.9, yOff: -2, alpha: 0.3 },
+    { seed: 110, rough: 0.7, sw: 1.1, yOff: 0, alpha: 0.4 },
+    { seed: 120, rough: 0.9, sw: 0.8, yOff: 2.5, alpha: 0.25 },
+  ]
+  for (const pass of trackPasses) {
+    for (let s = 0; s < 100; s += 8) {
+      const pts = []
+      for (let i = s; i <= Math.min(s + 8, 100); i++) pts.push([trackPad + (i/100)*trackW, 16 + pass.yOff])
+      if (pts.length >= 2)
+        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw, stroke: getColor((s+4)/100, pass.alpha, locs, BASE_RGB), disableMultiStroke: true, bowing: 0.3 })
+    }
+  }
+}
+
+// === Component ===
+const PANEL_H = 100, NODE_W = 72
+
+export default function ThreadView({ locations = [], onNodeTap }) {
+  const infRef = useRef(null), hlRef = useRef(null), trackRef = useRef(null)
+  const wrapRef = useRef(null), containerRef = useRef(null), labelsRef = useRef(null)
+  const [activeIdx, setActiveIdx] = useState(0)
+  const activeIdxRef = useRef(0)
+  const [dims, setDims] = useState({ w: 0, h: 0 })
+
+  const locs = [...locations].filter(l => l.inf_t != null).sort((a, b) => a.inf_t - b.inf_t)
+
+  const infSize = Math.round(Math.min((dims.w || 400) * 1.2, ((dims.h || 700) - PANEL_H) * 0.9)) || 400
+  const sc = infSize * 0.28, ox = infSize / 2, oy = infSize / 2
+  const trackW = locs.length * NODE_W, trackPad = (dims.w || 400) / 2
+
+  const scrollRef = useRef({ x: 0, target: 0, dragging: false, startX: 0, startScroll: 0 })
+  const rotRef = useRef({ x: 12, y: 0, dragging: false, px: 0, py: 0, dist: 0 })
 
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+    const el = containerRef.current; if (!el) return
+    setDims({ w: el.clientWidth, h: el.clientHeight })
+    const onR = () => setDims({ w: el.clientWidth, h: el.clientHeight })
+    window.addEventListener('resize', onR); return () => window.removeEventListener('resize', onR)
+  }, [])
 
-    const W = container.clientWidth, H = container.clientHeight
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  useEffect(() => {
+    if (!infRef.current || !dims.w || locs.length === 0) return
+    const c = infRef.current; c.width = infSize; c.height = infSize; c.style.width = infSize+'px'; c.style.height = infSize+'px'
+    drawInfinity(c, locs, sc, ox, oy)
+    const hl = hlRef.current; if (hl) { hl.width = infSize; hl.height = infSize; hl.style.width = infSize+'px'; hl.style.height = infSize+'px' }
+  }, [dims.w, locs.length, infSize, sc, ox, oy])
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
-    renderer.setSize(W, H)
-    renderer.setPixelRatio(dpr)
-    renderer.setClearColor(0x13100C, 1)
-    container.appendChild(renderer.domElement)
-    renderer.domElement.style.display = 'block'
+  useEffect(() => {
+    if (!trackRef.current || !dims.w || locs.length === 0) return
+    const c = trackRef.current; c.width = trackPad * 2 + trackW; c.height = 50
+    drawTrack(c, locs, trackPad, trackW)
+  }, [dims.w, locs.length, trackW, trackPad])
 
-    // Scene + Camera
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 1000)
-    camera.position.set(0, 0, 6)
-    camera.lookAt(0, 0, 0)
+  useEffect(() => {
+    if (!hlRef.current || locs.length === 0) return
+    drawHighlight(hlRef.current, locs, activeIdx, sc, ox, oy)
+  }, [activeIdx, locs.length, infSize, sc, ox, oy])
 
-    const group = new THREE.Group()
-    scene.add(group)
+  const getSnapX = useCallback(i => { if (!locs[i]) return 0; return trackPad + locs[i].inf_t * trackW - (dims.w || 400) / 2 }, [locs, trackPad, trackW, dims.w])
+  const findNearest = useCallback(sx => { let minD = Infinity, minI = 0; locs.forEach((loc, i) => { const d = Math.abs(trackPad + loc.inf_t * trackW - sx - (dims.w || 400) / 2); if (d < minD) { minD = d; minI = i } }); return minI }, [locs, trackPad, trackW, dims.w])
 
-    // Curve
-    const curve = new LemnCurve()
+  const selectLocation = useCallback(i => {
+    activeIdxRef.current = i; setActiveIdx(i)
+    scrollRef.current.target = getSnapX(i)
+    if (onNodeTap && locs[i]) onNodeTap(locs[i], (dims.w || 400) / 2, ((dims.h || 700) - PANEL_H) / 2)
+  }, [locs, getSnapX, onNodeTap, dims])
 
-    // Build tube with vertex colors
-    const TSEG = 400, RSEG = 10, R = 0.006
-    const baseCol = new THREE.Color(0xD8D0C8)
-    const spread = 0.007
+  useEffect(() => { if (locs.length > 0 && dims.w) { const sx = getSnapX(0); scrollRef.current.target = sx; scrollRef.current.x = sx } }, [locs.length, dims.w, getSnapX])
 
-    // Sort locations by time (index = order)
-    const sortedLocs = [...locations].sort((a, b) => {
-      if (a.id === 'home') return -1
-      if (b.id === 'home') return 1
-      return (a.created_at || a.id) > (b.created_at || b.id) ? 1 : -1
-    })
+  const onInfDown = useCallback(e => { rotRef.current.dragging = true; rotRef.current.px = e.clientX; rotRef.current.py = e.clientY; rotRef.current.dist = 0; e.preventDefault() }, [])
 
-    // Assign t values evenly
-    const nodeData = sortedLocs.map((loc, i) => ({
-      ...loc,
-      t: sortedLocs.length > 1 ? i / (sortedLocs.length - 1) * 0.9 + 0.05 : 0.5,
-      nodeColor: new THREE.Color(loc.color || '#D8D0C8'),
-    }))
+  useEffect(() => {
+    const onMove = e => { const r = rotRef.current; if (!r.dragging) return; const dx = e.clientX - r.px, dy = e.clientY - r.py; r.dist += Math.abs(dx) + Math.abs(dy); r.y += dx * 0.4; r.x += dy * 0.3; r.x = Math.max(-40, Math.min(40, r.x)); r.px = e.clientX; r.py = e.clientY; if (wrapRef.current) wrapRef.current.style.transform = 'perspective(1200px) rotateX('+r.x+'deg) rotateY('+r.y+'deg)' }
+    const onUp = e => { const r = rotRef.current; if (r.dragging && r.dist < 8 && infRef.current) { const rect = infRef.current.getBoundingClientRect(); const cx = (e.clientX - rect.left) * (infSize / rect.width), cy = (e.clientY - rect.top) * (infSize / rect.height); let minD = Infinity, minI = 0; locs.forEach((loc, i) => { const [lx, ly] = lem(loc.inf_t, ox, oy, sc, 0); const d = Math.hypot(lx - cx, ly - cy); if (d < minD) { minD = d; minI = i } }); if (minD < sc * 0.4) selectLocation(minI) }; r.dragging = false }
+    window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
+    return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp) }
+  }, [locs, infSize, sc, ox, oy, selectLocation])
 
-    function loopDist(a, b) { const d = Math.abs(a - b); return Math.min(d, 1 - d) }
+  const onTrackDown = useCallback(e => { const s = scrollRef.current; s.dragging = true; s.startX = e.touches ? e.touches[0].clientX : e.clientX; s.startScroll = s.x }, [])
 
-    const frames = curve.computeFrenetFrames(TSEG, true)
-    const pts = []
-    for (let i = 0; i <= TSEG; i++) pts.push(curve.getPoint(i / TSEG))
+  useEffect(() => {
+    const minS = () => getSnapX(0) - 20, maxS = () => getSnapX(locs.length - 1) + 20
+    const onMove = e => { const s = scrollRef.current; if (!s.dragging) return; const cx = e.touches ? e.touches[0].clientX : e.clientX; s.target = s.startScroll - (cx - s.startX); s.target = Math.max(minS(), Math.min(maxS(), s.target)); const n = findNearest(s.target); if (n !== activeIdxRef.current) selectLocation(n) }
+    const onEnd = () => { const s = scrollRef.current; if (!s.dragging) return; s.dragging = false; s.target = getSnapX(activeIdxRef.current) }
+    window.addEventListener('touchmove', onMove, { passive: true }); window.addEventListener('mousemove', onMove); window.addEventListener('touchend', onEnd); window.addEventListener('mouseup', onEnd)
+    return () => { window.removeEventListener('touchmove', onMove); window.removeEventListener('mousemove', onMove); window.removeEventListener('touchend', onEnd); window.removeEventListener('mouseup', onEnd) }
+  }, [locs, getSnapX, findNearest, selectLocation])
 
-    const verts = [], cols = [], norms = [], idx = []
-    for (let i = 0; i <= TSEG; i++) {
-      const t = i / TSEG
-      let col = baseCol.clone()
-      let totalWeight = 0
-      const blended = new THREE.Color(0, 0, 0)
+  useEffect(() => {
+    let t = 0, running = true
+    const tick = () => { if (!running) return; requestAnimationFrame(tick); t += 0.016
+      if (infRef.current) infRef.current.style.opacity = String(0.9 + 0.06 * Math.sin(t * 0.35))
+      if (hlRef.current) hlRef.current.style.opacity = String(0.25 + 0.25 * (0.5 + 0.5 * Math.sin(t * 1.5)))
+      const s = scrollRef.current; s.x += (s.target - s.x) * 0.14; if (Math.abs(s.target - s.x) < 0.5) s.x = s.target
+      if (trackRef.current) trackRef.current.style.transform = 'translateX('+ (-s.x) +'px)'
+      if (labelsRef.current) { const ch = labelsRef.current.children; for (let i = 0; i < ch.length && i < locs.length; i++) ch[i].style.left = (trackPad + locs[i].inf_t * trackW - s.x) + 'px' }
+    }; tick(); return () => { running = false }
+  }, [locs, trackPad, trackW])
 
-      for (const n of nodeData) {
-        const d = loopDist(t, n.t)
-        if (d < spread) {
-          const raw = Math.max(0, 1 - d / spread)
-          const w = raw * raw * (3 - 2 * raw)
-          blended.r += n.nodeColor.r * w
-          blended.g += n.nodeColor.g * w
-          blended.b += n.nodeColor.b * w
-          totalWeight += w
-        }
-      }
-      if (totalWeight > 0) {
-        blended.multiplyScalar(1 / totalWeight)
-        col.lerp(blended, Math.min(totalWeight, 1))
-      }
-
-      const N = frames.normals[i % TSEG] || frames.normals[0]
-      const B = frames.binormals[i % TSEG] || frames.binormals[0]
-      const P = pts[i]
-
-      for (let j = 0; j <= RSEG; j++) {
-        const ang = (j / RSEG) * Math.PI * 2
-        const c = Math.cos(ang), sn = Math.sin(ang)
-        const nx = c * N.x + sn * B.x, ny = c * N.y + sn * B.y, nz = c * N.z + sn * B.z
-        verts.push(P.x + R * nx, P.y + R * ny, P.z + R * nz)
-        norms.push(nx, ny, nz)
-        cols.push(col.r, col.g, col.b)
-      }
-    }
-    for (let i = 0; i < TSEG; i++)
-      for (let j = 0; j < RSEG; j++) {
-        const a = i * (RSEG + 1) + j, b = a + RSEG + 1, c = a + 1, d = b + 1
-        idx.push(a, b, c, b, d, c)
-      }
-
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3))
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(norms, 3))
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3))
-    geo.setIndex(idx)
-    group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true })))
-
-    // Ambient particles
-    const NP = 20
-    const pPos = new Float32Array(NP * 3)
-    const pOff = [], pSpd = []
-    for (let i = 0; i < NP; i++) { pOff.push(Math.random()); pSpd.push(0.0002 + Math.random() * 0.0004) }
-    const pGeo = new THREE.BufferGeometry()
-    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3))
-    const ambientParticles = new THREE.Points(pGeo, new THREE.PointsMaterial({
-      color: 0xE8E0D8, size: 0.012, transparent: true, opacity: 0.35, sizeAttenuation: true,
-    }))
-    group.add(ambientParticles)
-
-    // Errand particles (brighter, only active segment)
-    const EP = 15
-    const ePos = new Float32Array(EP * 3)
-    const eOff = [], eSpd = []
-    for (let i = 0; i < EP; i++) { eOff.push(Math.random()); eSpd.push(0.002 + Math.random() * 0.003) }
-    const eGeo = new THREE.BufferGeometry()
-    eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3))
-    const errandParticles = new THREE.Points(eGeo, new THREE.PointsMaterial({
-      color: 0xF0D868, size: 0.02, transparent: true, opacity: 0.7, sizeAttenuation: true,
-    }))
-    errandParticles.visible = false
-    group.add(errandParticles)
-
-    // Labels (HTML overlay)
-    // We'll skip 3D labels for now and use a 2D overlay approach
-
-    // Interaction
-    let isDrag = false, px = 0, py = 0, rx = 0.15, ry = 0, vy = 0.0008
-    let pinchDist = 0, camZ = 6
-
-    const onPointerDown = (e) => {
-      isDrag = true; px = e.clientX; py = e.clientY; vy = 0
-    }
-    const onPointerMove = (e) => {
-      if (!isDrag) return
-      ry += (e.clientX - px) * 0.006
-      rx += (e.clientY - py) * 0.006
-      rx = Math.max(-1.5, Math.min(1.5, rx))
-      px = e.clientX; py = e.clientY
-    }
-    const onPointerUp = () => { isDrag = false; vy = 0.0008 }
-
-    // Pinch zoom
-    const onTouchStart = (e) => {
-      if (e.touches.length === 2) {
-        pinchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        )
-      } else if (e.touches.length === 1) {
-        isDrag = true; px = e.touches[0].clientX; py = e.touches[0].clientY; vy = 0
-      }
-    }
-    const onTouchMove = (e) => {
-      if (e.touches.length === 2) {
-        const d = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        )
-        camZ = Math.max(3, Math.min(12, camZ * (pinchDist / d)))
-        camera.position.z = camZ
-        pinchDist = d
-      } else if (e.touches.length === 1 && isDrag) {
-        ry += (e.touches[0].clientX - px) * 0.006
-        rx += (e.touches[0].clientY - py) * 0.006
-        rx = Math.max(-1.5, Math.min(1.5, rx))
-        px = e.touches[0].clientX; py = e.touches[0].clientY
-      }
-    }
-    const onTouchEnd = () => { isDrag = false; vy = 0.0008 }
-
-    renderer.domElement.addEventListener('pointerdown', onPointerDown)
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp)
-    renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: true })
-    renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: true })
-    renderer.domElement.addEventListener('touchend', onTouchEnd)
-
-    // Animate
-    let time = 0
-    function animate() {
-      const animId = requestAnimationFrame(animate)
-      sceneRef.current = { animId }
-      time += 0.016
-      // no auto-rotation
-      group.rotation.x = rx
-      group.rotation.y = ry
-
-      // Ambient particles
-      for (let i = 0; i < NP; i++) {
-        pOff[i] = (pOff[i] + pSpd[i]) % 1
-        const pt = curve.getPoint(pOff[i])
-        pPos[i * 3] = pt.x; pPos[i * 3 + 1] = pt.y; pPos[i * 3 + 2] = pt.z
-      }
-      pGeo.attributes.position.needsUpdate = true
-
-      // Errand particles
-      if (activeErrand && nodeData.length > 0) {
-        errandParticles.visible = true
-        const fromNode = nodeData.find(n => n.id === activeErrand.from)
-        const toNode = nodeData.find(n => n.id === activeErrand.to)
-        if (fromNode && toNode) {
-          const tMin = Math.min(fromNode.t, toNode.t)
-          const tMax = Math.max(fromNode.t, toNode.t)
-          const range = tMax - tMin
-          for (let i = 0; i < EP; i++) {
-            eOff[i] = (eOff[i] + eSpd[i]) % 1
-            const et = tMin + eOff[i] * range
-            const pt = curve.getPoint(et)
-            ePos[i * 3] = pt.x; ePos[i * 3 + 1] = pt.y; ePos[i * 3 + 2] = pt.z
-          }
-          eGeo.attributes.position.needsUpdate = true
-        }
-      } else {
-        errandParticles.visible = false
-      }
-
-      renderer.render(scene, camera)
-    }
-    animate()
-
-    // Cleanup
-    return () => {
-      if (sceneRef.current) cancelAnimationFrame(sceneRef.current.animId)
-      renderer.dispose()
-      container.removeChild(renderer.domElement)
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
-    }
-  }, [locations, activeErrand])
+  const bgColor = getTimeBg()
+  if (locs.length === 0) return <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#FAF6F0' }} />
 
   return (
-    <div ref={containerRef} style={{
-      width: '100%', height: '100%', background: '#13100C',
-      touchAction: 'none',
-    }} />
+    <div ref={containerRef} style={{ width: '100%', height: '100%', background: bgColor, position: 'relative', overflow: 'hidden' }}>
+      <div onPointerDown={onInfDown} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: PANEL_H, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none' }}>
+        <div ref={wrapRef} style={{ position: 'relative', transformStyle: 'preserve-3d', transform: 'perspective(1200px) rotateX(12deg) rotateY(0deg)' }}>
+          <canvas ref={infRef} style={{ display: 'block' }} />
+          <canvas ref={hlRef} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
+        </div>
+      </div>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: PANEL_H, background: bgColor, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(122,92,60,0.06)' }}>
+        <div style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 104 }}>
+          <div style={{ fontFamily: "-apple-system,'PingFang SC',sans-serif", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: locs[activeIdx] ? locs[activeIdx].color : '#7A5C3C', transition: 'color 0.2s ease', marginBottom: 4 }}>
+            {locs[activeIdx] ? (locs[activeIdx].display_name || locs[activeIdx].label || '') : ''}
+          </div>
+          <div style={{ width: 1, height: 14, background: 'rgba(122,92,60,0.18)' }} />
+        </div>
+        <div onTouchStart={onTrackDown} onMouseDown={onTrackDown} style={{ position: 'absolute', top: 38, left: 0, right: 0, height: 50, overflow: 'hidden', touchAction: 'pan-x' }}>
+          <canvas ref={trackRef} style={{ position: 'absolute', top: 0, left: 0, height: 50 }} />
+          <div ref={labelsRef}>
+            {locs.map((loc, i) => (
+              <div key={loc.id || i} onClick={e => { e.stopPropagation(); selectLocation(i) }} style={{
+                position: 'absolute', top: 26, transform: 'translateX(-50%)',
+                fontSize: 10, whiteSpace: 'nowrap', cursor: 'pointer', padding: '6px 8px', zIndex: 103,
+                fontFamily: "-apple-system,'PingFang SC',sans-serif",
+                color: i === activeIdx ? (loc.color || '#7A5C3C') : '#A09888',
+                fontWeight: i === activeIdx ? 600 : 400, transition: 'color 0.2s ease',
+              }}>
+                {loc.display_name || loc.label || loc.id}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
