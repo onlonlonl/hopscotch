@@ -66,11 +66,17 @@ export default function CompassView({locations}){
 
     var rc=rough.canvas(canvas)
 
-    /* coastlines: land light fill on dark ocean */
+    /* coastlines: split at antimeridian to avoid horizontal stripes */
     for(var p=0;p<coastlines.length;p++){
-      var poly=coastlines[p],pts=[]
-      for(var q=0;q<poly.length;q++)pts.push([lngX(poly[q][0]),latY(poly[q][1])])
-      if(pts.length>2)rc.polygon(pts,{stroke:'#B8B0A0',strokeWidth:0.3,roughness:0.2,fill:'#F0ECE4',fillStyle:'solid',disableMultiStroke:true,seed:p+1})
+      var poly=coastlines[p],crosses=false
+      for(var q=0;q<poly.length-1;q++){if(Math.abs(poly[q][0]-poly[q+1][0])>180){crosses=true;break}}
+      if(!crosses){
+        var pts=[];for(var q=0;q<poly.length;q++)pts.push([lngX(poly[q][0]),latY(poly[q][1])])
+        if(pts.length>2)rc.polygon(pts,{stroke:'#B8B0A0',strokeWidth:0.3,roughness:0.2,fill:'#F0ECE4',fillStyle:'solid',disableMultiStroke:true,seed:p+1})
+      }else{
+        var segs=[[]];for(var q=0;q<poly.length;q++){if(q>0&&Math.abs(poly[q][0]-poly[q-1][0])>180)segs.push([]);segs[segs.length-1].push([lngX(poly[q][0]),latY(poly[q][1])])}
+        for(var sg=0;sg<segs.length;sg++){if(segs[sg].length>2)rc.polygon(segs[sg],{stroke:'#B8B0A0',strokeWidth:0.3,roughness:0.2,fill:'#F0ECE4',fillStyle:'solid',disableMultiStroke:true,seed:p*10+sg+1})}
+      }
     }
 
     /* locations with weather icons via offscreen canvas */
