@@ -28,8 +28,10 @@ for (const feature of (geo.type === 'FeatureCollection' ? geo.features : [geo]))
   const geom = feature.geometry
   const rings = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
   for (const poly of rings) {
-    for (const ring of poly) {
-      if (ring.length < 20) continue
+    // Only outer ring (index 0), skip holes (lakes/inland seas)
+    {
+      const ring = poly[0]
+      if (!ring || ring.length < 20) { continue } else { /* outer only */ }
       const maxPts = ring.length > 300 ? 80 : ring.length > 80 ? 40 : 30
       let s = simplify(ring, maxPts)
       s = chaikin(s)

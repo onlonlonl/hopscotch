@@ -43,14 +43,14 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
     const ctx = canvas.getContext('2d')
     const rc = rough.canvas(canvas)
     const dpr = Math.min(window.devicePixelRatio || 1, 3)
-    const size = 52
+    const size = 36
     canvas.width = size * dpr
     canvas.height = size * dpr
     canvas.style.width = size + 'px'
     canvas.style.height = size + 'px'
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, size, size)
-    recipes[type](rc, ctx, size/2, size/2, size/80, color || '#A09080')
+    recipes[type](rc, ctx, size/2, size/2, size/100, color || '#A09080')
   }, [recipes])
 
   // Draw floating drag ghost
@@ -175,7 +175,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
 
             {/* Grid — fixed height, scrollable */}
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+              display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
               gap: 4, padding: '12px 16px',
               flex: 1, overflowY: 'auto', alignContent: 'start',
             }}>
@@ -186,7 +186,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
                   onClick={() => onSelect && onSelect(item.type)}
                   style={{
                     display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', padding: '8px 4px',
+                    alignItems: 'center', padding: '4px 2px',
                     borderRadius: 8, cursor: 'grab',
                     userSelect: 'none', WebkitUserSelect: 'none',
                   }}>
@@ -197,7 +197,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
               <div onClick={() => setGeneratorOpen(true)} style={{
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
-                padding: '8px 4px', borderRadius: 8, cursor: 'pointer',
+                padding: '4px 2px', borderRadius: 8, cursor: 'pointer',
                 border: '1.5px dashed #C0B8A8', minHeight: 72,
               }}>
                 <span style={{ fontSize: 20, color: '#B0A898' }}>+</span>

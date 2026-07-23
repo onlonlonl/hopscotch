@@ -4,7 +4,7 @@ import rough from 'roughjs'
 var RO = {roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:2}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var ks=Object.keys(x);for(var i=0;i<ks.length;i++)o[ks[i]]=x[ks[i]]};return o}
 
-var CW=230, CH=280, M=6
+var CW=260, CH=280, M=6
 
 function translateT(t){if(t<0.15)return'at the origin';if(t<0.3)return'near the start';if(t<0.5)return'first crossing';if(t<0.7)return'far side';if(t<0.85)return'second crossing';return'almost home'}
 function translateW(w){if(w<0.2)return'distant';if(w<0.4)return'cool';if(w<0.6)return'mild';if(w<0.8)return'warm';return'glowing'}
@@ -124,7 +124,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   useEffect(function() {
     var cvs = stampRef.current
     if (!cvs || !weatherDraw) return
-    var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+    var sz = 36, dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = sz * dpr; cvs.height = sz * dpr
     cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
     var ctx = cvs.getContext('2d')
@@ -207,9 +207,9 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   return (
     <div style={{position:'absolute',left:position[0]-CW/2,top:position[1]-CH/2,width:CW,height:CH,zIndex:200,cursor:'default',fontFamily:'-apple-system,PingFang SC,sans-serif'}} onClick={function(e){e.stopPropagation()}}>
       <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
-      <div style={{position:'relative',zIndex:1,padding:'14px 18px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
+      <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
-          <div style={{flex:1,minWidth:0,paddingRight:8}}>
+          <div style={{flex:1,minWidth:0,paddingRight:4}}>
             <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3}}>{storyName}</div>
             <div style={{fontSize:11,color:'#A09888',marginTop:3}}>{displayName}</div>
             {hasInf && (
@@ -220,7 +220,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             )}
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
-            <div onClick={onClose} style={{width:28,height:16,cursor:'pointer'}} />
+            <div onClick={onClose} style={{width:24,height:16,cursor:'pointer'}} />
             <canvas ref={stampRef} />
           </div>
         </div>

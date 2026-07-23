@@ -197,10 +197,10 @@ export default function App() {
       </div>
 
       {/* Left-side dimension tabs */}
-      <canvas ref={tabRef} onClick={handleTabClick} style={{
+      {!panelOpen && !card && <canvas ref={tabRef} onClick={handleTabClick} style={{
         position: 'fixed', left: 10, top: '50%', transform: 'translateY(-50%)',
         zIndex: 115, cursor: 'pointer',
-      }} />
+      }} />}
 
       {/* Back button */}
       <canvas ref={backRef} onClick={exitInk} style={{
