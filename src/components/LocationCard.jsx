@@ -94,7 +94,6 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   var borderRef = useRef(null)
   var stampRef = useRef(null)
   var badgesRef = useRef(null)
-  var dividerRef = useRef(null)
   var infState = useState(false)
   var showTranslate = infState[0]
   var setShowTranslate = infState[1]
@@ -114,7 +113,12 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     // Close X
     rc.line(CW-M-14,M+10,CW-M-6,M+18,ro({stroke:'#C0B8A8',strokeWidth:0.7}))
     rc.line(CW-M-6,M+10,CW-M-14,M+18,ro({stroke:'#C0B8A8',strokeWidth:0.7}))
-
+    // Divider line
+    rc.line(M+12,80,CW-M-12,80,ro({stroke:c,strokeWidth:0.4,roughness:1.5}))
+    // Ruled lines if no story
+    if (!(location && location.story)) {
+      for (var i=0;i<4;i++) rc.line(M+14,98+i*18,CW-M-14,98+i*18,ro({stroke:'#E0DCD4',strokeWidth:0.3,roughness:1.2}))
+    }
   }, [weatherColor, weatherType, location])
 
   useEffect(function() {
@@ -139,10 +143,10 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     if (!cvs || !location) return
     var loc = location
     if (loc.inf_t == null) return
-    var pad = 4, bw = CW - M*2 - 24, bh = 36
+    var bw = CW - M*2 - 24, bh = 36
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = (bw+pad*2) * dpr; cvs.height = (bh+pad*2) * dpr
-    cvs.style.width = (bw+pad*2) + 'px'; cvs.style.height = (bh+pad*2) + 'px'
+    cvs.width = bw * dpr; cvs.height = bh * dpr
+    cvs.style.width = bw + 'px'; cvs.style.height = bh + 'px'
     var ctx = cvs.getContext('2d')
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
@@ -151,7 +155,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     var gap = (bw - unitW * 3) / 2
 
     // Badge 1: Ink
-    bx = pad, by = pad
+    bx = 0, by = 0
     var inC = activeDim===0 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
     icx = bx + unitW/2
@@ -164,7 +168,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.fillText('Ink', bx+unitW/2, by+bh-3); ctx.restore()
 
     // Badge 2: Thread
-    bx = pad + unitW + gap
+    bx = unitW + gap
     var thC = activeDim===1 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: thC, strokeWidth: activeDim===1 ? 0.8 : 0.6}))
     var icx = bx + unitW/2, icy = by + bh/2 - 2, is2 = unitW * 0.32
@@ -178,7 +182,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.fillText('Thread', icx, by+bh-3); ctx.restore()
 
     // Badge 3: Compass
-    bx = pad + (unitW + gap) * 2
+    bx = (unitW + gap) * 2
     var coC = activeDim===2 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: coC, strokeWidth: activeDim===2 ? 0.8 : 0.6}))
     icx = bx + unitW/2; icy = by + bh/2 - 2
@@ -193,19 +197,6 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   }, [location])
 
 
-  useEffect(function() {
-    var cvs = dividerRef.current
-    if (!cvs) return
-    var dw = CW - M*2 - 24, dh = 6
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = dw * dpr; cvs.height = dh * dpr
-    cvs.style.width = dw + 'px'; cvs.style.height = dh + 'px'
-    var ctx = cvs.getContext('2d')
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    var rc = rough.canvas(cvs)
-    rc.line(0, dh/2, dw, dh/2, ro({stroke: weatherColor || '#8A7A68', strokeWidth:0.4, roughness:1.5}))
-  }, [weatherColor])
-
   if (!location || !position) return null
   var loc = location
   var storyName = loc.story_name || loc.label || ''
@@ -214,37 +205,33 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   var hasInf = loc.inf_t != null && loc.inf_w != null
 
   return (
-    <div style={{position:'fixed',left:position[0]-CW/2,top:position[1]-CH/2,width:CW,height:CH,zIndex:200,cursor:'default',fontFamily:'-apple-system,PingFang SC,sans-serif'}} onClick={function(e){e.stopPropagation()}}>
+    <div style={{position:'absolute',left:position[0]-CW/2,top:position[1]-CH/2,width:CW,height:CH,zIndex:200,cursor:'default',fontFamily:'-apple-system,PingFang SC,sans-serif'}} onClick={function(e){e.stopPropagation()}}>
       <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
           <div style={{flex:1,minWidth:0,paddingRight:4}}>
-            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>
-            <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
-              <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{displayName}</span>
-              {hasInf && (
-                <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',whiteSpace:'nowrap',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
-                  <span style={{marginRight:2}}>∞</span>
-                  {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
-                </span>
-              )}
-            </div>
+            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3}}>{storyName}</div>
+            <div style={{fontSize:11,color:'#A09888',marginTop:3}}>{displayName}</div>
             {loc.errands > 0 && <div style={{fontSize:9,color:'#B8B0A0',marginTop:2}}>{loc.errands + ' errands'}</div>}
+            {hasInf && (
+              <div onClick={function(){setShowTranslate(!showTranslate)}} style={{fontSize:10,marginTop:5,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
+                <span style={{marginRight:3}}>∞</span>
+                {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
+              </div>
+            )}
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
             <div onClick={onClose} style={{width:24,height:16,cursor:'pointer'}} />
             <canvas ref={stampRef} style={{width:44,height:44}} />
           </div>
         </div>
-        <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'2px 0 4px'}}>
-          <canvas ref={dividerRef} style={{width:220,height:6}} />
-        </div>
-        <div style={{flex:1,overflow:'hidden',overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
+        <div style={{height:24,flexShrink:0}} />
+        <div style={{flex:1,overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
           {story || ''}
         </div>
         {hasInf && (
-          <div style={{flexShrink:0,paddingTop:4,paddingBottom:4,display:'flex',justifyContent:'center',position:'relative',zIndex:3}}>
-            <canvas ref={badgesRef} style={{width:232,height:44}} />
+          <div style={{flexShrink:0,paddingTop:8,display:'flex',justifyContent:'center'}}>
+            <canvas ref={badgesRef} />
           </div>
         )}
       </div>

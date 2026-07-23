@@ -160,7 +160,7 @@ export default function App() {
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
     }}>
-      <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, perspective: '1200px', zIndex: 0 }}>
+      <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, perspective: '1200px' }}>
       <div style={{
         width: '100%', height: '100%',
         transformStyle: 'preserve-3d',
@@ -217,8 +217,8 @@ export default function App() {
           <LocationCard
             location={card}
             position={dimIndex === 1
-              ? [window.innerWidth / 2, window.innerHeight / 2 - 10]
-              : [Math.max(144, Math.min(card.x, window.innerWidth - 144)), Math.max(150, Math.min(card.y, window.innerHeight - 170))]
+              ? [window.innerWidth / 2, (window.innerHeight - 100) / 2]
+              : [Math.min(card.x, window.innerWidth - 120), Math.max(card.y, 130)]
             }
             onClose={() => setCard(null)}
             weatherColor={card.color}
