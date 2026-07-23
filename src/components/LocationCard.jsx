@@ -4,7 +4,7 @@ import rough from 'roughjs'
 var RO = {roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:2}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var ks=Object.keys(x);for(var i=0;i<ks.length;i++)o[ks[i]]=x[ks[i]]};return o}
 
-var CW=260, CH=280, M=6
+var CW=260, CH=240, M=6
 
 function translateT(t){if(t<0.15)return'at the origin';if(t<0.3)return'near the start';if(t<0.5)return'first crossing';if(t<0.7)return'far side';if(t<0.85)return'second crossing';return'almost home'}
 function translateW(w){if(w<0.2)return'distant';if(w<0.4)return'cool';if(w<0.6)return'mild';if(w<0.8)return'warm';return'glowing'}
@@ -113,12 +113,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     // Close X
     rc.line(CW-M-14,M+10,CW-M-6,M+18,ro({stroke:'#C0B8A8',strokeWidth:0.7}))
     rc.line(CW-M-6,M+10,CW-M-14,M+18,ro({stroke:'#C0B8A8',strokeWidth:0.7}))
-    // Divider line
-    rc.line(M+12,80,CW-M-12,80,ro({stroke:c,strokeWidth:0.4,roughness:1.5}))
-    // Ruled lines if no story
-    if (!(location && location.story)) {
-      for (var i=0;i<4;i++) rc.line(M+14,98+i*18,CW-M-14,98+i*18,ro({stroke:'#E0DCD4',strokeWidth:0.3,roughness:1.2}))
-    }
+
   }, [weatherColor, weatherType, location])
 
   useEffect(function() {
@@ -225,7 +220,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             <canvas ref={stampRef} />
           </div>
         </div>
-        <div style={{height:24,flexShrink:0}} />
+        <div style={{height:1,background:'#E0DCD4',margin:'10px 8px 8px',flexShrink:0}} />
         <div style={{flex:1,overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
           {story || ''}
         </div>
