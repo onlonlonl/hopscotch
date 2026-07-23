@@ -4,7 +4,7 @@ import rough from 'roughjs'
 var RO = {roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:2}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var ks=Object.keys(x);for(var i=0;i<ks.length;i++)o[ks[i]]=x[ks[i]]};return o}
 
-var CW=260, CH=240, M=6
+var CW=260, CH=280, M=6
 
 function translateT(t){if(t<0.15)return'at the origin';if(t<0.3)return'near the start';if(t<0.5)return'first crossing';if(t<0.7)return'far side';if(t<0.85)return'second crossing';return'almost home'}
 function translateW(w){if(w<0.2)return'distant';if(w<0.4)return'cool';if(w<0.6)return'mild';if(w<0.8)return'warm';return'glowing'}
@@ -94,6 +94,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   var borderRef = useRef(null)
   var stampRef = useRef(null)
   var badgesRef = useRef(null)
+  var dividerRef = useRef(null)
   var infState = useState(false)
   var showTranslate = infState[0]
   var setShowTranslate = infState[1]
@@ -192,6 +193,22 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   }, [location])
 
 
+  // Inline Rough.js divider
+  useEffect(function() {
+    var cvs = dividerRef.current
+    if (!cvs) return
+    var dw = CW - M*2 - 24
+    var dh = 6
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = dw * dpr; cvs.height = dh * dpr
+    cvs.style.width = dw + 'px'; cvs.style.height = dh + 'px'
+    var ctx = cvs.getContext('2d')
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    var c = weatherColor || '#8A7A68'
+    rc.line(0, dh/2, dw, dh/2, ro({stroke:c, strokeWidth:0.4, roughness:1.5}))
+  }, [weatherColor])
+
   if (!location || !position) return null
   var loc = location
   var storyName = loc.story_name || loc.label || ''
@@ -220,7 +237,9 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             <canvas ref={stampRef} />
           </div>
         </div>
-        <div style={{height:1,background:'#E0DCD4',margin:'10px 8px 8px',flexShrink:0}} />
+        <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'8px 0'}}>
+          <canvas ref={dividerRef} />
+        </div>
         <div style={{flex:1,overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
           {story || ''}
         </div>
