@@ -193,20 +193,17 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   }, [location])
 
 
-  // Inline Rough.js divider
   useEffect(function() {
     var cvs = dividerRef.current
     if (!cvs) return
-    var dw = CW - M*2 - 24
-    var dh = 6
+    var dw = CW - M*2 - 24, dh = 6
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = dw * dpr; cvs.height = dh * dpr
     cvs.style.width = dw + 'px'; cvs.style.height = dh + 'px'
     var ctx = cvs.getContext('2d')
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    var c = weatherColor || '#8A7A68'
-    rc.line(0, dh/2, dw, dh/2, ro({stroke:c, strokeWidth:0.4, roughness:1.5}))
+    rc.line(0, dh/2, dw, dh/2, ro({stroke: weatherColor || '#8A7A68', strokeWidth:0.4, roughness:1.5}))
   }, [weatherColor])
 
   if (!location || !position) return null
@@ -221,12 +218,12 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
       <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
-          {hasInf && (
-                <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}
+          <div style={{flex:1,minWidth:0,paddingRight:4}}>
+            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>
             <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
               <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{displayName}</span>
-              <div style={{flex:1,minWidth:0,paddingRight:4}}>
-            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5,whiteSpace:'nowrap'}}>
+              {hasInf && (
+                <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',whiteSpace:'nowrap',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
                   <span style={{marginRight:2}}>∞</span>
                   {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
                 </span>
@@ -242,14 +239,14 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
         <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'2px 0 4px'}}>
           <canvas ref={dividerRef} style={{width:220,height:6}} />
         </div>
-        <div style={{flex:1,overflow:'hidden',overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
-          {story || ''}
-        </div>
         {hasInf && (
-          <div style={{flexShrink:0,paddingTop:8,display:'flex',justifyContent:'center',position:'relative',zIndex:2}}>
+          <div style={{flexShrink:0,paddingTop:4,paddingBottom:4,display:'flex',justifyContent:'center'}}>
             <canvas ref={badgesRef} style={{width:224,height:36}} />
           </div>
         )}
+        <div style={{flex:1,overflow:'hidden',overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
+          {story || ''}
+        </div>
       </div>
     </div>
   )
