@@ -58,19 +58,30 @@ function makeProj(locs,W,H,pad) {
 
 export default function CompassView({ locations }) {
   var canvasRef = useRef(null)
+  var outerRef = useRef(null)
+  var innerRef = useRef(null)
+  var cardWrapRef = useRef(null)
   var projRef = useRef(null)
   var geoLocsRef = useRef([])
+  var sizeRef = useRef({ W: 380, H: 600 })
   var selectedState = useState(null)
   var selected = selectedState[0]
   var setSelected = selectedState[1]
+  var tfRef = useRef({ px: 0, py: 0, z: 1 })
+  var snapState = useState({ px: 0, py: 0, z: 1 })
+  var tfSnap = snapState[0]
+  var setTfSnap = snapState[1]
+  var gestRef = useRef(null)
+  var movedRef = useRef(false)
 
   useEffect(function() {
     var canvas = canvasRef.current
     if (!canvas) return
-    var el = canvas.parentElement
+    var el = outerRef.current
     if (!el) return
     var W = el.clientWidth || 380
     var H = el.clientHeight || 600
+    sizeRef.current = { W: W, H: H }
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     canvas.width = W * dpr
     canvas.height = H * dpr
@@ -109,10 +120,8 @@ export default function CompassView({ locations }) {
       var cx = pos[0], cy = pos[1]
       var weather = loc.weather || 'sun'
       var ws = WS[weather] || WS.sun
-
       rc.circle(cx, cy, cR * 2, ro({stroke: ws.color, strokeWidth: 1, roughness: 1}))
       try { ws.draw(rc, cx, cy, ws.color) } catch(e) {}
-
       ctx.textAlign = 'center'
       ctx.font = '600 11px -apple-system, PingFang SC, sans-serif'
       ctx.fillStyle = '#8A7A68'
@@ -120,43 +129,113 @@ export default function CompassView({ locations }) {
     }
   }, [locations])
 
-  function handleCanvasClick(e) {
-    var canvas = canvasRef.current
-    if (!canvas) return
-    var rect = canvas.getBoundingClientRect()
-    var mx = e.clientX - rect.left
-    var my = e.clientY - rect.top
-    var proj = projRef.current
-    var gl = geoLocsRef.current
-    if (!proj || !gl.length) return
+  useEffect(function() {
+    var el = outerRef.current
+    if (!el) return
+    function applyCSS() {
+      if (!innerRef.current) return
+      var t = tfRef.current
+      innerRef.current.style.transform = 'translate(' + t.px + 'px,' + t.py + 'px) scale(' + t.z + ')'
+    }
+    function dist2(ts) {
+      var dx = ts[1].clientX - ts[0].clientX
+      var dy = ts[1].clientY - ts[0].clientY
+      return Math.sqrt(dx * dx + dy * dy)
+    }
+    function onTS(e) {
+      if (cardWrapRef.current && cardWrapRef.current.contains(e.target)) return
+      var ts = e.touches
+      movedRef.current = false
+      if (ts.length === 1) {
+        gestRef.current = { type:'pan', sx:ts[0].clientX, sy:ts[0].clientY, spx:tfRef.current.px, spy:tfRef.current.py }
+      } else if (ts.length >= 2) {
+        setSelected(null)
+        gestRef.current = { type:'pinch', sd:dist2(ts), sz:tfRef.current.z, spx:tfRef.current.px, spy:tfRef.current.py, smx:(ts[0].clientX+ts[1].clientX)/2, smy:(ts[0].clientY+ts[1].clientY)/2 }
+      }
+    }
+    function onTM(e) {
+      var g = gestRef.current
+      if (!g) return
+      e.preventDefault()
+      var ts = e.touches
+      if (ts.length >= 2) {
+        if (g.type === 'pan') {
+          setSelected(null); g.type='pinch'; g.sd=dist2(ts); g.sz=tfRef.current.z; g.spx=tfRef.current.px; g.spy=tfRef.current.py
+          g.smx=(ts[0].clientX+ts[1].clientX)/2; g.smy=(ts[0].clientY+ts[1].clientY)/2; return
+        }
+        movedRef.current = true
+        var d = dist2(ts)
+        var newZ = Math.max(0.5, Math.min(5, g.sz * d / g.sd))
+        var mx = (ts[0].clientX+ts[1].clientX)/2, my = (ts[0].clientY+ts[1].clientY)/2
+        var rect = el.getBoundingClientRect()
+        var cx = g.smx - rect.left, cy = g.smy - rect.top
+        tfRef.current.z = newZ
+        tfRef.current.px = cx - (cx - g.spx) * newZ / g.sz + (mx - g.smx)
+        tfRef.current.py = cy - (cy - g.spy) * newZ / g.sz + (my - g.smy)
+        applyCSS()
+      } else if (g.type === 'pan' && ts.length === 1) {
+        var dx = ts[0].clientX - g.sx, dy = ts[0].clientY - g.sy
+        if (Math.abs(dx) + Math.abs(dy) > 5) { movedRef.current = true; setSelected(null) }
+        tfRef.current.px = g.spx + dx; tfRef.current.py = g.spy + dy
+        applyCSS()
+      }
+    }
+    function onTE(e) {
+      if (e.touches.length === 0) { gestRef.current = null; setTfSnap({px:tfRef.current.px,py:tfRef.current.py,z:tfRef.current.z}) }
+    }
+    function onWh(e) {
+      e.preventDefault()
+      var rect = el.getBoundingClientRect()
+      var cx = e.clientX - rect.left, cy = e.clientY - rect.top
+      var t = tfRef.current, f = e.deltaY > 0 ? 0.92 : 1.08
+      var newZ = Math.max(0.5, Math.min(5, t.z * f)), oldZ = t.z
+      t.px = cx - (cx - t.px) * newZ / oldZ; t.py = cy - (cy - t.py) * newZ / oldZ; t.z = newZ
+      applyCSS(); setTfSnap({px:t.px,py:t.py,z:t.z})
+    }
+    el.addEventListener('touchstart', onTS, {passive:true})
+    el.addEventListener('touchmove', onTM, {passive:false})
+    el.addEventListener('touchend', onTE, {passive:true})
+    el.addEventListener('wheel', onWh, {passive:false})
+    return function() { el.removeEventListener('touchstart',onTS); el.removeEventListener('touchmove',onTM); el.removeEventListener('touchend',onTE); el.removeEventListener('wheel',onWh) }
+  }, [])
 
+  function handleClick(e) {
+    if (movedRef.current) return
+    if (cardWrapRef.current && cardWrapRef.current.contains(e.target)) return
+    var rect = outerRef.current.getBoundingClientRect()
+    var t = tfRef.current
+    var sx = e.clientX - rect.left, sy = e.clientY - rect.top
+    var wx = (sx - t.px) / t.z, wy = (sy - t.py) / t.z
+    var gl = geoLocsRef.current, proj = projRef.current
+    if (!proj || !gl.length) { setSelected(null); return }
     var best = null, bestD = 40
     for (var i = 0; i < gl.length; i++) {
       var pos = proj(gl[i].lat, gl[i].lng)
-      var dx = mx - pos[0], dy = my - pos[1]
-      var d = Math.sqrt(dx * dx + dy * dy)
-      if (d < bestD) { bestD = d; best = { loc: gl[i], pos: pos } }
+      var dx = wx - pos[0], dy = wy - pos[1]
+      var d = Math.sqrt(dx*dx + dy*dy)
+      if (d < bestD) { bestD = d; best = {loc:gl[i],pos:pos} }
     }
-    if (best) { setSelected(best); e.stopPropagation() }
+    if (best) setSelected(best); else setSelected(null)
   }
 
-  var cardWeather = selected ? (WS[selected.loc.weather || 'sun'] || WS.sun) : null
+  var cardPos = null
+  if (selected) {
+    var t = tfSnap, rawX = selected.pos[0]*t.z+t.px, rawY = selected.pos[1]*t.z+t.py
+    var sz = sizeRef.current, CW = 230, CH = 280
+    cardPos = [ Math.max(CW/2+4, Math.min(sz.W-CW/2-4, rawX)), Math.max(CH/2+4, Math.min(sz.H-CH/2-4, rawY)) ]
+  }
+  var cardWeather = selected ? (WS[selected.loc.weather||'sun']||WS.sun) : null
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}
-         onClick={function() { setSelected(null) }}>
-      <canvas ref={canvasRef}
-              onClick={handleCanvasClick}
-              style={{ width: '100%', height: '100%', display: 'block' }} />
-      {selected && (
-        <LocationCard
-          location={selected.loc}
-          position={selected.pos}
-          onClose={function() { setSelected(null) }}
-          weatherDraw={cardWeather.draw}
-          weatherColor={cardWeather.color}
-        weatherType={selected.loc.weather || 'sun'}
-        />
+    <div ref={outerRef} onClick={handleClick} style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',touchAction:'none',background:'#FAF6F0'}}>
+      <div ref={innerRef} style={{position:'absolute',width:'100%',height:'100%',transformOrigin:'0 0',willChange:'transform'}}>
+        <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block'}} />
+      </div>
+      {selected && cardPos && (
+        <div ref={cardWrapRef} onClick={function(e){e.stopPropagation()}} style={{position:'absolute',top:0,left:0,zIndex:200}}>
+          <LocationCard location={selected.loc} position={cardPos} onClose={function(){setSelected(null)}}
+            weatherDraw={cardWeather.draw} weatherColor={cardWeather.color} weatherType={selected.loc.weather||'sun'} />
+        </div>
       )}
     </div>
   )
