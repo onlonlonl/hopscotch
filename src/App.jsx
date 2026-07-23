@@ -160,7 +160,7 @@ export default function App() {
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
     }}>
-      <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, perspective: '1200px' }}>
+      <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, perspective: '1200px', zIndex: 0 }}>
       <div style={{
         width: '100%', height: '100%',
         transformStyle: 'preserve-3d',
