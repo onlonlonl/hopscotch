@@ -222,15 +222,17 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
           <div style={{flex:1,minWidth:0,paddingRight:4}}>
-            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3}}>{storyName}</div>
-            <div style={{fontSize:11,color:'#A09888',marginTop:3}}>{displayName}</div>
+            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
+              <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{displayName}</span>
+              {hasInf && (
+                <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5,whiteSpace:'nowrap'}}>
+                  <span style={{marginRight:2}}>∞</span>
+                  {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
+                </span>
+              )}
+            </div>
             {loc.errands > 0 && <div style={{fontSize:9,color:'#B8B0A0',marginTop:2}}>{loc.errands + ' errands'}</div>}
-            {hasInf && (
-              <div onClick={function(){setShowTranslate(!showTranslate)}} style={{fontSize:10,marginTop:5,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
-                <span style={{marginRight:3}}>∞</span>
-                {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
-              </div>
-            )}
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
             <div onClick={onClose} style={{width:24,height:16,cursor:'pointer'}} />
