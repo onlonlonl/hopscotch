@@ -221,12 +221,12 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
       <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
-          <div style={{flex:1,minWidth:0,paddingRight:4}}>
-            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>
+          {hasInf && (
+                <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}
             <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
               <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{displayName}</span>
-              {hasInf && (
-                <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5,whiteSpace:'nowrap'}}>
+              <div style={{flex:1,minWidth:0,paddingRight:4}}>
+            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5,whiteSpace:'nowrap'}}>
                   <span style={{marginRight:2}}>∞</span>
                   {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
                 </span>
