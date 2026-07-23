@@ -139,20 +139,32 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     if (!cvs || !location) return
     var loc = location
     if (loc.inf_t == null) return
-    var pad = 4, bw = CW - M*2 - 24 + pad*2, bh = 36 + pad*2
+    var pad = 4, bw = CW - M*2 - 24, bh = 36
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = bw * dpr; cvs.height = bh * dpr
-    cvs.style.width = bw + 'px'; cvs.style.height = bh + 'px'
+    cvs.width = (bw+pad*2) * dpr; cvs.height = (bh+pad*2) * dpr
+    cvs.style.width = (bw+pad*2) + 'px'; cvs.style.height = (bh+pad*2) + 'px'
     var ctx = cvs.getContext('2d')
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
     var c = loc.color || '#8A7A68'
-    var rawW = bw - pad*2
-    var unitW = Math.floor(rawW / 3) - 4
-    var gap = (rawW - unitW * 3) / 2
+    var unitW = Math.floor(bw / 3) - 4
+    var gap = (bw - unitW * 3) / 2
 
-    // Badge 1: Thread
-    var bx = pad, by = pad
+    // Badge 1: Ink
+    bx = pad, by = pad
+    var inC = activeDim===0 ? c : '#D0C8C0'
+    rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
+    icx = bx + unitW/2
+    rc.rectangle(bx+6, by+4, unitW-12, bh-14, ro({stroke: '#C0B8A8', strokeWidth: 0.4, roughness: 0.8}))
+    ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = c
+    var mapX = bx+8+(unitW-16)*Math.min(1,Math.max(0,((loc.lng||120)-119.9)/0.6))
+    var mapY = by+6+(bh-18)*Math.min(1,Math.max(0,((loc.lat||30.3)-30.2)/0.3))
+    ctx.beginPath(); ctx.arc(mapX, mapY, 1.8, 0, Math.PI*2); ctx.fill()
+    ctx.globalAlpha = 0.45; ctx.fillStyle = '#7A5C3C'; ctx.font = '7px -apple-system,sans-serif'; ctx.textAlign = 'center'
+    ctx.fillText('Ink', bx+unitW/2, by+bh-3); ctx.restore()
+
+    // Badge 2: Thread
+    bx = pad + unitW + gap
     var thC = activeDim===1 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: thC, strokeWidth: activeDim===1 ? 0.8 : 0.6}))
     var icx = bx + unitW/2, icy = by + bh/2 - 2, is2 = unitW * 0.32
@@ -164,19 +176,6 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.globalAlpha = 1; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(icx+is2*c2/d2, icy+is2*0.8*s2*c2/d2, 2, 0, Math.PI*2); ctx.fill()
     ctx.globalAlpha = 0.45; ctx.fillStyle = '#7A5C3C'; ctx.font = '7px -apple-system,sans-serif'; ctx.textAlign = 'center'
     ctx.fillText('Thread', icx, by+bh-3); ctx.restore()
-
-    // Badge 2: Ink
-    bx = pad + unitW + gap
-    var inC = activeDim===0 ? c : '#D0C8C0'
-    rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
-    icx = bx + unitW/2
-    rc.rectangle(bx+6, by+4, unitW-12, bh-14, ro({stroke: '#C0B8A8', strokeWidth: 0.4, roughness: 0.8}))
-    ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = c
-    var mapX = bx+8+(unitW-16)*Math.min(1,Math.max(0,((loc.lng||120)-119.9)/0.6))
-    var mapY = by+6+(bh-18)*Math.min(1,Math.max(0,((loc.lat||30.3)-30.2)/0.3))
-    ctx.beginPath(); ctx.arc(mapX, mapY, 1.8, 0, Math.PI*2); ctx.fill()
-    ctx.globalAlpha = 0.45; ctx.fillStyle = '#7A5C3C'; ctx.font = '7px -apple-system,sans-serif'; ctx.textAlign = 'center'
-    ctx.fillText('Ink', bx+unitW/2, by+bh-3); ctx.restore()
 
     // Badge 3: Compass
     bx = pad + (unitW + gap) * 2
