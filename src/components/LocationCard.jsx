@@ -139,7 +139,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     if (!cvs || !location) return
     var loc = location
     if (loc.inf_t == null) return
-    var bw = CW - M*2 - 24, bh = 36
+    var pad = 4, bw = CW - M*2 - 24 + pad*2, bh = 36 + pad*2
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = bw * dpr; cvs.height = bh * dpr
     cvs.style.width = bw + 'px'; cvs.style.height = bh + 'px'
@@ -147,11 +147,12 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
     var c = loc.color || '#8A7A68'
-    var unitW = Math.floor(bw / 3) - 4
-    var gap = (bw - unitW * 3) / 2
+    var rawW = bw - pad*2
+    var unitW = Math.floor(rawW / 3) - 4
+    var gap = (rawW - unitW * 3) / 2
 
     // Badge 1: Thread
-    var bx = 0, by = 0
+    var bx = pad, by = pad
     var thC = activeDim===1 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: thC, strokeWidth: activeDim===1 ? 0.8 : 0.6}))
     var icx = bx + unitW/2, icy = by + bh/2 - 2, is2 = unitW * 0.32
@@ -165,7 +166,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.fillText('Thread', icx, by+bh-3); ctx.restore()
 
     // Badge 2: Ink
-    bx = unitW + gap
+    bx = pad + unitW + gap
     var inC = activeDim===0 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
     icx = bx + unitW/2
@@ -178,7 +179,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.fillText('Ink', bx+unitW/2, by+bh-3); ctx.restore()
 
     // Badge 3: Compass
-    bx = (unitW + gap) * 2
+    bx = pad + (unitW + gap) * 2
     var coC = activeDim===2 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: coC, strokeWidth: activeDim===2 ? 0.8 : 0.6}))
     icx = bx + unitW/2; icy = by + bh/2 - 2
@@ -239,14 +240,14 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
         <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'2px 0 4px'}}>
           <canvas ref={dividerRef} style={{width:220,height:6}} />
         </div>
-        {hasInf && (
-          <div style={{flexShrink:0,paddingTop:4,paddingBottom:4,display:'flex',justifyContent:'center'}}>
-            <canvas ref={badgesRef} style={{width:224,height:36}} />
-          </div>
-        )}
         <div style={{flex:1,overflow:'hidden',overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
           {story || ''}
         </div>
+        {hasInf && (
+          <div style={{flexShrink:0,paddingTop:4,paddingBottom:4,display:'flex',justifyContent:'center',position:'relative',zIndex:3}}>
+            <canvas ref={badgesRef} style={{width:232,height:44}} />
+          </div>
+        )}
       </div>
     </div>
   )
