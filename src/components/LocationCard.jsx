@@ -217,7 +217,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
   var hasInf = loc.inf_t != null && loc.inf_w != null
 
   return (
-    <div style={{position:'absolute',left:position[0]-CW/2,top:position[1]-CH/2,width:CW,height:CH,zIndex:200,cursor:'default',fontFamily:'-apple-system,PingFang SC,sans-serif'}} onClick={function(e){e.stopPropagation()}}>
+    <div style={{position:'fixed',left:position[0]-CW/2,top:position[1]-CH/2,width:CW,height:CH,zIndex:200,cursor:'default',fontFamily:'-apple-system,PingFang SC,sans-serif'}} onClick={function(e){e.stopPropagation()}}>
       <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>

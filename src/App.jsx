@@ -217,8 +217,8 @@ export default function App() {
           <LocationCard
             location={card}
             position={dimIndex === 1
-              ? [window.innerWidth / 2, (window.innerHeight - 100) / 2]
-              : [Math.min(card.x, window.innerWidth - 120), Math.max(card.y, 130)]
+              ? [window.innerWidth / 2, window.innerHeight / 2]
+              : [Math.max(144, Math.min(card.x, window.innerWidth - 144)), Math.max(154, Math.min(card.y, window.innerHeight - 154))]
             }
             onClose={() => setCard(null)}
             weatherColor={card.color}
