@@ -239,7 +239,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             <canvas ref={stampRef} style={{width:44,height:44}} />
           </div>
         </div>
-        <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'8px 0'}}>
+        <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'4px 0'}}>
           <canvas ref={dividerRef} />
         </div>
         <div style={{flex:1,overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
