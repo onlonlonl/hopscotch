@@ -139,10 +139,10 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     if (!cvs || !location) return
     var loc = location
     if (loc.inf_t == null) return
-    var bw = CW - M*2 - 24, bh = 36
+    var bw = CW - M*2 - 24, bh = 36, bp = 4
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = bw * dpr; cvs.height = bh * dpr
-    cvs.style.width = bw + 'px'; cvs.style.height = bh + 'px'
+    cvs.width = (bw+bp*2) * dpr; cvs.height = (bh+bp*2) * dpr
+    cvs.style.width = (bw+bp*2) + 'px'; cvs.style.height = (bh+bp*2) + 'px'
     var ctx = cvs.getContext('2d')
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
@@ -151,7 +151,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     var gap = (bw - unitW * 3) / 2
 
     // Badge 1: Ink
-    var bx = 0, by = 0
+    var bx = bp, by = bp
     var inC = activeDim===0 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
     icx = bx + unitW/2
@@ -164,7 +164,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.fillText('Ink', bx+unitW/2, by+bh-3); ctx.restore()
 
     // Badge 2: Thread
-    bx = unitW + gap
+    bx = bp + unitW + gap
     var thC = activeDim===1 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: thC, strokeWidth: activeDim===1 ? 0.8 : 0.6}))
     var icx = bx + unitW/2, icy = by + bh/2 - 2, is2 = unitW * 0.32
@@ -178,7 +178,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     ctx.fillText('Thread', icx, by+bh-3); ctx.restore()
 
     // Badge 3: Compass
-    bx = (unitW + gap) * 2
+    bx = bp + (unitW + gap) * 2
     var coC = activeDim===2 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: coC, strokeWidth: activeDim===2 ? 0.8 : 0.6}))
     icx = bx + unitW/2; icy = by + bh/2 - 2
@@ -244,7 +244,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
         </div>
         {hasInf && (
           <div style={{flexShrink:0,paddingTop:4,display:'flex',justifyContent:'center',position:'relative',zIndex:2}}>
-            <canvas ref={badgesRef} style={{width:224,height:36}} />
+            <canvas ref={badgesRef} style={{width:232,height:44}} />
           </div>
         )}
       </div>
