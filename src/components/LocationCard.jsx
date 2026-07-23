@@ -155,7 +155,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     var gap = (bw - unitW * 3) / 2
 
     // Badge 1: Ink
-    bx = 0, by = 0
+    var bx = 0, by = 0
     var inC = activeDim===0 ? c : '#D0C8C0'
     rc.rectangle(bx, by, unitW, bh, ro({stroke: inC, strokeWidth: activeDim===0 ? 0.8 : 0.6}))
     icx = bx + unitW/2
