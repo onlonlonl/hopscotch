@@ -247,7 +247,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
         </div>
         {hasInf && (
           <div style={{flexShrink:0,paddingTop:8,display:'flex',justifyContent:'center',position:'relative',zIndex:2}}>
-            <canvas ref={badgesRef} />
+            <canvas ref={badgesRef} style={{width:224,height:36}} />
           </div>
         )}
       </div>
