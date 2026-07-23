@@ -31,15 +31,13 @@ function drawPetals(rc,cx,cy,c){var pts=[[-7,-8],[-1,-3],[6,-6],[-9,3],[3,2],[9,
 
 var WS={sun:{color:"#C8A830",draw:drawSun},warm:{color:"#C09030",draw:drawWarm},glow:{color:"#B0A070",draw:drawGlow},moon:{color:"#7888A8",draw:drawMoon},drizzle:{color:"#6888A8",draw:drawDrizzle},rain:{color:"#4870A0",draw:drawRain},storm:{color:"#5858A0",draw:drawStorm},plum:{color:"#5888A0",draw:drawPlum},cloudy:{color:"#9A9488",draw:drawCloudy},overcast:{color:"#888480",draw:drawOvercast},fog:{color:"#A09890",draw:drawFog},wind:{color:"#5898A0",draw:drawWind},breeze:{color:"#78A880",draw:drawBreeze},humid:{color:"#A09070",draw:drawHumid},snow:{color:"#6880A8",draw:drawSnow},frost:{color:"#5080A8",draw:drawFrost},hail:{color:"#6878A0",draw:drawHail},rainbow:{color:"#C07878",draw:drawRainbow},starry:{color:"#A09060",draw:drawStarry},dust:{color:"#B09050",draw:drawDust},petals:{color:"#C08080",draw:drawPetals}}
 
-/* ── world map constants ── */
 var MW=1080,MH=540,DS=MW/360
 function lngX(v){return(v+180)*DS}
 function latY(v){return(90-v)*DS}
 
 function initTf(sw,sh){
   var z=sw/(70*DS)
-  var cx=lngX(110),cy=latY(28)
-  return{px:sw/2-cx*z,py:sh/2-cy*z,z:z}
+  return{px:sw/2-lngX(110)*z,py:sh/2-latY(28)*z,z:z}
 }
 
 function niceScale(kpp,maxPx){
@@ -55,7 +53,6 @@ export default function CompassView({locations}){
   var tfRef=useRef(null),sn=useState(null),tfSnap=sn[0],setTfSnap=sn[1]
   var gestRef=useRef(null),movedRef=useRef(false),initedRef=useRef(false)
 
-  /* ── draw world ── */
   useEffect(function(){
     var canvas=canvasRef.current;if(!canvas)return
     var dpr=Math.min(window.devicePixelRatio||1,3)
@@ -63,39 +60,51 @@ export default function CompassView({locations}){
     canvas.style.width=MW+'px';canvas.style.height=MH+'px'
     var ctx=canvas.getContext('2d')
     ctx.setTransform(dpr,0,0,dpr,0,0)
-    ctx.fillStyle='#F5F0E8';ctx.fillRect(0,0,MW,MH)
+
+    /* ocean background */
+    ctx.fillStyle='#C8D4DC';ctx.fillRect(0,0,MW,MH)
 
     var rc=rough.canvas(canvas)
 
-    /* coastlines */
+    /* coastlines: land light fill on dark ocean */
     for(var p=0;p<coastlines.length;p++){
       var poly=coastlines[p],pts=[]
       for(var q=0;q<poly.length;q++)pts.push([lngX(poly[q][0]),latY(poly[q][1])])
-      if(pts.length>2) rc.polygon(pts,{stroke:'#C8C0B0',strokeWidth:0.4,roughness:0.25,fill:'#EDE8E0',fillStyle:'solid',disableMultiStroke:true,seed:p+1})
+      if(pts.length>2)rc.polygon(pts,{stroke:'#B8B0A0',strokeWidth:0.3,roughness:0.2,fill:'#F0ECE4',fillStyle:'solid',disableMultiStroke:true,seed:p+1})
     }
 
-    /* locations */
+    /* locations with weather icons via offscreen canvas */
     var gl=[]
     if(locations)for(var j=0;j<locations.length;j++){if(locations[j].lat!=null&&locations[j].lng!=null)gl.push(locations[j])}
     geoLocsRef.current=gl
 
+    var tmp=document.createElement('canvas');tmp.width=60;tmp.height=60
     for(var i=0;i<gl.length;i++){
-      var loc=gl[i],x=lngX(loc.lng),y=latY(loc.lat)
-      var col=loc.color||'#E8A87C'
-      rc.circle(x,y,12,ro({stroke:col,strokeWidth:1.2,fill:col,fillStyle:'solid',fillWeight:0.5,roughness:0.6}))
-      ctx.textAlign='center';ctx.font='600 5px -apple-system,PingFang SC,sans-serif';ctx.fillStyle='#6B5B4E'
-      ctx.fillText(loc.display_name||loc.label||loc.id,x,y+12)
+      var loc=gl[i],mx=lngX(loc.lng),my=latY(loc.lat)
+      var weather=loc.weather||'sun',ws=WS[weather]||WS.sun
+
+      /* draw icon at full size on offscreen canvas */
+      var tc=tmp.getContext('2d');tc.clearRect(0,0,60,60)
+      /* white backing circle */
+      tc.fillStyle='#F0ECE4';tc.beginPath();tc.arc(30,30,22,0,Math.PI*2);tc.fill()
+      var trc=rough.canvas(tmp)
+      trc.circle(30,30,44,{stroke:ws.color,strokeWidth:1.2,roughness:0.8,disableMultiStroke:true,seed:i+200})
+      try{ws.draw(trc,30,30,ws.color)}catch(e){}
+
+      /* composite scaled onto map */
+      ctx.drawImage(tmp,0,0,60,60,mx-10,my-10,20,20)
+
+      /* label */
+      ctx.textAlign='center';ctx.font='600 5px -apple-system,PingFang SC,sans-serif';ctx.fillStyle='#5A4E40'
+      ctx.fillText(loc.display_name||loc.label||loc.id,mx,my+16)
     }
   },[locations])
 
-  /* ── init transform + gestures ── */
   useEffect(function(){
     var el=outerRef.current;if(!el)return
     var sw=el.clientWidth||380,sh=el.clientHeight||600
     sizeRef.current={W:sw,H:sh}
-    if(!initedRef.current){
-      var tf=initTf(sw,sh);tfRef.current=tf;setTfSnap(tf);applyCSS();initedRef.current=true
-    }
+    if(!initedRef.current){var tf=initTf(sw,sh);tfRef.current=tf;setTfSnap(tf);applyCSS();initedRef.current=true}
     function applyCSS(){if(!innerRef.current||!tfRef.current)return;var t=tfRef.current;innerRef.current.style.transform='translate('+t.px+'px,'+t.py+'px) scale('+t.z+')'}
     function d2(ts){var dx=ts[1].clientX-ts[0].clientX,dy=ts[1].clientY-ts[0].clientY;return Math.sqrt(dx*dx+dy*dy)}
     function onTS(e){
@@ -129,7 +138,6 @@ export default function CompassView({locations}){
     return function(){el.removeEventListener('touchstart',onTS);el.removeEventListener('touchmove',onTM);el.removeEventListener('touchend',onTE);el.removeEventListener('wheel',onWh)}
   },[])
 
-  /* ── scale bar ── */
   useEffect(function(){
     if(!tfSnap||!scaleRef.current)return
     var cvs=scaleRef.current,sw=130,sh=28
@@ -139,10 +147,10 @@ export default function CompassView({locations}){
     var kpp=111.32*Math.cos(30*Math.PI/180)/(DS*tfSnap.z)
     var sc=niceScale(kpp,100)
     var rc=rough.canvas(cvs),y=sh-8
-    rc.line(10,y,10+sc.px,y,{stroke:'#8A7A68',strokeWidth:1.2,roughness:0.4,disableMultiStroke:true,seed:99})
-    rc.line(10,y-4,10,y+1,{stroke:'#8A7A68',strokeWidth:0.8,roughness:0.3,disableMultiStroke:true,seed:100})
-    rc.line(10+sc.px,y-4,10+sc.px,y+1,{stroke:'#8A7A68',strokeWidth:0.8,roughness:0.3,disableMultiStroke:true,seed:101})
-    ctx.font='9px -apple-system,PingFang SC,sans-serif';ctx.fillStyle='#8A7A68';ctx.textAlign='center'
+    rc.line(10,y,10+sc.px,y,{stroke:'#6B5B4E',strokeWidth:1.2,roughness:0.4,disableMultiStroke:true,seed:99})
+    rc.line(10,y-4,10,y+1,{stroke:'#6B5B4E',strokeWidth:0.8,roughness:0.3,disableMultiStroke:true,seed:100})
+    rc.line(10+sc.px,y-4,10+sc.px,y+1,{stroke:'#6B5B4E',strokeWidth:0.8,roughness:0.3,disableMultiStroke:true,seed:101})
+    ctx.font='9px -apple-system,PingFang SC,sans-serif';ctx.fillStyle='#6B5B4E';ctx.textAlign='center'
     ctx.fillText(sc.km>=1?sc.km+' km':(sc.km*1000)+' m',10+sc.px/2,y-6)
   },[tfSnap])
 
@@ -153,7 +161,7 @@ export default function CompassView({locations}){
     var sx=e.clientX-rect.left,sy=e.clientY-rect.top
     var wx=(sx-t.px)/t.z,wy=(sy-t.py)/t.z
     var gl=geoLocsRef.current;if(!gl.length){setSelected(null);return}
-    var best=null,bestD=12
+    var best=null,bestD=15
     for(var i=0;i<gl.length;i++){
       var px=lngX(gl[i].lng),py=latY(gl[i].lat)
       var dx=wx-px,dy=wy-py,d=Math.sqrt(dx*dx+dy*dy)
@@ -171,14 +179,14 @@ export default function CompassView({locations}){
   var cw=selected?(WS[selected.loc.weather||'sun']||WS.sun):null
 
   return(
-    <div ref={outerRef} onClick={handleClick} style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',touchAction:'none',background:'#F5F0E8'}}>
+    <div ref={outerRef} onClick={handleClick} style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',touchAction:'none',background:'#C8D4DC'}}>
       <div ref={innerRef} style={{position:'absolute',transformOrigin:'0 0',willChange:'transform'}}>
         <canvas ref={canvasRef} style={{display:'block'}}/>
       </div>
       <canvas ref={scaleRef} style={{position:'absolute',bottom:16,left:12,zIndex:50,pointerEvents:'none'}}/>
       {selected&&cardPos&&(
         <div ref={cardWrapRef} onClick={function(e){e.stopPropagation()}} style={{position:'absolute',top:0,left:0,zIndex:200}}>
-          <LocationCard location={selected.loc} position={cardPos} onClose={function(){setSelected(null)}} weatherDraw={cw.draw} weatherColor={cw.color} weatherType={selected.loc.weather||'sun'}/>
+          <LocationCard location={selected.loc} position={cardPos} onClose={function(){setSelected(null)}} weatherDraw={cw.draw} weatherColor={cw.color} weatherType={selected.loc.weather||'sun'} activeDim={2}/>
         </div>
       )}
     </div>

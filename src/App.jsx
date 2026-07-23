@@ -221,7 +221,7 @@ export default function App() {
             }
             onClose={() => setCard(null)}
             weatherColor={card.color}
-            weatherType={card.weather || 'sun'}
+            weatherType={card.weather || 'sun'} activeDim={dimIndex}
           />
         </>
       )}
