@@ -1,12 +1,12 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import rough from 'roughjs'
+import * as topojson from 'topojson-client'
+import worldTopo from 'world-atlas/countries-110m.json'
 import LocationCard from './LocationCard'
-import coastlines from '../lib/coastlines'
 
-var SEED=1
-var RO={roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:SEED}
+/* ── weather icons (unchanged) ── */
+var RO={roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:1}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var k=Object.keys(x);for(var i=0;i<k.length;i++)o[k[i]]=x[k[i]]};return o}
-
 function drawSun(rc,cx,cy,c){rc.circle(cx,cy,14,ro({stroke:c,strokeWidth:1.5}));var r=12;for(var i=0;i<8;i++){var a=i*Math.PI/4;rc.line(cx+Math.cos(a)*9,cy+Math.sin(a)*9,cx+Math.cos(a)*r,cy+Math.sin(a)*r,ro({stroke:c,strokeWidth:1}))}}
 function drawWarm(rc,cx,cy,c){rc.circle(cx,cy,18,ro({stroke:c,strokeWidth:1.8}));rc.line(cx-13,cy,cx-16,cy,ro({stroke:c,strokeWidth:1}));rc.line(cx+13,cy,cx+16,cy,ro({stroke:c,strokeWidth:1}));rc.line(cx,cy-13,cx,cy-16,ro({stroke:c,strokeWidth:1}));rc.line(cx,cy+13,cx,cy+16,ro({stroke:c,strokeWidth:1}))}
 function drawGlow(rc,cx,cy,c){rc.circle(cx,cy,12,ro({stroke:c,strokeWidth:1.3}));rc.circle(cx,cy,24,ro({stroke:c,strokeWidth:0.7}))}
@@ -28,171 +28,267 @@ function drawRainbow(rc,cx,cy,c){var cs=["#C85050","#D88840","#D0B830","#50A850"
 function drawStarry(rc,cx,cy,c){var pts=[[-8,-7,4],[4,-9,5],[10,-2,3],[-10,3,3],[-2,2,6],[7,5,4],[-6,9,3],[5,10,3]];for(var i=0;i<pts.length;i++){var p=pts[i],s=p[2]/2;rc.line(cx+p[0],cy+p[1]-s,cx+p[0],cy+p[1]+s,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+p[0]-s,cy+p[1],cx+p[0]+s,cy+p[1],ro({stroke:c,strokeWidth:0.8}))}}
 function drawDust(rc,cx,cy,c){var pts=[[-10,-5],[-4,-9],[3,-7],[9,-4],[-8,1],[1,-1],[7,1],[-6,6],[0,7],[6,6],[-3,11],[5,10]];for(var i=0;i<pts.length;i++)rc.circle(cx+pts[i][0],cy+pts[i][1],2+i%2,ro({stroke:c,strokeWidth:0.7,fill:c,fillStyle:'solid'}))}
 function drawPetals(rc,cx,cy,c){var pts=[[-7,-8],[-1,-3],[6,-6],[-9,3],[3,2],[9,1],[-5,8],[4,9]];for(var i=0;i<pts.length;i++)rc.ellipse(cx+pts[i][0],cy+pts[i][1],6,3,ro({stroke:c,strokeWidth:0.9}))}
-
 var WS={sun:{color:"#C8A830",draw:drawSun},warm:{color:"#C09030",draw:drawWarm},glow:{color:"#B0A070",draw:drawGlow},moon:{color:"#7888A8",draw:drawMoon},drizzle:{color:"#6888A8",draw:drawDrizzle},rain:{color:"#4870A0",draw:drawRain},storm:{color:"#5858A0",draw:drawStorm},plum:{color:"#5888A0",draw:drawPlum},cloudy:{color:"#9A9488",draw:drawCloudy},overcast:{color:"#888480",draw:drawOvercast},fog:{color:"#A09890",draw:drawFog},wind:{color:"#5898A0",draw:drawWind},breeze:{color:"#78A880",draw:drawBreeze},humid:{color:"#A09070",draw:drawHumid},snow:{color:"#6880A8",draw:drawSnow},frost:{color:"#5080A8",draw:drawFrost},hail:{color:"#6878A0",draw:drawHail},rainbow:{color:"#C07878",draw:drawRainbow},starry:{color:"#A09060",draw:drawStarry},dust:{color:"#B09050",draw:drawDust},petals:{color:"#C08080",draw:drawPetals}}
 
-var MW=1080,MH=540,DS=MW/360
-function lngX(v){return(v+180)*DS}
-function latY(v){return(90-v)*DS}
+/* ── projection: Pacific-centered, cut at 25°W (mid-Atlantic) ── */
+var MW = 1080, MH = 540, DS = MW / 360
+var CUT = -25
 
-function initTf(sw,sh){
-  var z=sw/(70*DS)
-  return{px:sw/2-lngX(110)*z,py:sh/2-latY(28)*z,z:z}
+function wrapLng(v) { return ((v - CUT) % 360 + 360) % 360 }
+function lngX(v) { return wrapLng(v) * DS }
+function latY(v) { return (90 - v) * (MH / 180) }
+
+var MAX_ZOOM = 6
+
+function niceScale(kpp, maxPx) {
+  var ts = [10000,5000,2000,1000,500,200,100,50,20,10,5,2,1]
+  for (var i = 0; i < ts.length; i++) { var px = ts[i] / kpp; if (px <= maxPx && px >= 30) return { km: ts[i], px: px } }
+  return { km: 1, px: 1 / kpp }
 }
 
-function niceScale(kpp,maxPx){
-  var ts=[10000,5000,2000,1000,500,200,100,50,20,10,5,2,1]
-  for(var i=0;i<ts.length;i++){var px=ts[i]/kpp;if(px<=maxPx&&px>=30)return{km:ts[i],px:px}}
-  return{km:1,px:1/kpp}
+/* ── pre-compute country outlines with rough.generator ── */
+function projectRing(coords) {
+  var pts = []
+  for (var i = 0; i < coords.length; i++) pts.push([wrapLng(coords[i][0]) * DS, (90 - coords[i][1]) * (MH / 180)])
+  /* split at map-edge crossings (|dx| > MW/2 means it crossed the cut) */
+  var rings = [[]], ci = 0
+  for (var i = 0; i < pts.length; i++) {
+    if (i > 0 && Math.abs(pts[i][0] - pts[i - 1][0]) > MW * 0.5) {
+      /* interpolate crossing point */
+      var prev = pts[i - 1], cur = pts[i]
+      var goingRight = cur[0] > prev[0]
+      var edgeX = goingRight ? MW : 0, otherX = goingRight ? 0 : MW
+      var dy = cur[1] - prev[1], dx = goingRight ? (cur[0] - MW - prev[0]) : (cur[0] + MW - prev[0])
+      var frac = dx !== 0 ? (edgeX - prev[0]) / dx : 0.5
+      if (frac < 0) frac = 0; if (frac > 1) frac = 1
+      var crossY = prev[1] + frac * dy
+      rings[ci].push([edgeX, crossY])
+      rings.push([])
+      ci++
+      rings[ci].push([otherX, crossY])
+    }
+    rings[ci].push(pts[i])
+  }
+  return rings.filter(function(r) { return r.length >= 3 })
 }
 
-export default function CompassView({locations}){
-  var canvasRef=useRef(null),scaleRef=useRef(null),outerRef=useRef(null),innerRef=useRef(null),cardWrapRef=useRef(null)
-  var sizeRef=useRef({W:380,H:600}),geoLocsRef=useRef([])
-  var ss=useState(null),selected=ss[0],setSelected=ss[1]
-  var tfRef=useRef(null),sn=useState(null),tfSnap=sn[0],setTfSnap=sn[1]
-  var gestRef=useRef(null),movedRef=useRef(false),initedRef=useRef(false)
+function buildDrawables() {
+  var gen = rough.generator()
+  var countries = topojson.feature(worldTopo, worldTopo.objects.countries)
+  var drawables = []
+  var seed = 1
 
-  useEffect(function(){
-    var canvas=canvasRef.current;if(!canvas)return
-    var dpr=Math.min(window.devicePixelRatio||1,3)
-    canvas.width=MW*dpr;canvas.height=MH*dpr
-    canvas.style.width=MW+'px';canvas.style.height=MH+'px'
-    var ctx=canvas.getContext('2d')
-    ctx.setTransform(dpr,0,0,dpr,0,0)
+  for (var f = 0; f < countries.features.length; f++) {
+    var geom = countries.features[f].geometry, allRings = []
+    if (geom.type === 'Polygon') {
+      for (var r = 0; r < geom.coordinates.length; r++) allRings = allRings.concat(projectRing(geom.coordinates[r]))
+    } else if (geom.type === 'MultiPolygon') {
+      for (var p = 0; p < geom.coordinates.length; p++)
+        for (var r = 0; r < geom.coordinates[p].length; r++) allRings = allRings.concat(projectRing(geom.coordinates[p][r]))
+    }
+    for (var i = 0; i < allRings.length; i++) {
+      drawables.push(gen.polygon(allRings[i], {
+        stroke: '#C0B8AC', strokeWidth: 0.4, roughness: 0.15, bowing: 0.3,
+        fill: '#F0ECE4', fillStyle: 'solid', disableMultiStroke: true, seed: seed
+      }))
+      seed++
+    }
+  }
+  return drawables
+}
 
-    /* ocean background */
-    ctx.fillStyle='#C8D4DC';ctx.fillRect(0,0,MW,MH)
+/* pre-render weather icon to offscreen canvas */
+function prerenderIcon(loc, idx) {
+  var weather = loc.weather || 'sun', ws = WS[weather] || WS.sun
+  var cvs = document.createElement('canvas'); cvs.width = 60; cvs.height = 60
+  var ctx = cvs.getContext('2d')
+  ctx.fillStyle = '#F0ECE4'; ctx.beginPath(); ctx.arc(30, 30, 22, 0, Math.PI * 2); ctx.fill()
+  var rc = rough.canvas(cvs)
+  rc.circle(30, 30, 44, { stroke: ws.color, strokeWidth: 1.2, roughness: 0.8, disableMultiStroke: true, seed: 200 + idx })
+  try { ws.draw(rc, 30, 30, ws.color) } catch (e) {}
+  return { canvas: cvs, ws: ws }
+}
 
-    var rc=rough.canvas(canvas)
+/* ── component ── */
+export default function CompassView({ locations }) {
+  var canvasRef = useRef(null), scaleRef = useRef(null), outerRef = useRef(null), cardWrapRef = useRef(null)
+  var drawRef = useRef(null), iconsRef = useRef([]), geoRef = useRef([])
+  var camRef = useRef(null), sizeRef = useRef({ W: 380, H: 600 })
+  var gestRef = useRef(null), movedRef = useRef(false)
+  var ss = useState(null), selected = ss[0], setSelected = ss[1]
 
-    /* coastlines: split at antimeridian to avoid horizontal stripes */
-    for(var p=0;p<coastlines.length;p++){
-      var poly=coastlines[p],crosses=false
-      for(var q=0;q<poly.length-1;q++){if(Math.abs(poly[q][0]-poly[q+1][0])>180){crosses=true;break}}
-      if(!crosses){
-        var pts=[];for(var q=0;q<poly.length;q++)pts.push([lngX(poly[q][0]),latY(poly[q][1])])
-        if(pts.length>2)rc.polygon(pts,{stroke:'#B8B0A0',strokeWidth:0.3,roughness:0.2,fill:'#F0ECE4',fillStyle:'solid',disableMultiStroke:true,seed:p+1})
-      }else{
-        var segs=[[]];for(var q=0;q<poly.length;q++){if(q>0&&Math.abs(poly[q][0]-poly[q-1][0])>180)segs.push([]);segs[segs.length-1].push([lngX(poly[q][0]),latY(poly[q][1])])}
-        for(var sg=0;sg<segs.length;sg++){if(segs[sg].length>2)rc.polygon(segs[sg],{stroke:'#B8B0A0',strokeWidth:0.3,roughness:0.2,fill:'#F0ECE4',fillStyle:'solid',disableMultiStroke:true,seed:p*10+sg+1})}
-      }
+  /* pre-compute country drawables once */
+  useEffect(function() { drawRef.current = buildDrawables() }, [])
+
+  /* pre-render location icons */
+  useEffect(function() {
+    var gl = locations ? locations.filter(function(l) { return l.lat != null && l.lng != null }) : []
+    geoRef.current = gl
+    iconsRef.current = gl.map(function(loc, i) { return prerenderIcon(loc, i) })
+  }, [locations])
+
+  /* ── render ── */
+  var render = useCallback(function() {
+    var canvas = canvasRef.current; if (!canvas) return
+    var ds = drawRef.current; if (!ds) return
+    var cam = camRef.current; if (!cam) return
+    var sz = sizeRef.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    canvas.width = sz.W * dpr; canvas.height = sz.H * dpr
+    canvas.style.width = sz.W + 'px'; canvas.style.height = sz.H + 'px'
+    var ctx = canvas.getContext('2d')
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    /* ocean */
+    ctx.fillStyle = '#C8D4DC'; ctx.fillRect(0, 0, sz.W, sz.H)
+
+    /* countries — draw in world space (camera transform) */
+    ctx.save()
+    ctx.translate(cam.px, cam.py)
+    ctx.scale(cam.z, cam.z)
+    var rc = rough.canvas(canvas)
+    for (var i = 0; i < ds.length; i++) rc.draw(ds[i])
+    ctx.restore()
+
+    /* icons + labels — draw in screen space (always crisp) */
+    var gl = geoRef.current, icons = iconsRef.current
+    for (var j = 0; j < gl.length; j++) {
+      var loc = gl[j]
+      var sx = lngX(loc.lng) * cam.z + cam.px
+      var sy = latY(loc.lat) * cam.z + cam.py
+      if (sx < -30 || sx > sz.W + 30 || sy < -30 || sy > sz.H + 30) continue  /* cull offscreen */
+      if (icons[j]) ctx.drawImage(icons[j].canvas, 0, 0, 60, 60, sx - 10, sy - 10, 20, 20)
+      ctx.textAlign = 'center'
+      ctx.font = "600 9px -apple-system,'PingFang SC',sans-serif"
+      ctx.fillStyle = '#5A4E40'
+      ctx.fillText(loc.display_name || loc.label || loc.id, sx, sy + 16)
     }
 
-    /* locations with weather icons via offscreen canvas */
-    var gl=[]
-    if(locations)for(var j=0;j<locations.length;j++){if(locations[j].lat!=null&&locations[j].lng!=null)gl.push(locations[j])}
-    geoLocsRef.current=gl
+    /* scale bar */
+    renderScale(cam.z)
+  }, [])
 
-    var tmp=document.createElement('canvas');tmp.width=60;tmp.height=60
-    for(var i=0;i<gl.length;i++){
-      var loc=gl[i],mx=lngX(loc.lng),my=latY(loc.lat)
-      var weather=loc.weather||'sun',ws=WS[weather]||WS.sun
-
-      /* draw icon at full size on offscreen canvas */
-      var tc=tmp.getContext('2d');tc.clearRect(0,0,60,60)
-      /* white backing circle */
-      tc.fillStyle='#F0ECE4';tc.beginPath();tc.arc(30,30,22,0,Math.PI*2);tc.fill()
-      var trc=rough.canvas(tmp)
-      trc.circle(30,30,44,{stroke:ws.color,strokeWidth:1.2,roughness:0.8,disableMultiStroke:true,seed:i+200})
-      try{ws.draw(trc,30,30,ws.color)}catch(e){}
-
-      /* composite scaled onto map */
-      ctx.drawImage(tmp,0,0,60,60,mx-10,my-10,20,20)
-
-      /* label */
-      ctx.textAlign='center';ctx.font='600 5px -apple-system,PingFang SC,sans-serif';ctx.fillStyle='#5A4E40'
-      ctx.fillText(loc.display_name||loc.label||loc.id,mx,my+16)
-    }
-  },[locations])
-
-  useEffect(function(){
-    var el=outerRef.current;if(!el)return
-    var sw=el.clientWidth||380,sh=el.clientHeight||600
-    sizeRef.current={W:sw,H:sh}
-    if(!initedRef.current){var tf=initTf(sw,sh);tfRef.current=tf;setTfSnap(tf);applyCSS();initedRef.current=true}
-    function applyCSS(){if(!innerRef.current||!tfRef.current)return;var t=tfRef.current;innerRef.current.style.transform='translate('+t.px+'px,'+t.py+'px) scale('+t.z+')'}
-    function d2(ts){var dx=ts[1].clientX-ts[0].clientX,dy=ts[1].clientY-ts[0].clientY;return Math.sqrt(dx*dx+dy*dy)}
-    function onTS(e){
-      if(cardWrapRef.current&&cardWrapRef.current.contains(e.target))return
-      var ts=e.touches;movedRef.current=false
-      if(ts.length===1)gestRef.current={type:'pan',sx:ts[0].clientX,sy:ts[0].clientY,spx:tfRef.current.px,spy:tfRef.current.py}
-      else if(ts.length>=2){setSelected(null);gestRef.current={type:'pinch',sd:d2(ts),sz:tfRef.current.z,spx:tfRef.current.px,spy:tfRef.current.py,smx:(ts[0].clientX+ts[1].clientX)/2,smy:(ts[0].clientY+ts[1].clientY)/2}}
-    }
-    function onTM(e){
-      var g=gestRef.current;if(!g)return;e.preventDefault();var ts=e.touches
-      if(ts.length>=2){
-        if(g.type==='pan'){setSelected(null);g.type='pinch';g.sd=d2(ts);g.sz=tfRef.current.z;g.spx=tfRef.current.px;g.spy=tfRef.current.py;g.smx=(ts[0].clientX+ts[1].clientX)/2;g.smy=(ts[0].clientY+ts[1].clientY)/2;return}
-        movedRef.current=true;var d=d2(ts),nz=Math.max(0.15,Math.min(8,g.sz*d/g.sd))
-        var mx=(ts[0].clientX+ts[1].clientX)/2,my=(ts[0].clientY+ts[1].clientY)/2
-        var rect=el.getBoundingClientRect(),cx=g.smx-rect.left,cy=g.smy-rect.top
-        tfRef.current.z=nz;tfRef.current.px=cx-(cx-g.spx)*nz/g.sz+(mx-g.smx);tfRef.current.py=cy-(cy-g.spy)*nz/g.sz+(my-g.smy);applyCSS()
-      }else if(g.type==='pan'&&ts.length===1){
-        var dx=ts[0].clientX-g.sx,dy=ts[0].clientY-g.sy
-        if(Math.abs(dx)+Math.abs(dy)>5){movedRef.current=true;setSelected(null)}
-        tfRef.current.px=g.spx+dx;tfRef.current.py=g.spy+dy;applyCSS()
-      }
-    }
-    function onTE(e){if(e.touches.length===0){gestRef.current=null;setTfSnap({px:tfRef.current.px,py:tfRef.current.py,z:tfRef.current.z})}}
-    function onWh(e){
-      e.preventDefault();var rect=el.getBoundingClientRect(),cx=e.clientX-rect.left,cy=e.clientY-rect.top
-      var t=tfRef.current,f=e.deltaY>0?0.92:1.08,nz=Math.max(0.15,Math.min(8,t.z*f)),oz=t.z
-      t.px=cx-(cx-t.px)*nz/oz;t.py=cy-(cy-t.py)*nz/oz;t.z=nz;applyCSS();setTfSnap({px:t.px,py:t.py,z:t.z})
-    }
-    el.addEventListener('touchstart',onTS,{passive:true});el.addEventListener('touchmove',onTM,{passive:false})
-    el.addEventListener('touchend',onTE,{passive:true});el.addEventListener('wheel',onWh,{passive:false})
-    return function(){el.removeEventListener('touchstart',onTS);el.removeEventListener('touchmove',onTM);el.removeEventListener('touchend',onTE);el.removeEventListener('wheel',onWh)}
-  },[])
-
-  useEffect(function(){
-    if(!tfSnap||!scaleRef.current)return
-    var cvs=scaleRef.current,sw=130,sh=28
-    var dpr=Math.min(window.devicePixelRatio||1,3)
-    cvs.width=sw*dpr;cvs.height=sh*dpr;cvs.style.width=sw+'px';cvs.style.height=sh+'px'
-    var ctx=cvs.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0)
-    var kpp=111.32*Math.cos(30*Math.PI/180)/(DS*tfSnap.z)
-    var sc=niceScale(kpp,100)
-    var rc=rough.canvas(cvs),y=sh-8
-    rc.line(10,y,10+sc.px,y,{stroke:'#6B5B4E',strokeWidth:1.2,roughness:0.4,disableMultiStroke:true,seed:99})
-    rc.line(10,y-4,10,y+1,{stroke:'#6B5B4E',strokeWidth:0.8,roughness:0.3,disableMultiStroke:true,seed:100})
-    rc.line(10+sc.px,y-4,10+sc.px,y+1,{stroke:'#6B5B4E',strokeWidth:0.8,roughness:0.3,disableMultiStroke:true,seed:101})
-    ctx.font='9px -apple-system,PingFang SC,sans-serif';ctx.fillStyle='#6B5B4E';ctx.textAlign='center'
-    ctx.fillText(sc.km>=1?sc.km+' km':(sc.km*1000)+' m',10+sc.px/2,y-6)
-  },[tfSnap])
-
-  function handleClick(e){
-    if(movedRef.current)return
-    if(cardWrapRef.current&&cardWrapRef.current.contains(e.target))return
-    var rect=outerRef.current.getBoundingClientRect(),t=tfRef.current
-    var sx=e.clientX-rect.left,sy=e.clientY-rect.top
-    var wx=(sx-t.px)/t.z,wy=(sy-t.py)/t.z
-    var gl=geoLocsRef.current;if(!gl.length){setSelected(null);return}
-    var best=null,bestD=15
-    for(var i=0;i<gl.length;i++){
-      var px=lngX(gl[i].lng),py=latY(gl[i].lat)
-      var dx=wx-px,dy=wy-py,d=Math.sqrt(dx*dx+dy*dy)
-      if(d<bestD){bestD=d;best={loc:gl[i],pos:[px,py]}}
-    }
-    if(best)setSelected(best);else setSelected(null)
+  /* scale bar on separate canvas */
+  function renderScale(z) {
+    var cvs = scaleRef.current; if (!cvs) return
+    var sw = 130, sh = 28
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sw * dpr; cvs.height = sh * dpr; cvs.style.width = sw + 'px'; cvs.style.height = sh + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var kpp = 111.32 * Math.cos(30 * Math.PI / 180) / (DS * z)
+    var sc = niceScale(kpp, 100), y = sh - 8
+    var rc = rough.canvas(cvs)
+    rc.line(10, y, 10 + sc.px, y, { stroke: '#6B5B4E', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 99 })
+    rc.line(10, y - 4, 10, y + 1, { stroke: '#6B5B4E', strokeWidth: 0.8, roughness: 0.3, disableMultiStroke: true, seed: 100 })
+    rc.line(10 + sc.px, y - 4, 10 + sc.px, y + 1, { stroke: '#6B5B4E', strokeWidth: 0.8, roughness: 0.3, disableMultiStroke: true, seed: 101 })
+    ctx.font = '9px -apple-system,PingFang SC,sans-serif'; ctx.fillStyle = '#6B5B4E'; ctx.textAlign = 'center'
+    ctx.fillText(sc.km >= 1 ? sc.km + ' km' : (sc.km * 1000) + ' m', 10 + sc.px / 2, y - 6)
   }
 
-  var cardPos=null
-  if(selected&&tfSnap){
-    var t=tfSnap,rx=selected.pos[0]*t.z+t.px,ry=selected.pos[1]*t.z+t.py
-    var sz=sizeRef.current,CW=230,CH=280
-    cardPos=[Math.max(CW/2+4,Math.min(sz.W-CW/2-4,rx)),Math.max(CH/2+4,Math.min(sz.H-CH/2-4,ry))]
-  }
-  var cw=selected?(WS[selected.loc.weather||'sun']||WS.sun):null
+  /* ── init camera + gestures ── */
+  useEffect(function() {
+    var el = outerRef.current; if (!el) return
+    var sw = el.clientWidth || 380, sh = el.clientHeight || 600
+    sizeRef.current = { W: sw, H: sh }
 
-  return(
-    <div ref={outerRef} onClick={handleClick} style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',touchAction:'none',background:'#C8D4DC'}}>
-      <div ref={innerRef} style={{position:'absolute',transformOrigin:'0 0',willChange:'transform'}}>
-        <canvas ref={canvasRef} style={{display:'block'}}/>
-      </div>
-      <canvas ref={scaleRef} style={{position:'absolute',bottom:16,left:12,zIndex:50,pointerEvents:'none'}}/>
-      {selected&&cardPos&&(
-        <div ref={cardWrapRef} onClick={function(e){e.stopPropagation()}} style={{position:'absolute',top:0,left:0,zIndex:200}}>
-          <LocationCard location={selected.loc} position={cardPos} onClose={function(){setSelected(null)}} weatherDraw={cw.draw} weatherColor={cw.color} weatherType={selected.loc.weather||'sun'} activeDim={2}/>
+    /* initial view: focused on Asia */
+    var z = sw / (80 * DS)
+    camRef.current = { px: sw / 2 - lngX(110) * z, py: sh / 2 - latY(25) * z, z: z }
+
+    var MIN_ZOOM = Math.max(sw / MW, sh / MH) * 0.8
+    function clampZoom(v) { return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, v)) }
+    function applyAndRender() { render() }
+
+    /* resize */
+    function onResize() { sizeRef.current = { W: el.clientWidth, H: el.clientHeight }; render() }
+    window.addEventListener('resize', onResize)
+
+    /* touch: pan + pinch */
+    function d2(ts) { var dx = ts[1].clientX - ts[0].clientX, dy = ts[1].clientY - ts[0].clientY; return Math.sqrt(dx * dx + dy * dy) }
+    function onTS(e) {
+      if (cardWrapRef.current && cardWrapRef.current.contains(e.target)) return
+      var ts = e.touches; movedRef.current = false
+      if (ts.length === 1) gestRef.current = { type: 'pan', sx: ts[0].clientX, sy: ts[0].clientY, spx: camRef.current.px, spy: camRef.current.py }
+      else if (ts.length >= 2) { setSelected(null); gestRef.current = { type: 'pinch', sd: d2(ts), sz: camRef.current.z, spx: camRef.current.px, spy: camRef.current.py, smx: (ts[0].clientX + ts[1].clientX) / 2, smy: (ts[0].clientY + ts[1].clientY) / 2 } }
+    }
+    function onTM(e) {
+      var g = gestRef.current; if (!g) return; e.preventDefault(); var ts = e.touches, cam = camRef.current
+      if (ts.length >= 2) {
+        if (g.type === 'pan') { setSelected(null); g.type = 'pinch'; g.sd = d2(ts); g.sz = cam.z; g.spx = cam.px; g.spy = cam.py; g.smx = (ts[0].clientX + ts[1].clientX) / 2; g.smy = (ts[0].clientY + ts[1].clientY) / 2; return }
+        movedRef.current = true; var d = d2(ts), nz = clampZoom(g.sz * d / g.sd)
+        var mx = (ts[0].clientX + ts[1].clientX) / 2, my = (ts[0].clientY + ts[1].clientY) / 2
+        var rect = el.getBoundingClientRect(), cx = g.smx - rect.left, cy = g.smy - rect.top
+        cam.z = nz; cam.px = cx - (cx - g.spx) * nz / g.sz + (mx - g.smx); cam.py = cy - (cy - g.spy) * nz / g.sz + (my - g.smy)
+        applyAndRender()
+      } else if (g.type === 'pan' && ts.length === 1) {
+        var dx = ts[0].clientX - g.sx, dy = ts[0].clientY - g.sy
+        if (Math.abs(dx) + Math.abs(dy) > 5) { movedRef.current = true; setSelected(null) }
+        cam.px = g.spx + dx; cam.py = g.spy + dy; applyAndRender()
+      }
+    }
+    function onTE(e) { if (e.touches.length === 0) gestRef.current = null }
+
+    /* wheel zoom */
+    function onWh(e) {
+      e.preventDefault(); var rect = el.getBoundingClientRect()
+      var cx = e.clientX - rect.left, cy = e.clientY - rect.top
+      var cam = camRef.current, oz = cam.z
+      var nz = clampZoom(oz * (e.deltaY > 0 ? 0.92 : 1.08))
+      cam.px = cx - (cx - cam.px) * nz / oz; cam.py = cy - (cy - cam.py) * nz / oz; cam.z = nz
+      applyAndRender()
+    }
+
+    el.addEventListener('touchstart', onTS, { passive: true })
+    el.addEventListener('touchmove', onTM, { passive: false })
+    el.addEventListener('touchend', onTE, { passive: true })
+    el.addEventListener('wheel', onWh, { passive: false })
+
+    /* initial render after drawables ready */
+    var timer = setInterval(function() { if (drawRef.current) { render(); clearInterval(timer) } }, 50)
+
+    return function() {
+      window.removeEventListener('resize', onResize)
+      el.removeEventListener('touchstart', onTS)
+      el.removeEventListener('touchmove', onTM)
+      el.removeEventListener('touchend', onTE)
+      el.removeEventListener('wheel', onWh)
+      clearInterval(timer)
+    }
+  }, [render])
+
+  /* ── click / tap ── */
+  function handleClick(e) {
+    if (movedRef.current) return
+    if (cardWrapRef.current && cardWrapRef.current.contains(e.target)) return
+    var rect = outerRef.current.getBoundingClientRect(), cam = camRef.current
+    var sx = e.clientX - rect.left, sy = e.clientY - rect.top
+    var wx = (sx - cam.px) / cam.z, wy = (sy - cam.py) / cam.z
+    var gl = geoRef.current; if (!gl.length) { setSelected(null); return }
+    var best = null, bestD = 15
+    for (var i = 0; i < gl.length; i++) {
+      var px = lngX(gl[i].lng), py = latY(gl[i].lat)
+      var d = Math.sqrt((wx - px) * (wx - px) + (wy - py) * (wy - py))
+      if (d < bestD) { bestD = d; best = { loc: gl[i], pos: [px, py] } }
+    }
+    if (best) setSelected(best); else setSelected(null)
+  }
+
+  var cardPos = null
+  if (selected && camRef.current) {
+    var cam = camRef.current, sz = sizeRef.current
+    var rx = selected.pos[0] * cam.z + cam.px, ry = selected.pos[1] * cam.z + cam.py
+    var CW = 230, CH = 280
+    cardPos = [Math.max(CW / 2 + 4, Math.min(sz.W - CW / 2 - 4, rx)), Math.max(CH / 2 + 4, Math.min(sz.H - CH / 2 - 4, ry))]
+  }
+  var cw = selected ? (WS[selected.loc.weather || 'sun'] || WS.sun) : null
+
+  return (
+    <div ref={outerRef} onClick={handleClick} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', touchAction: 'none', background: '#C8D4DC' }}>
+      <canvas ref={canvasRef} style={{ display: 'block', position: 'absolute', top: 0, left: 0 }} />
+      <canvas ref={scaleRef} style={{ position: 'absolute', bottom: 16, left: 12, zIndex: 50, pointerEvents: 'none' }} />
+      {selected && cardPos && (
+        <div ref={cardWrapRef} onClick={function(e) { e.stopPropagation() }} style={{ position: 'absolute', top: 0, left: 0, zIndex: 200 }}>
+          <LocationCard location={selected.loc} position={cardPos} onClose={function() { setSelected(null) }} weatherDraw={cw.draw} weatherColor={cw.color} weatherType={selected.loc.weather || 'sun'} activeDim={2} />
         </div>
       )}
     </div>
