@@ -4,41 +4,47 @@ import * as topojson from 'topojson-client'
 import worldTopo from 'world-atlas/countries-110m.json'
 import LocationCard from './LocationCard'
 
-/* ── weather icons (unchanged) ── */
+/* ── weather icons ── */
 var RO={roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:1}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var k=Object.keys(x);for(var i=0;i<k.length;i++)o[k[i]]=x[k[i]]};return o}
-function drawSun(rc,cx,cy,c){rc.circle(cx,cy,14,ro({stroke:c,strokeWidth:1.5}));var r=12;for(var i=0;i<8;i++){var a=i*Math.PI/4;rc.line(cx+Math.cos(a)*9,cy+Math.sin(a)*9,cx+Math.cos(a)*r,cy+Math.sin(a)*r,ro({stroke:c,strokeWidth:1}))}}
+function drawSun(rc,cx,cy,c){rc.circle(cx,cy,14,ro({stroke:c,strokeWidth:1.5}));for(var i=0;i<8;i++){var a=i*Math.PI/4;rc.line(cx+Math.cos(a)*9,cy+Math.sin(a)*9,cx+Math.cos(a)*12,cy+Math.sin(a)*12,ro({stroke:c,strokeWidth:1}))}}
 function drawWarm(rc,cx,cy,c){rc.circle(cx,cy,18,ro({stroke:c,strokeWidth:1.8}));rc.line(cx-13,cy,cx-16,cy,ro({stroke:c,strokeWidth:1}));rc.line(cx+13,cy,cx+16,cy,ro({stroke:c,strokeWidth:1}));rc.line(cx,cy-13,cx,cy-16,ro({stroke:c,strokeWidth:1}));rc.line(cx,cy+13,cx,cy+16,ro({stroke:c,strokeWidth:1}))}
 function drawGlow(rc,cx,cy,c){rc.circle(cx,cy,12,ro({stroke:c,strokeWidth:1.3}));rc.circle(cx,cy,24,ro({stroke:c,strokeWidth:0.7}))}
 function drawMoon(rc,cx,cy,c){var pts=[],i;for(i=0;i<=20;i++){var a=-Math.PI/2+i*Math.PI/20;pts.push([cx+Math.cos(a)*13,cy+Math.sin(a)*13])};for(i=20;i>=0;i--){var a2=-Math.PI/2+i*Math.PI/20;pts.push([cx+Math.cos(a2)*4,cy+Math.sin(a2)*12])};rc.linearPath(pts,ro({stroke:c,strokeWidth:1.3}))}
-function drawDrizzle(rc,cx,cy,c){rc.line(cx-7,cy-8,cx-8,cy+0,ro({stroke:c,strokeWidth:1.2}));rc.line(cx,cy-6,cx-1,cy+4,ro({stroke:c,strokeWidth:1.2}));rc.line(cx+7,cy-7,cx+6,cy+2,ro({stroke:c,strokeWidth:1.2}))}
+function drawDrizzle(rc,cx,cy,c){rc.line(cx-7,cy-8,cx-8,cy,ro({stroke:c,strokeWidth:1.2}));rc.line(cx,cy-6,cx-1,cy+4,ro({stroke:c,strokeWidth:1.2}));rc.line(cx+7,cy-7,cx+6,cy+2,ro({stroke:c,strokeWidth:1.2}))}
 function drawRain(rc,cx,cy,c){for(var i=-3;i<=3;i++)rc.line(cx+i*4,cy-8+Math.abs(i),cx+i*4-1,cy+6-Math.abs(i),ro({stroke:c,strokeWidth:1.1}))}
 function drawStorm(rc,cx,cy,c){rc.linearPath([[cx,cy-13],[cx-5,cy-2],[cx+3,cy-2],[cx-2,cy+13]],ro({stroke:c,strokeWidth:1.8}))}
-function drawPlum(rc,cx,cy,c){for(var i=-5;i<=5;i++){rc.line(cx+i*3,cy-10,cx+i*3,cy-5,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+i*3-1,cy-2,cx+i*3-1,cy+3,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+i*3,cy+6,cx+i*3,cy+11,ro({stroke:c,strokeWidth:0.8}))}}
 function drawCloudy(rc,cx,cy,c){rc.linearPath([[cx-14,cy+3],[cx-13,cy-1],[cx-9,cy-5],[cx-4,cy-7],[cx,cy-9],[cx+4,cy-7],[cx+9,cy-5],[cx+13,cy-1],[cx+14,cy+3]],ro({stroke:c,strokeWidth:1.3}));rc.line(cx-14,cy+3,cx+14,cy+3,ro({stroke:c,strokeWidth:1.1}))}
 function drawOvercast(rc,cx,cy,c){rc.line(cx-16,cy-2,cx+16,cy-2,ro({stroke:c,strokeWidth:2.5}));rc.line(cx-14,cy+4,cx+14,cy+4,ro({stroke:c,strokeWidth:2}))}
 function drawFog(rc,cx,cy,c){rc.line(cx-12,cy-7,cx-3,cy-7,ro({stroke:c,strokeWidth:1.1,roughness:1.5}));rc.line(cx+2,cy-7,cx+10,cy-7,ro({stroke:c,strokeWidth:0.9,roughness:1.5}));rc.line(cx-10,cy-1,cx+1,cy-1,ro({stroke:c,strokeWidth:1.2,roughness:1.5}));rc.line(cx+5,cy-1,cx+13,cy-1,ro({stroke:c,strokeWidth:0.8,roughness:1.5}));rc.line(cx-13,cy+5,cx-4,cy+5,ro({stroke:c,strokeWidth:0.9,roughness:1.5}));rc.line(cx+1,cy+5,cx+11,cy+5,ro({stroke:c,strokeWidth:1.1,roughness:1.5}))}
 function drawWind(rc,cx,cy,c){rc.linearPath([[cx-14,cy-6],[cx,cy-5],[cx+10,cy-9]],ro({stroke:c,strokeWidth:1.3}));rc.linearPath([[cx-12,cy+1],[cx+2,cy+1],[cx+14,cy-2]],ro({stroke:c,strokeWidth:1.5}));rc.linearPath([[cx-10,cy+7],[cx+4,cy+8],[cx+12,cy+5]],ro({stroke:c,strokeWidth:1.1}))}
 function drawBreeze(rc,cx,cy,c){rc.linearPath([[cx-14,cy],[cx-4,cy-3],[cx+6,cy+1],[cx+14,cy-2]],ro({stroke:c,strokeWidth:1.2}))}
 function drawHumid(rc,cx,cy,c){rc.linearPath([[cx,cy-12],[cx-8,cy+4]],ro({stroke:c,strokeWidth:1.3}));rc.linearPath([[cx,cy-12],[cx+8,cy+4]],ro({stroke:c,strokeWidth:1.3}));rc.arc(cx,cy+4,16,10,0,Math.PI,false,ro({stroke:c,strokeWidth:1.3}))}
-function drawSnow(rc,cx,cy,c){for(var i=0;i<6;i++){var a=i*Math.PI/3;var ex=Math.cos(a),ey=Math.sin(a);rc.line(cx,cy,cx+ex*13,cy+ey*13,ro({stroke:c,strokeWidth:1}));rc.line(cx+ex*8,cy+ey*8,cx+ex*8+Math.cos(a+0.8)*5,cy+ey*8+Math.sin(a+0.8)*5,ro({stroke:c,strokeWidth:0.7}));rc.line(cx+ex*8,cy+ey*8,cx+ex*8+Math.cos(a-0.8)*5,cy+ey*8+Math.sin(a-0.8)*5,ro({stroke:c,strokeWidth:0.7}))}}
+function drawSnow(rc,cx,cy,c){for(var i=0;i<6;i++){var a=i*Math.PI/3,ex=Math.cos(a),ey=Math.sin(a);rc.line(cx,cy,cx+ex*13,cy+ey*13,ro({stroke:c,strokeWidth:1}));rc.line(cx+ex*8,cy+ey*8,cx+ex*8+Math.cos(a+0.8)*5,cy+ey*8+Math.sin(a+0.8)*5,ro({stroke:c,strokeWidth:0.7}));rc.line(cx+ex*8,cy+ey*8,cx+ex*8+Math.cos(a-0.8)*5,cy+ey*8+Math.sin(a-0.8)*5,ro({stroke:c,strokeWidth:0.7}))}}
 function drawFrost(rc,cx,cy,c){for(var i=0;i<6;i++){var a=i*Math.PI/3;rc.line(cx,cy,cx+Math.cos(a)*12,cy+Math.sin(a)*12,ro({stroke:c,strokeWidth:1.1}))};rc.circle(cx,cy,4,ro({stroke:c,strokeWidth:0.8}))}
-function drawHail(rc,cx,cy,c){rc.circle(cx-8,cy-6,7,ro({stroke:c,strokeWidth:1,fill:c,fillStyle:'solid'}));rc.circle(cx+5,cy-3,6,ro({stroke:c,strokeWidth:1,fill:c,fillStyle:'solid'}));rc.circle(cx-3,cy+5,8,ro({stroke:c,strokeWidth:1,fill:c,fillStyle:'solid'}));rc.circle(cx+9,cy+6,5,ro({stroke:c,strokeWidth:0.9,fill:c,fillStyle:'solid'}));rc.circle(cx-10,cy+8,4,ro({stroke:c,strokeWidth:0.8,fill:c,fillStyle:'solid'}))}
+function drawHail(rc,cx,cy,c){rc.circle(cx-8,cy-6,7,ro({stroke:c,strokeWidth:1,fill:c,fillStyle:'solid'}));rc.circle(cx+5,cy-3,6,ro({stroke:c,strokeWidth:1,fill:c,fillStyle:'solid'}));rc.circle(cx-3,cy+5,8,ro({stroke:c,strokeWidth:1,fill:c,fillStyle:'solid'}));rc.circle(cx+9,cy+6,5,ro({stroke:c,strokeWidth:0.9,fill:c,fillStyle:'solid'}))}
 function drawRainbow(rc,cx,cy,c){var cs=["#C85050","#D88840","#D0B830","#50A850","#4878C0","#7858A8"];for(var i=0;i<cs.length;i++)rc.arc(cx,cy+8,28-i*3.5,24-i*3.5,Math.PI,Math.PI*2,false,ro({stroke:cs[i],strokeWidth:1.5}))}
 function drawStarry(rc,cx,cy,c){var pts=[[-8,-7,4],[4,-9,5],[10,-2,3],[-10,3,3],[-2,2,6],[7,5,4],[-6,9,3],[5,10,3]];for(var i=0;i<pts.length;i++){var p=pts[i],s=p[2]/2;rc.line(cx+p[0],cy+p[1]-s,cx+p[0],cy+p[1]+s,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+p[0]-s,cy+p[1],cx+p[0]+s,cy+p[1],ro({stroke:c,strokeWidth:0.8}))}}
 function drawDust(rc,cx,cy,c){var pts=[[-10,-5],[-4,-9],[3,-7],[9,-4],[-8,1],[1,-1],[7,1],[-6,6],[0,7],[6,6],[-3,11],[5,10]];for(var i=0;i<pts.length;i++)rc.circle(cx+pts[i][0],cy+pts[i][1],2+i%2,ro({stroke:c,strokeWidth:0.7,fill:c,fillStyle:'solid'}))}
 function drawPetals(rc,cx,cy,c){var pts=[[-7,-8],[-1,-3],[6,-6],[-9,3],[3,2],[9,1],[-5,8],[4,9]];for(var i=0;i<pts.length;i++)rc.ellipse(cx+pts[i][0],cy+pts[i][1],6,3,ro({stroke:c,strokeWidth:0.9}))}
+function drawPlum(rc,cx,cy,c){for(var i=-5;i<=5;i++){rc.line(cx+i*3,cy-10,cx+i*3,cy-5,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+i*3-1,cy-2,cx+i*3-1,cy+3,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+i*3,cy+6,cx+i*3,cy+11,ro({stroke:c,strokeWidth:0.8}))}}
 var WS={sun:{color:"#C8A830",draw:drawSun},warm:{color:"#C09030",draw:drawWarm},glow:{color:"#B0A070",draw:drawGlow},moon:{color:"#7888A8",draw:drawMoon},drizzle:{color:"#6888A8",draw:drawDrizzle},rain:{color:"#4870A0",draw:drawRain},storm:{color:"#5858A0",draw:drawStorm},plum:{color:"#5888A0",draw:drawPlum},cloudy:{color:"#9A9488",draw:drawCloudy},overcast:{color:"#888480",draw:drawOvercast},fog:{color:"#A09890",draw:drawFog},wind:{color:"#5898A0",draw:drawWind},breeze:{color:"#78A880",draw:drawBreeze},humid:{color:"#A09070",draw:drawHumid},snow:{color:"#6880A8",draw:drawSnow},frost:{color:"#5080A8",draw:drawFrost},hail:{color:"#6878A0",draw:drawHail},rainbow:{color:"#C07878",draw:drawRainbow},starry:{color:"#A09060",draw:drawStarry},dust:{color:"#B09050",draw:drawDust},petals:{color:"#C08080",draw:drawPetals}}
 
-/* ── projection: Pacific-centered, cut at 25°W (mid-Atlantic) ── */
-var MW = 1080, MH = 540, DS = MW / 360
-var CUT = -25
+/* ── Web Mercator projection, Pacific-centered ── */
+var MW = 1080
+var MERC_R = MW / (2 * Math.PI)
+var CUT = -25, DS = MW / 360, LAT_CLIP = 85
+var MAX_ZOOM = 15
 
 function wrapLng(v) { return ((v - CUT) % 360 + 360) % 360 }
 function lngX(v) { return wrapLng(v) * DS }
-function latY(v) { return (90 - v) * (MH / 180) }
-
-var MAX_ZOOM = 6
+function mercY(lat) {
+  var l = Math.max(-LAT_CLIP, Math.min(LAT_CLIP, lat)) * Math.PI / 180
+  return MERC_R * Math.log(Math.tan(Math.PI / 4 + l / 2))
+}
+var Y_TOP = mercY(LAT_CLIP)
+var MH = 2 * Y_TOP
+function latY(lat) { return Y_TOP - mercY(lat) }
 
 function niceScale(kpp, maxPx) {
   var ts = [10000,5000,2000,1000,500,200,100,50,20,10,5,2,1]
@@ -46,25 +52,21 @@ function niceScale(kpp, maxPx) {
   return { km: 1, px: 1 / kpp }
 }
 
-/* ── pre-compute country outlines with rough.generator ── */
+/* ── pre-compute with rough.generator ── */
 function projectRing(coords) {
   var pts = []
-  for (var i = 0; i < coords.length; i++) pts.push([wrapLng(coords[i][0]) * DS, (90 - coords[i][1]) * (MH / 180)])
-  /* split at map-edge crossings (|dx| > MW/2 means it crossed the cut) */
+  for (var i = 0; i < coords.length; i++) {
+    var lat = Math.max(-LAT_CLIP, Math.min(LAT_CLIP, coords[i][1]))
+    pts.push([wrapLng(coords[i][0]) * DS, Y_TOP - mercY(lat)])
+  }
   var rings = [[]], ci = 0
   for (var i = 0; i < pts.length; i++) {
     if (i > 0 && Math.abs(pts[i][0] - pts[i - 1][0]) > MW * 0.5) {
-      /* interpolate crossing point */
-      var prev = pts[i - 1], cur = pts[i]
-      var goingRight = cur[0] > prev[0]
+      var prev = pts[i - 1], cur = pts[i], goingRight = cur[0] > prev[0]
       var edgeX = goingRight ? MW : 0, otherX = goingRight ? 0 : MW
-      var dy = cur[1] - prev[1], dx = goingRight ? (cur[0] - MW - prev[0]) : (cur[0] + MW - prev[0])
-      var frac = dx !== 0 ? (edgeX - prev[0]) / dx : 0.5
-      if (frac < 0) frac = 0; if (frac > 1) frac = 1
-      var crossY = prev[1] + frac * dy
+      var crossY = (prev[1] + cur[1]) / 2
       rings[ci].push([edgeX, crossY])
-      rings.push([])
-      ci++
+      rings.push([]); ci++
       rings[ci].push([otherX, crossY])
     }
     rings[ci].push(pts[i])
@@ -75,9 +77,7 @@ function projectRing(coords) {
 function buildDrawables() {
   var gen = rough.generator()
   var countries = topojson.feature(worldTopo, worldTopo.objects.countries)
-  var drawables = []
-  var seed = 1
-
+  var drawables = [], seed = 1
   for (var f = 0; f < countries.features.length; f++) {
     var geom = countries.features[f].geometry, allRings = []
     if (geom.type === 'Polygon') {
@@ -89,15 +89,13 @@ function buildDrawables() {
     for (var i = 0; i < allRings.length; i++) {
       drawables.push(gen.polygon(allRings[i], {
         stroke: '#C0B8AC', strokeWidth: 0.4, roughness: 0.15, bowing: 0.3,
-        fill: '#F0ECE4', fillStyle: 'solid', disableMultiStroke: true, seed: seed
+        fill: '#F0ECE4', fillStyle: 'solid', disableMultiStroke: true, seed: seed++
       }))
-      seed++
     }
   }
   return drawables
 }
 
-/* pre-render weather icon to offscreen canvas */
 function prerenderIcon(loc, idx) {
   var weather = loc.weather || 'sun', ws = WS[weather] || WS.sun
   var cvs = document.createElement('canvas'); cvs.width = 60; cvs.height = 60
@@ -114,35 +112,37 @@ export default function CompassView({ locations }) {
   var canvasRef = useRef(null), scaleRef = useRef(null), outerRef = useRef(null), cardWrapRef = useRef(null)
   var drawRef = useRef(null), iconsRef = useRef([]), geoRef = useRef([])
   var camRef = useRef(null), sizeRef = useRef({ W: 380, H: 600 })
-  var gestRef = useRef(null), movedRef = useRef(false)
+  var renderedRef = useRef({ px: 0, py: 0, z: 1 })  /* camera state when canvas was last painted */
+  var gestRef = useRef(null), movedRef = useRef(false), redrawTimer = useRef(null)
   var ss = useState(null), selected = ss[0], setSelected = ss[1]
+  var minZoomRef = useRef(0.3)
 
-  /* pre-compute country drawables once */
   useEffect(function() { drawRef.current = buildDrawables() }, [])
 
-  /* pre-render location icons */
   useEffect(function() {
     var gl = locations ? locations.filter(function(l) { return l.lat != null && l.lng != null }) : []
     geoRef.current = gl
     iconsRef.current = gl.map(function(loc, i) { return prerenderIcon(loc, i) })
   }, [locations])
 
-  /* ── render ── */
-  var render = useCallback(function() {
+  /* ── full render: paint canvas at current camera ── */
+  var fullRender = useCallback(function() {
     var canvas = canvasRef.current; if (!canvas) return
     var ds = drawRef.current; if (!ds) return
     var cam = camRef.current; if (!cam) return
-    var sz = sizeRef.current
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    var sz = sizeRef.current, dpr = Math.min(window.devicePixelRatio || 1, 3)
+
     canvas.width = sz.W * dpr; canvas.height = sz.H * dpr
     canvas.style.width = sz.W + 'px'; canvas.style.height = sz.H + 'px'
+    /* reset CSS transform — we're painting fresh */
+    canvas.style.transform = ''
+    canvas.style.transformOrigin = '0 0'
+
     var ctx = canvas.getContext('2d')
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-    /* ocean */
     ctx.fillStyle = '#C8D4DC'; ctx.fillRect(0, 0, sz.W, sz.H)
 
-    /* countries — draw in world space (camera transform) */
+    /* countries in world space */
     ctx.save()
     ctx.translate(cam.px, cam.py)
     ctx.scale(cam.z, cam.z)
@@ -150,29 +150,43 @@ export default function CompassView({ locations }) {
     for (var i = 0; i < ds.length; i++) rc.draw(ds[i])
     ctx.restore()
 
-    /* icons + labels — draw in screen space (always crisp) */
+    /* icons + labels in screen space */
     var gl = geoRef.current, icons = iconsRef.current
     for (var j = 0; j < gl.length; j++) {
-      var loc = gl[j]
-      var sx = lngX(loc.lng) * cam.z + cam.px
-      var sy = latY(loc.lat) * cam.z + cam.py
-      if (sx < -30 || sx > sz.W + 30 || sy < -30 || sy > sz.H + 30) continue  /* cull offscreen */
+      var loc = gl[j], sx = lngX(loc.lng) * cam.z + cam.px, sy = latY(loc.lat) * cam.z + cam.py
+      if (sx < -30 || sx > sz.W + 30 || sy < -30 || sy > sz.H + 30) continue
       if (icons[j]) ctx.drawImage(icons[j].canvas, 0, 0, 60, 60, sx - 10, sy - 10, 20, 20)
-      ctx.textAlign = 'center'
-      ctx.font = "600 9px -apple-system,'PingFang SC',sans-serif"
-      ctx.fillStyle = '#5A4E40'
+      ctx.textAlign = 'center'; ctx.font = "600 9px -apple-system,'PingFang SC',sans-serif"; ctx.fillStyle = '#5A4E40'
       ctx.fillText(loc.display_name || loc.label || loc.id, sx, sy + 16)
     }
+
+    /* remember what we painted */
+    renderedRef.current = { px: cam.px, py: cam.py, z: cam.z }
 
     /* scale bar */
     renderScale(cam.z)
   }, [])
 
-  /* scale bar on separate canvas */
+  /* ── CSS transform: instant GPU update during gestures ── */
+  function cssUpdate() {
+    var canvas = canvasRef.current; if (!canvas) return
+    var cam = camRef.current, r = renderedRef.current
+    var ratio = cam.z / r.z
+    var tx = cam.px - ratio * r.px
+    var ty = cam.py - ratio * r.py
+    canvas.style.transformOrigin = '0 0'
+    canvas.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + ratio + ')'
+  }
+
+  /* schedule a full render after interaction settles */
+  function scheduleRender(ms) {
+    if (redrawTimer.current) clearTimeout(redrawTimer.current)
+    redrawTimer.current = setTimeout(fullRender, ms || 150)
+  }
+
   function renderScale(z) {
     var cvs = scaleRef.current; if (!cvs) return
-    var sw = 130, sh = 28
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    var sw = 130, sh = 28, dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = sw * dpr; cvs.height = sh * dpr; cvs.style.width = sw + 'px'; cvs.style.height = sh + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var kpp = 111.32 * Math.cos(30 * Math.PI / 180) / (DS * z)
@@ -185,25 +199,26 @@ export default function CompassView({ locations }) {
     ctx.fillText(sc.km >= 1 ? sc.km + ' km' : (sc.km * 1000) + ' m', 10 + sc.px / 2, y - 6)
   }
 
-  /* ── init camera + gestures ── */
+  /* ── init + gestures ── */
   useEffect(function() {
     var el = outerRef.current; if (!el) return
     var sw = el.clientWidth || 380, sh = el.clientHeight || 600
     sizeRef.current = { W: sw, H: sh }
+    minZoomRef.current = Math.max(sw / MW, sh / MH) * 0.8
 
-    /* initial view: focused on Asia */
     var z = sw / (80 * DS)
     camRef.current = { px: sw / 2 - lngX(110) * z, py: sh / 2 - latY(25) * z, z: z }
 
-    var MIN_ZOOM = Math.max(sw / MW, sh / MH) * 0.8
-    function clampZoom(v) { return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, v)) }
-    function applyAndRender() { render() }
+    function clamp(v) { return Math.max(minZoomRef.current, Math.min(MAX_ZOOM, v)) }
 
-    /* resize */
-    function onResize() { sizeRef.current = { W: el.clientWidth, H: el.clientHeight }; render() }
+    function onResize() {
+      sizeRef.current = { W: el.clientWidth, H: el.clientHeight }
+      minZoomRef.current = Math.max(el.clientWidth / MW, el.clientHeight / MH) * 0.8
+      fullRender()
+    }
     window.addEventListener('resize', onResize)
 
-    /* touch: pan + pinch */
+    /* touch */
     function d2(ts) { var dx = ts[1].clientX - ts[0].clientX, dy = ts[1].clientY - ts[0].clientY; return Math.sqrt(dx * dx + dy * dy) }
     function onTS(e) {
       if (cardWrapRef.current && cardWrapRef.current.contains(e.target)) return
@@ -215,27 +230,29 @@ export default function CompassView({ locations }) {
       var g = gestRef.current; if (!g) return; e.preventDefault(); var ts = e.touches, cam = camRef.current
       if (ts.length >= 2) {
         if (g.type === 'pan') { setSelected(null); g.type = 'pinch'; g.sd = d2(ts); g.sz = cam.z; g.spx = cam.px; g.spy = cam.py; g.smx = (ts[0].clientX + ts[1].clientX) / 2; g.smy = (ts[0].clientY + ts[1].clientY) / 2; return }
-        movedRef.current = true; var d = d2(ts), nz = clampZoom(g.sz * d / g.sd)
+        movedRef.current = true
+        var d = d2(ts), nz = clamp(g.sz * d / g.sd)
         var mx = (ts[0].clientX + ts[1].clientX) / 2, my = (ts[0].clientY + ts[1].clientY) / 2
         var rect = el.getBoundingClientRect(), cx = g.smx - rect.left, cy = g.smy - rect.top
         cam.z = nz; cam.px = cx - (cx - g.spx) * nz / g.sz + (mx - g.smx); cam.py = cy - (cy - g.spy) * nz / g.sz + (my - g.smy)
-        applyAndRender()
+        cssUpdate()
       } else if (g.type === 'pan' && ts.length === 1) {
         var dx = ts[0].clientX - g.sx, dy = ts[0].clientY - g.sy
         if (Math.abs(dx) + Math.abs(dy) > 5) { movedRef.current = true; setSelected(null) }
-        cam.px = g.spx + dx; cam.py = g.spy + dy; applyAndRender()
+        cam.px = g.spx + dx; cam.py = g.spy + dy
+        cssUpdate()
       }
     }
-    function onTE(e) { if (e.touches.length === 0) gestRef.current = null }
+    function onTE(e) { if (e.touches.length === 0) { gestRef.current = null; fullRender() } }
 
-    /* wheel zoom */
+    /* wheel */
     function onWh(e) {
-      e.preventDefault(); var rect = el.getBoundingClientRect()
-      var cx = e.clientX - rect.left, cy = e.clientY - rect.top
-      var cam = camRef.current, oz = cam.z
-      var nz = clampZoom(oz * (e.deltaY > 0 ? 0.92 : 1.08))
+      e.preventDefault()
+      var rect = el.getBoundingClientRect(), cx = e.clientX - rect.left, cy = e.clientY - rect.top
+      var cam = camRef.current, oz = cam.z, nz = clamp(oz * (e.deltaY > 0 ? 0.92 : 1.08))
       cam.px = cx - (cx - cam.px) * nz / oz; cam.py = cy - (cy - cam.py) * nz / oz; cam.z = nz
-      applyAndRender()
+      cssUpdate()
+      scheduleRender(150)
     }
 
     el.addEventListener('touchstart', onTS, { passive: true })
@@ -243,20 +260,18 @@ export default function CompassView({ locations }) {
     el.addEventListener('touchend', onTE, { passive: true })
     el.addEventListener('wheel', onWh, { passive: false })
 
-    /* initial render after drawables ready */
-    var timer = setInterval(function() { if (drawRef.current) { render(); clearInterval(timer) } }, 50)
+    /* wait for drawables then initial render */
+    var timer = setInterval(function() { if (drawRef.current) { fullRender(); clearInterval(timer) } }, 50)
 
     return function() {
       window.removeEventListener('resize', onResize)
-      el.removeEventListener('touchstart', onTS)
-      el.removeEventListener('touchmove', onTM)
-      el.removeEventListener('touchend', onTE)
-      el.removeEventListener('wheel', onWh)
-      clearInterval(timer)
+      el.removeEventListener('touchstart', onTS); el.removeEventListener('touchmove', onTM)
+      el.removeEventListener('touchend', onTE); el.removeEventListener('wheel', onWh)
+      clearInterval(timer); if (redrawTimer.current) clearTimeout(redrawTimer.current)
     }
-  }, [render])
+  }, [fullRender])
 
-  /* ── click / tap ── */
+  /* ── click ── */
   function handleClick(e) {
     if (movedRef.current) return
     if (cardWrapRef.current && cardWrapRef.current.contains(e.target)) return
@@ -284,7 +299,7 @@ export default function CompassView({ locations }) {
 
   return (
     <div ref={outerRef} onClick={handleClick} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', touchAction: 'none', background: '#C8D4DC' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', position: 'absolute', top: 0, left: 0 }} />
+      <canvas ref={canvasRef} style={{ display: 'block', position: 'absolute', top: 0, left: 0, willChange: 'transform' }} />
       <canvas ref={scaleRef} style={{ position: 'absolute', bottom: 16, left: 12, zIndex: 50, pointerEvents: 'none' }} />
       {selected && cardPos && (
         <div ref={cardWrapRef} onClick={function(e) { e.stopPropagation() }} style={{ position: 'absolute', top: 0, left: 0, zIndex: 200 }}>
