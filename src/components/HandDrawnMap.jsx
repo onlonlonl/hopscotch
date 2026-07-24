@@ -1,12 +1,11 @@
 // HandDrawnMap.jsx — Lux's psychological distance map
-// Renders inside the map zone or fullscreen
+// Infinite canvas with pinch-zoom and pan support
 // Uses Rough.js for location icons, Canvas 2D for paths and footprints
 
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
 import rough from 'roughjs'
 import { recipes } from './IconGallery'
 
-// Mock location data (will come from Supabase)
 const MOCK_LOCATIONS = [
   { id: 'home', label: '家', display_name: '家', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9 },
   { id: 'office-new', label: '新公司', display_name: '公司', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5 },
@@ -16,25 +15,28 @@ const MOCK_LOCATIONS = [
   { id: 'taiwan', label: '台灣', display_name: '台灣', icon_type: 'lantern', color: '#C4A6D0', lux_x: 80, lux_y: 75, scale: 0.7, errands: 0 },
 ]
 
-// Connections between locations (for dotted paths + footprints)
 const CONNECTIONS = [
   ['home', 'office-new'],
   ['home', 'metro'],
   ['home', 'airport'],
 ]
 
-function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIONS, fullscreen = false, onLocationTap }) {
-  const canvasRef = useRef(null)
-  const [nameMode, setNameMode] = useState(0) // 0: display_name, 1: label, 2: story
+var MIN_ZOOM = 0.4
+var MAX_ZOOM = 4.0
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current
+function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIONS, fullscreen = false, onLocationTap }) {
+  var canvasRef = useRef(null)
+  var camRef = useRef({ zoom: 1, panX: 0, panY: 0 })
+  var gestRef = useRef({ dragging: false, lastX: 0, lastY: 0, pinchDist: 0, pinchZoom: 1 })
+
+  var draw = useCallback(function() {
+    var canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const rc = rough.canvas(canvas)
-    const dpr = Math.min(window.devicePixelRatio || 1, 3)
-    const W = canvas.parentElement?.clientWidth || window.innerWidth
-    const H = canvas.parentElement?.clientHeight || window.innerHeight
+    var ctx = canvas.getContext('2d')
+    var rc = rough.canvas(canvas)
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    var W = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth
+    var H = canvas.parentElement ? canvas.parentElement.clientHeight : window.innerHeight
 
     canvas.width = W * dpr
     canvas.height = H * dpr
@@ -42,141 +44,280 @@ function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIO
     canvas.style.height = H + 'px'
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    // Background — warm white paper
     ctx.fillStyle = '#FAF6F0'
     ctx.fillRect(0, 0, W, H)
 
-    // Transform lux_x/lux_y (0-100) to screen coords with padding
-    const pad = 40
-    const mapW = W - pad * 2
-    const mapH = H - pad * 2
-    const locToScreen = (lx, ly) => [pad + (lx / 100) * mapW, pad + (ly / 100) * mapH]
+    var cam = camRef.current
+    ctx.save()
+    ctx.translate(W / 2, H / 2)
+    ctx.scale(cam.zoom, cam.zoom)
+    ctx.translate(-W / 2 + cam.panX, -H / 2 + cam.panY)
 
-    // No dotted lines — footprints are the path
+    var pad = 40
+    var mapW = W - pad * 2
+    var mapH = H - pad * 2
+    function locToScreen(lx, ly) { return [pad + (lx / 100) * mapW, pad + (ly / 100) * mapH] }
+
     ctx.lineCap = 'round'
-
-    // Draw footprints along connections (from home outward)
     function drawShoe(sx, sy, sAngle, mirror) {
       ctx.save()
       ctx.translate(sx, sy)
       ctx.rotate(sAngle - Math.PI / 2)
       if (mirror) ctx.scale(-1, 1)
       ctx.beginPath()
-      ctx.moveTo(-1.8, -4)
-      ctx.quadraticCurveTo(-2.2, -1, -2, 1.5)
-      ctx.lineTo(-1.5, 3)
-      ctx.lineTo(1.5, 3)
-      ctx.lineTo(2, 1.5)
-      ctx.quadraticCurveTo(2.2, -1, 1.8, -4)
-      ctx.quadraticCurveTo(0, -5, -1.8, -4)
+      ctx.moveTo(-1.8, -4); ctx.quadraticCurveTo(-2.2, -1, -2, 1.5)
+      ctx.lineTo(-1.5, 3); ctx.lineTo(1.5, 3); ctx.lineTo(2, 1.5)
+      ctx.quadraticCurveTo(2.2, -1, 1.8, -4); ctx.quadraticCurveTo(0, -5, -1.8, -4)
       ctx.fill()
       ctx.beginPath()
-      ctx.moveTo(-1.3, 4.5)
-      ctx.quadraticCurveTo(-1.5, 6, -1, 7)
-      ctx.lineTo(1, 7)
-      ctx.quadraticCurveTo(1.5, 6, 1.3, 4.5)
+      ctx.moveTo(-1.3, 4.5); ctx.quadraticCurveTo(-1.5, 6, -1, 7)
+      ctx.lineTo(1, 7); ctx.quadraticCurveTo(1.5, 6, 1.3, 4.5)
       ctx.fill()
       ctx.restore()
     }
 
-    for (const [fromId, toId] of connections) {
-      const from = locations.find(l => l.id === fromId)
-      const to = locations.find(l => l.id === toId)
+    for (var ci = 0; ci < connections.length; ci++) {
+      var fromId = connections[ci][0], toId = connections[ci][1]
+      var from = null, to = null
+      for (var li = 0; li < locations.length; li++) {
+        if (locations[li].id === fromId) from = locations[li]
+        if (locations[li].id === toId) to = locations[li]
+      }
       if (!from || !to) continue
       if (from.errands === 0 && to.errands === 0) continue
-      const homeIsFrom = from.id === 'home'
-      const [x1, y1] = homeIsFrom ? locToScreen(from.lux_x, from.lux_y) : locToScreen(to.lux_x, to.lux_y)
-      const [x2, y2] = homeIsFrom ? locToScreen(to.lux_x, to.lux_y) : locToScreen(from.lux_x, from.lux_y)
-      const cmx = (x1 + x2) / 2 + (y2 - y1) * 0.15
-      const cmy = (y1 + y2) / 2 - (x2 - x1) * 0.15
-      const dist = Math.hypot(x2 - x1, y2 - y1)
-      const steps = Math.floor(dist / 35)
+      var homeIsFrom = from.id === 'home'
+      var p1 = homeIsFrom ? locToScreen(from.lux_x, from.lux_y) : locToScreen(to.lux_x, to.lux_y)
+      var p2 = homeIsFrom ? locToScreen(to.lux_x, to.lux_y) : locToScreen(from.lux_x, from.lux_y)
+      var cmx = (p1[0] + p2[0]) / 2 + (p2[1] - p1[1]) * 0.15
+      var cmy = (p1[1] + p2[1]) / 2 - (p2[0] - p1[0]) * 0.15
+      var dist = Math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+      var steps = Math.floor(dist / 35)
       ctx.fillStyle = 'rgba(160, 150, 140, 0.22)'
-      for (let i = 1; i < steps; i++) {
-        const t = i / steps
-        const fx = (1-t)*(1-t)*x1 + 2*(1-t)*t*cmx + t*t*x2
-        const fy = (1-t)*(1-t)*y1 + 2*(1-t)*t*cmy + t*t*y2
-        const tdx = 2*(1-t)*(cmx-x1) + 2*t*(x2-cmx)
-        const tdy = 2*(1-t)*(cmy-y1) + 2*t*(y2-cmy)
-        const angle = Math.atan2(tdy, tdx)
-        const offset = (i % 2 === 0 ? 4 : -4)
-        const px = fx + Math.cos(angle + Math.PI / 2) * offset
-        const py = fy + Math.sin(angle + Math.PI / 2) * offset
+      for (var i = 1; i < steps; i++) {
+        var t = i / steps
+        var fx = (1-t)*(1-t)*p1[0] + 2*(1-t)*t*cmx + t*t*p2[0]
+        var fy = (1-t)*(1-t)*p1[1] + 2*(1-t)*t*cmy + t*t*p2[1]
+        var tdx = 2*(1-t)*(cmx-p1[0]) + 2*t*(p2[0]-cmx)
+        var tdy = 2*(1-t)*(cmy-p1[1]) + 2*t*(p2[1]-cmy)
+        var angle = Math.atan2(tdy, tdx)
+        var offset = (i % 2 === 0 ? 4 : -4)
+        var px = fx + Math.cos(angle + Math.PI / 2) * offset
+        var py = fy + Math.sin(angle + Math.PI / 2) * offset
         drawShoe(px, py, angle, i % 2 === 1)
       }
     }
 
-    // Draw location icons
-    const baseScale = Math.min(W, H) / 300
-    for (const loc of locations) {
-      const [x, y] = locToScreen(loc.lux_x, loc.lux_y)
-      const s = baseScale * (loc.scale || 1)
-      const recipe = recipes[loc.icon_type] || recipes.flag
-      recipe(rc, ctx, x, y, s, loc.color)
+    var baseScale = Math.min(W, H) / 400
+    for (var idx = 0; idx < locations.length; idx++) {
+      var loc = locations[idx]
+      var pos = locToScreen(loc.lux_x, loc.lux_y)
+      var s = baseScale * (loc.scale || 1)
+      var recipe = recipes[loc.icon_type] || recipes.flag
+      recipe(rc, ctx, pos[0], pos[1], s, loc.color)
 
-      // Label
       ctx.fillStyle = loc.color
-      ctx.font = `${9 * s}px 'DotGothic16', monospace`
+      ctx.font = (9 * s) + "px '-apple-system', 'PingFang SC', sans-serif"
       ctx.textAlign = 'center'
-      ctx.fillText(loc.display_name || loc.label, x, y + 18 * s)
+      ctx.fillText(loc.display_name || loc.label, pos[0], pos[1] + 18 * s)
 
-      // Errand count
       if (loc.errands > 0) {
         ctx.fillStyle = 'rgba(160, 150, 140, 0.4)'
-        ctx.font = `${7 * s}px 'DotGothic16', monospace`
-        ctx.fillText(loc.errands + '×', x, y + 26 * s)
+        ctx.font = (7 * s) + "px '-apple-system', 'PingFang SC', sans-serif"
+        ctx.fillText(loc.errands + '×', pos[0], pos[1] + 26 * s)
       }
     }
-  }, [locations, connections, nameMode])
 
-  useEffect(() => {
+    ctx.restore()
+  }, [locations, connections])
+
+  useEffect(function() {
     draw()
-    const onResize = () => draw()
+    var onResize = function() { draw() }
     window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    return function() { window.removeEventListener('resize', onResize) }
   }, [draw])
+
+  useEffect(function() {
+    var canvas = canvasRef.current
+    if (!canvas) return
+    function onWheel(e) {
+      e.preventDefault()
+      var cam = camRef.current
+      var rect = canvas.getBoundingClientRect()
+      var mx = e.clientX - rect.left, my = e.clientY - rect.top
+      var W = rect.width, H = rect.height
+      var factor = e.deltaY > 0 ? 0.92 : 1.08
+      var newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, cam.zoom * factor))
+      cam.panX += (mx - W/2) * (1/cam.zoom - 1/newZoom)
+      cam.panY += (my - H/2) * (1/cam.zoom - 1/newZoom)
+      cam.zoom = newZoom
+      draw()
+    }
+    canvas.addEventListener('wheel', onWheel, { passive: false })
+    return function() { canvas.removeEventListener('wheel', onWheel) }
+  }, [draw])
+
+  useEffect(function() {
+    var canvas = canvasRef.current
+    if (!canvas) return
+    var gest = gestRef.current
+    function onDown(e) {
+      if (e.button !== 0) return
+      gest.dragging = true
+      gest.lastX = e.clientX
+      gest.lastY = e.clientY
+    }
+    function onMove(e) {
+      if (!gest.dragging) return
+      var cam = camRef.current
+      cam.panX += (e.clientX - gest.lastX) / cam.zoom
+      cam.panY += (e.clientY - gest.lastY) / cam.zoom
+      gest.lastX = e.clientX
+      gest.lastY = e.clientY
+      draw()
+    }
+    function onUp() { gest.dragging = false }
+    canvas.addEventListener('mousedown', onDown)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return function() {
+      canvas.removeEventListener('mousedown', onDown)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [draw])
+
+  useEffect(function() {
+    var canvas = canvasRef.current
+    if (!canvas) return
+    var gest = gestRef.current
+    function pinchDist(e) {
+      return Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+    }
+    function pinchCenter(e) {
+      return { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 }
+    }
+    function onTouchStart(e) {
+      if (e.touches.length === 1) {
+        gest.dragging = true
+        gest.lastX = e.touches[0].clientX
+        gest.lastY = e.touches[0].clientY
+      } else if (e.touches.length === 2) {
+        e.preventDefault()
+        gest.dragging = false
+        gest.pinchDist = pinchDist(e)
+        gest.pinchZoom = camRef.current.zoom
+        var c = pinchCenter(e)
+        gest.lastX = c.x
+        gest.lastY = c.y
+      }
+    }
+    function onTouchMove(e) {
+      var cam = camRef.current
+      if (e.touches.length === 2) {
+        e.preventDefault()
+        var d = pinchDist(e)
+        var newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, gest.pinchZoom * (d / gest.pinchDist)))
+        var c = pinchCenter(e)
+        cam.panX += (c.x - gest.lastX) / cam.zoom
+        cam.panY += (c.y - gest.lastY) / cam.zoom
+        var rect = canvas.getBoundingClientRect()
+        cam.panX += (c.x - rect.left - rect.width/2) * (1/cam.zoom - 1/newZoom)
+        cam.panY += (c.y - rect.top - rect.height/2) * (1/cam.zoom - 1/newZoom)
+        cam.zoom = newZoom
+        gest.lastX = c.x
+        gest.lastY = c.y
+        draw()
+      } else if (e.touches.length === 1 && gest.dragging) {
+        cam.panX += (e.touches[0].clientX - gest.lastX) / cam.zoom
+        cam.panY += (e.touches[0].clientY - gest.lastY) / cam.zoom
+        gest.lastX = e.touches[0].clientX
+        gest.lastY = e.touches[0].clientY
+        draw()
+      }
+    }
+    function onTouchEnd(e) {
+      if (e.touches.length < 2) {
+        gest.dragging = false
+        if (e.touches.length === 1) {
+          gest.dragging = true
+          gest.lastX = e.touches[0].clientX
+          gest.lastY = e.touches[0].clientY
+        }
+      }
+    }
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false })
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+    canvas.addEventListener('touchend', onTouchEnd)
+    return function() {
+      canvas.removeEventListener('touchstart', onTouchStart)
+      canvas.removeEventListener('touchmove', onTouchMove)
+      canvas.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [draw])
+
+  var tapRef = useRef({ x: 0, y: 0, time: 0 })
+
+  function handlePointerDown(e) {
+    tapRef.current = { x: e.clientX, y: e.clientY, time: Date.now() }
+  }
+  function handlePointerUp(e) {
+    var tap = tapRef.current
+    if (Math.abs(e.clientX - tap.x) < 8 && Math.abs(e.clientY - tap.y) < 8 && Date.now() - tap.time < 300) {
+      handleTap(e.clientX, e.clientY)
+    }
+  }
+
+  function handleTap(clientX, clientY) {
+    if (!onLocationTap) return
+    var canvas = canvasRef.current
+    if (!canvas) return
+    var rect = canvas.getBoundingClientRect()
+    var W = rect.width, H = rect.height
+    var cam = camRef.current
+    var wx = (clientX - rect.left - W/2) / cam.zoom + W/2 - cam.panX
+    var wy = (clientY - rect.top - H/2) / cam.zoom + H/2 - cam.panY
+    var pad = 40, mapW = W - pad*2, mapH = H - pad*2
+    for (var i = 0; i < locations.length; i++) {
+      var loc = locations[i]
+      var lx = pad + (loc.lux_x / 100) * mapW
+      var ly = pad + (loc.lux_y / 100) * mapH
+      if (Math.hypot(wx - lx, wy - ly) < 25 / Math.min(cam.zoom, 1.5)) {
+        onLocationTap(loc, clientX, clientY)
+        return
+      }
+    }
+    onLocationTap(null)
+  }
 
   return (
     <canvas
       ref={canvasRef}
-      onClick={(e) => {
-        if (!onLocationTap) return
-        const rect = canvasRef.current.getBoundingClientRect()
-        const cx = e.clientX - rect.left
-        const cy = e.clientY - rect.top
-        const W = rect.width, H = rect.height, pad = 40
-        const mapW = W - pad*2, mapH = H - pad*2
-        for (const loc of locations) {
-          const lx = pad + (loc.lux_x / 100) * mapW
-          const ly = pad + (loc.lux_y / 100) * mapH
-          const dist = Math.hypot(cx - lx, cy - ly)
-          if (dist < 25) { onLocationTap(loc, e.clientX, e.clientY); return }
-        }
-        onLocationTap(null)
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       style={{
-        display: 'block',
-        width: '100%',
-        height: '100%',
+        display: 'block', width: '100%', height: '100%',
         borderRadius: fullscreen ? 0 : 4,
+        touchAction: 'none', cursor: 'grab',
       }}
     />
   )
 }
 
-
-const HandDrawnMap = forwardRef(function HandDrawnMap(props, ref) {
-  useImperativeHandle(ref, () => ({
-    screenToLoc: (sx, sy) => {
-      const canvas = document.querySelector('canvas')
-      if (!canvas) return { lux_x: 50, lux_y: 50 }
-      const rect = canvas.getBoundingClientRect()
-      const W = rect.width, H = rect.height, pad = 40
-      const lux_x = Math.max(5, Math.min(95, (sx - rect.left - pad) / (W - pad*2) * 100))
-      const lux_y = Math.max(5, Math.min(95, (sy - rect.top - pad) / (H - pad*2) * 100))
-      return { lux_x, lux_y }
+var HandDrawnMap = forwardRef(function HandDrawnMap(props, ref) {
+  useImperativeHandle(ref, function() {
+    return {
+      screenToLoc: function(sx, sy) {
+        var canvas = document.querySelector('canvas')
+        if (!canvas) return { lux_x: 50, lux_y: 50 }
+        var rect = canvas.getBoundingClientRect()
+        var W = rect.width, H = rect.height, pad = 40
+        var lux_x = Math.max(5, Math.min(95, (sx - rect.left - pad) / (W - pad*2) * 100))
+        var lux_y = Math.max(5, Math.min(95, (sy - rect.top - pad) / (H - pad*2) * 100))
+        return { lux_x: lux_x, lux_y: lux_y }
+      }
     }
-  }))
+  })
   return <HandDrawnMapInner {...props} onLocationTap={props.onLocationTap} />
 })
 
