@@ -205,8 +205,9 @@ export default function App() {
 
       {/* Back button */}
       <canvas ref={backRef} onClick={exitInk} style={{
-        position: 'fixed', top: 50, left: 12,
+        position: 'fixed', top: 14, left: 12,
         zIndex: 110, cursor: 'pointer',
+        display: panelOpen ? 'none' : 'block',
       }} />
 
       {card && (
@@ -217,7 +218,7 @@ export default function App() {
           <LocationCard
             location={card}
             position={dimIndex === 1
-              ? [window.innerWidth / 2, (window.innerHeight - 100) / 2]
+              ? [window.innerWidth / 2, (window.innerHeight - 100) / 2 + 20]
               : [Math.min(card.x, window.innerWidth - 120), Math.max(card.y, 130)]
             }
             onClose={() => setCard(null)}

@@ -125,6 +125,24 @@ function drawTrack(canvas, locs, trackPad, trackW) {
 }
 
 // === Component ===
+
+function SilkAnchor({ color }) {
+  var ref = useRef(null)
+  useEffect(function() {
+    var cvs = ref.current; if (!cvs) return
+    var w = 12, h = 18
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = w * dpr; cvs.height = h * dpr
+    cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    var c = color || 'rgba(122,92,60,0.25)'
+    rc.line(4, 0, 5, h, { stroke: c, strokeWidth: 0.7, roughness: 1.2, bowing: 0.8, disableMultiStroke: true, seed: 201 })
+    rc.line(6, 0, 6, h, { stroke: c, strokeWidth: 0.9, roughness: 0.8, bowing: 0.6, disableMultiStroke: true, seed: 202 })
+    rc.line(8, 0, 7, h, { stroke: c, strokeWidth: 0.6, roughness: 1.0, bowing: 0.9, disableMultiStroke: true, seed: 203 })
+  }, [color])
+  return <canvas ref={ref} style={{ display: 'block' }} />
+}
 const PANEL_H = 100, NODE_W = 72
 
 export default function ThreadView({ locations = [], onNodeTap }) {
@@ -209,7 +227,7 @@ export default function ThreadView({ locations = [], onNodeTap }) {
     }; tick(); return () => { running = false }
   }, [locs, trackPad, trackW])
 
-  const bgColor = getTimeBg()
+  const bgColor = '#FAF6F0'
   if (locs.length === 0) return <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#FAF6F0' }} />
 
   return (
@@ -225,7 +243,7 @@ export default function ThreadView({ locations = [], onNodeTap }) {
           <div style={{ fontFamily: "-apple-system,'PingFang SC',sans-serif", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: locs[activeIdx] ? locs[activeIdx].color : '#7A5C3C', transition: 'color 0.2s ease', marginBottom: 4 }}>
             {locs[activeIdx] ? (locs[activeIdx].display_name || locs[activeIdx].label || '') : ''}
           </div>
-          <div style={{ width: 1, height: 14, background: 'rgba(122,92,60,0.18)' }} />
+          <SilkAnchor color={locs[activeIdx] ? locs[activeIdx].color : 'rgba(122,92,60,0.25)'} />
         </div>
         <div onTouchStart={onTrackDown} onMouseDown={onTrackDown} style={{ position: 'absolute', top: 38, left: 0, right: 0, height: 50, overflow: 'hidden', touchAction: 'pan-x' }}>
           <canvas ref={trackRef} style={{ position: 'absolute', top: 0, left: 0, height: 50 }} />

@@ -1,5 +1,5 @@
 
-// StampsPanel v3 — Rough.js styled editor UI, existing stamps untouched
+// StampsPanel v4 — Rough.js styled editor UI, cleaner layout
 import { useState, useRef, useEffect, useCallback } from 'react'
 import rough from 'roughjs'
 
@@ -25,25 +25,26 @@ var defaultCategories = {
 
 var RO = { roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
 
+/* === Rough.js UI components === */
+
 function RoughHandle({ width }) {
   var ref = useRef(null)
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    var w = width || 36, h = 8
+    var w = width || 40, h = 8
     cvs.width = w * dpr; cvs.height = h * dpr
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.line(4, h/2, w-4, h/2, { stroke: '#C0B8A8', strokeWidth: 1.2, roughness: 0.8, bowing: 0.6, disableMultiStroke: true, seed: 11 })
-    rc.line(8, h/2+2.5, w-8, h/2+2.5, { stroke: '#D0C8C0', strokeWidth: 0.8, roughness: 0.7, bowing: 0.5, disableMultiStroke: true, seed: 12 })
+    rc.line(4, 3, w-4, 3, { stroke: '#C0B8A8', strokeWidth: 1.5, roughness: 0.8, bowing: 0.6, disableMultiStroke: true, seed: 11 })
   }, [width])
   return <canvas ref={ref} style={{ display: 'block' }} />
 }
 
 function RoughClose({ size, onClick }) {
   var ref = useRef(null)
-  var sz = size || 28
+  var sz = size || 32
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -51,13 +52,13 @@ function RoughClose({ size, onClick }) {
     cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.line(8, 8, sz-8, sz-8, { stroke: '#B0A898', strokeWidth: 1.2, ...RO, seed: 20 })
-    rc.line(sz-8, 8, 8, sz-8, { stroke: '#B0A898', strokeWidth: 1.2, ...RO, seed: 21 })
+    rc.line(10, 10, sz-10, sz-10, { stroke: '#B0A898', strokeWidth: 1.3, ...RO, seed: 20 })
+    rc.line(sz-10, 10, 10, sz-10, { stroke: '#B0A898', strokeWidth: 1.3, ...RO, seed: 21 })
   }, [sz])
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
-function RoughTabLine({ width, active }) {
+function RoughTabUnderline({ width, active }) {
   var ref = useRef(null)
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
@@ -68,69 +69,57 @@ function RoughTabLine({ width, active }) {
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     if (active) {
       var rc = rough.canvas(cvs)
-      rc.line(2, 2, w-2, 2, { stroke: '#5A4A38', strokeWidth: 1.5, roughness: 0.7, bowing: 0.5, disableMultiStroke: true, seed: 33 })
+      rc.line(4, 2, w-4, 2, { stroke: '#5A4A38', strokeWidth: 1.5, roughness: 0.7, bowing: 0.5, disableMultiStroke: true, seed: 33 })
     }
   }, [width, active])
   return <canvas ref={ref} style={{ display: 'block' }} />
 }
 
-function RoughAddButton({ size, label }) {
+/* Rough.js add-category button — bigger touch target */
+function RoughPlusTab({ onClick }) {
   var ref = useRef(null)
-  var sz = size || 52
+  var sz = 36
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = sz * dpr; cvs.height = (sz + 14) * dpr
-    cvs.style.width = sz + 'px'; cvs.style.height = (sz + 14) + 'px'
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.rectangle(4, 4, sz-8, sz-8, { stroke: '#C0B8A8', strokeWidth: 1, roughness: 0.6, bowing: 0.5, disableMultiStroke: true, seed: 40, strokeLineDash: [4, 3] })
     var cx = sz/2, cy = sz/2
-    rc.line(cx, cy-7, cx, cy+7, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 41 })
-    rc.line(cx-7, cy, cx+7, cy, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 42 })
-    if (label) {
-      ctx.fillStyle = '#B0A898'
-      ctx.font = "9px '-apple-system', 'PingFang SC', sans-serif"
-      ctx.textAlign = 'center'
-      ctx.fillText(label, sz/2, sz + 8)
-    }
-  }, [sz, label])
-  return <canvas ref={ref} style={{ display: 'block' }} />
+    rc.circle(cx, cy, sz-8, { stroke: '#C0B8A8', strokeWidth: 0.8, roughness: 0.5, disableMultiStroke: true, seed: 44 })
+    rc.line(cx, cy-6, cx, cy+6, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 45 })
+    rc.line(cx-6, cy, cx+6, cy, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 46 })
+  }, [])
+  return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
-function RoughPanelBorder({ width }) {
+/* Rough.js generate stamp button in grid — bigger */
+function RoughAddStamp({ onClick }) {
   var ref = useRef(null)
+  var w = 56, h = 72
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
-    var w = width || 300, h = 4
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = w * dpr; cvs.height = h * dpr
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.line(16, 2, w-16, 2, { stroke: '#D8D0C4', strokeWidth: 0.8, roughness: 1, bowing: 0.3, disableMultiStroke: true, seed: 50 })
-  }, [width])
-  return <canvas ref={ref} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
-}
-
-function RoughDivider({ width }) {
-  var ref = useRef(null)
-  useEffect(function() {
-    var cvs = ref.current; if (!cvs) return
-    var w = width || 300, h = 3
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = w * dpr; cvs.height = h * dpr
-    cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
-    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    var rc = rough.canvas(cvs)
-    rc.line(8, 1.5, w-8, 1.5, { stroke: '#EAE4DC', strokeWidth: 0.7, roughness: 1.2, bowing: 0.3, disableMultiStroke: true, seed: 55 })
-  }, [width])
-  return <canvas ref={ref} style={{ display: 'block', width: '100%' }} />
+    rc.rectangle(6, 6, w-12, w-12, { stroke: '#C0B8A8', strokeWidth: 1, roughness: 0.6, bowing: 0.5, disableMultiStroke: true, seed: 40, strokeLineDash: [4, 3] })
+    var cx = w/2, cy = (w-12)/2 + 6
+    rc.line(cx, cy-8, cx, cy+8, { stroke: '#B0A898', strokeWidth: 1.4, roughness: 0.4, disableMultiStroke: true, seed: 41 })
+    rc.line(cx-8, cy, cx+8, cy, { stroke: '#B0A898', strokeWidth: 1.4, roughness: 0.4, disableMultiStroke: true, seed: 42 })
+    ctx.fillStyle = '#B0A898'
+    ctx.font = "9px '-apple-system', 'PingFang SC', sans-serif"
+    ctx.textAlign = 'center'
+    ctx.fillText('generate', w/2, w + 2)
+  }, [])
+  return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
 function RoughGenButton({ width, disabled, loading, onClick }) {
   var ref = useRef(null)
-  var w = width || 200, h = 38
+  var w = width || 200, h = 40
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -145,7 +134,7 @@ function RoughGenButton({ width, disabled, loading, onClick }) {
       fill: c, fillStyle: 'solid',
     })
     ctx.fillStyle = '#fff'
-    ctx.font = "600 12px '-apple-system', 'PingFang SC', sans-serif"
+    ctx.font = "600 13px '-apple-system', 'PingFang SC', sans-serif"
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillText(loading ? 'generating...' : 'Generate', w/2, h/2)
   }, [w, disabled, loading])
@@ -156,18 +145,18 @@ function RoughBackButton({ onClick }) {
   var ref = useRef(null)
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
-    var w = 40, h = 20
+    var w = 44, h = 24
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = w * dpr; cvs.height = h * dpr
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.line(4, h/2, 12, h/2-4, { stroke: '#B0A898', strokeWidth: 0.9, roughness: 0.5, disableMultiStroke: true, seed: 70 })
-    rc.line(4, h/2, 12, h/2+4, { stroke: '#B0A898', strokeWidth: 0.9, roughness: 0.5, disableMultiStroke: true, seed: 71 })
+    rc.line(4, h/2, 13, h/2-5, { stroke: '#B0A898', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 70 })
+    rc.line(4, h/2, 13, h/2+5, { stroke: '#B0A898', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 71 })
     ctx.fillStyle = '#B0A898'
     ctx.font = "13px '-apple-system', 'PingFang SC', sans-serif"
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-    ctx.fillText('back', 14, h/2 + 1)
+    ctx.fillText('back', 15, h/2 + 1)
   }, [])
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
@@ -200,7 +189,7 @@ function RoughInput({ value, onChange, placeholder }) {
   useEffect(function() {
     var cvs = borderRef.current; if (!cvs) return
     var w = cvs.parentElement ? cvs.parentElement.clientWidth : 260
-    var h = 40
+    var h = 42
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = w * dpr; cvs.height = h * dpr
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
@@ -214,13 +203,13 @@ function RoughInput({ value, onChange, placeholder }) {
   }, [])
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
+      <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', width: '100%' }} />
       <input type="text" value={value} onChange={onChange} placeholder={placeholder}
         style={{
           position: 'relative', width: '100%', padding: '10px 14px',
           border: 'none', background: 'transparent', fontSize: 13,
           fontFamily: 'inherit', color: '#5A4A38', outline: 'none',
-          boxSizing: 'border-box', height: 40,
+          boxSizing: 'border-box', height: 42,
         }} />
     </div>
   )
@@ -256,6 +245,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
     }
   }, [open])
 
+  /* Draw stamp thumbnail — EXISTING STAMPS UNTOUCHED */
   var drawStamp = useCallback(function(canvas, type, color) {
     if (!canvas || !recipes || !recipes[type]) return
     var ctx = canvas.getContext('2d')
@@ -271,6 +261,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
     recipes[type](rc, ctx, size/2, size/2, size/80, color || '#A09080')
   }, [recipes])
 
+  /* Draw floating drag ghost */
   useEffect(function() {
     if (!dragging || !dragCanvasRef.current || !recipes) return
     var canvas = dragCanvasRef.current
@@ -289,6 +280,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
     }
   }, [dragging, recipes])
 
+  /* Close on click outside */
   useEffect(function() {
     if (!open) return
     function handleClick(e) {
@@ -300,6 +292,7 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
     return function() { clearTimeout(timer); document.removeEventListener('click', handleClick) }
   }, [open, onClose])
 
+  /* Drag handlers */
   function startDrag(e, type) {
     e.preventDefault()
     var touch = e.touches ? e.touches[0] : e
@@ -352,24 +345,24 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
         overflow: 'hidden',
       }} onClick={function(e) { e.stopPropagation() }}>
 
-        <RoughPanelBorder width={panelWidth} />
-
-        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px 4px', justifyContent: 'center', position: 'relative' }}>
+        {/* Header: rough drag handle + rough close */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px 6px', justifyContent: 'center', position: 'relative' }}>
           <RoughHandle width={40} />
-          <div style={{ position: 'absolute', right: 12, top: 6 }}>
-            <RoughClose size={28} onClick={onClose} />
+          <div style={{ position: 'absolute', right: 10, top: 8 }}>
+            <RoughClose size={32} onClick={generatorOpen ? function() { setGeneratorOpen(false) } : onClose} />
           </div>
         </div>
 
         {!generatorOpen ? (
           <>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 0, paddingBottom: 0 }}>
+            {/* Tabs — rough underlines, no extra borders/lines */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '0 8px 4px' }}>
               {cats.map(function(entry) {
                 var key = entry[0], cat = entry[1]
                 return (
                   <div key={key} onClick={function() { setActiveTab(key) }} style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    padding: '8px 16px 2px', cursor: 'pointer',
+                    padding: '6px 16px 0', cursor: 'pointer',
                   }}>
                     <span style={{
                       fontSize: 12, letterSpacing: 1,
@@ -377,20 +370,20 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
                       fontWeight: activeTab === key ? 600 : 400,
                       fontFamily: 'inherit',
                     }}>{cat.label}</span>
-                    <RoughTabLine width={50} active={activeTab === key} />
+                    <RoughTabUnderline width={50} active={activeTab === key} />
                   </div>
                 )
               })}
-              <div style={{ display: 'flex', alignItems: 'center', padding: '8px 8px 2px', cursor: 'pointer' }}>
-                <span style={{ fontSize: 14, color: '#C0B8A8' }}>+</span>
+              {/* Bigger + button for adding category */}
+              <div style={{ padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+                <RoughPlusTab onClick={function() {/* TODO */}} />
               </div>
             </div>
 
-            <RoughDivider width={panelWidth} />
-
+            {/* Grid — no divider lines, just spacing */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 4, padding: '12px 16px',
+              gap: 4, padding: '8px 16px',
               flex: 1, overflowY: 'auto', alignContent: 'start',
             }}>
               {currentItems.map(function(item) {
@@ -410,20 +403,20 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
                   </div>
                 )
               })}
-              <div onClick={function() { setGeneratorOpen(true) }} style={{
+              {/* Rough.js generate button — bigger */}
+              <div style={{
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 padding: '4px', cursor: 'pointer', minHeight: 72,
               }}>
-                <RoughAddButton size={52} label="generate" />
+                <RoughAddStamp onClick={function() { setGeneratorOpen(true) }} />
               </div>
             </div>
           </>
         ) : (
           <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ marginBottom: 12 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#5A4A38' }}>Generate Stamp</span>
-              <RoughBackButton onClick={function() { setGeneratorOpen(false) }} />
             </div>
             <RoughPreviewBox size={120} />
             <RoughInput

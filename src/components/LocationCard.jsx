@@ -111,9 +111,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     var rc = rough.canvas(cvs)
     var c = weatherColor || '#8A7A68'
     drawBorder(rc, weatherType || 'sun', c)
-    // Close X
-    rc.line(CW-M-14,M+10,CW-M-6,M+18,ro({stroke:'#C0B8A8',strokeWidth:0.7}))
-    rc.line(CW-M-6,M+10,CW-M-14,M+18,ro({stroke:'#C0B8A8',strokeWidth:0.7}))
+    // Close X removed — tap outside to dismiss
 
   }, [weatherColor, weatherType, location])
 
@@ -232,7 +230,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             {loc.errands > 0 && <div style={{fontSize:9,color:'#B8B0A0',marginTop:2}}>{loc.errands + ' errands'}</div>}
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
-            <div onClick={onClose} style={{width:24,height:16,cursor:'pointer'}} />
+            
             <canvas ref={stampRef} style={{width:44,height:44}} />
           </div>
         </div>
