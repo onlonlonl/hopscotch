@@ -60,6 +60,97 @@ function drawHarvestBtn(cvs, w) {
   ctx.fillText('Harvest', w / 2, H / 2 + 1)
 }
 
+
+/* draw Rough.js icon for each growth stage */
+function drawStageIcon(rc, ctx, stage, cx, cy, s, stemC, leafC, flowerC, ro) {
+  var sw = 1.2
+  if (stage === 0) {
+    /* Seed: small oval in soil */
+    rc.ellipse(cx, cy + 2 * s, 8 * s, 6 * s, {
+      stroke: '#8B6C52', strokeWidth: sw, fill: '#A8896A', fillStyle: 'solid', ...ro
+    })
+    /* seed dot */
+    rc.circle(cx, cy + 2 * s, 3 * s, {
+      stroke: '#6A5040', strokeWidth: 0.8, fill: '#6A5040', fillStyle: 'solid', ...ro, seed: ro.seed + 10
+    })
+  } else if (stage === 1) {
+    /* Sprout: short stem + tiny leaf */
+    rc.line(cx, cy + 8 * s, cx, cy - 2 * s, { stroke: stemC, strokeWidth: sw, ...ro })
+    rc.ellipse(cx + 3 * s, cy - 2 * s, 5 * s, 3 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 10
+    })
+  } else if (stage === 2) {
+    /* Seedling: taller stem + two leaves */
+    rc.line(cx, cy + 8 * s, cx, cy - 6 * s, { stroke: stemC, strokeWidth: sw, ...ro })
+    rc.ellipse(cx - 5 * s, cy, 6 * s, 3 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 10
+    })
+    rc.ellipse(cx + 5 * s, cy - 4 * s, 6 * s, 3 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 11
+    })
+  } else if (stage === 3) {
+    /* Growth: tall stem + three leaves + thicker */
+    rc.line(cx, cy + 8 * s, cx, cy - 10 * s, { stroke: stemC, strokeWidth: 1.6, ...ro })
+    rc.ellipse(cx - 6 * s, cy + 2 * s, 7 * s, 3.5 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 10
+    })
+    rc.ellipse(cx + 6 * s, cy - 3 * s, 7 * s, 3.5 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 11
+    })
+    rc.ellipse(cx - 4 * s, cy - 7 * s, 5 * s, 3 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 12
+    })
+  } else if (stage === 4) {
+    /* Bloom: stem + leaves + flower bud */
+    rc.line(cx, cy + 8 * s, cx, cy - 10 * s, { stroke: stemC, strokeWidth: 1.6, ...ro })
+    rc.ellipse(cx - 6 * s, cy + 1 * s, 6 * s, 3 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 10
+    })
+    rc.ellipse(cx + 6 * s, cy - 3 * s, 6 * s, 3 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 11
+    })
+    /* flower */
+    rc.circle(cx, cy - 12 * s, 7 * s, {
+      stroke: flowerC, strokeWidth: 1.2, fill: flowerC, fillStyle: 'solid', ...ro, seed: ro.seed + 13
+    })
+    for (var p = 0; p < 5; p++) {
+      var pa = (p / 5) * Math.PI * 2 - Math.PI / 2
+      rc.circle(cx + Math.cos(pa) * 5 * s, cy - 12 * s + Math.sin(pa) * 5 * s, 4 * s, {
+        stroke: '#E8A87C', strokeWidth: 0.6, fill: '#E8A87C', fillStyle: 'solid',
+        roughness: 0.4, disableMultiStroke: true, seed: ro.seed + 20 + p
+      })
+    }
+    rc.circle(cx, cy - 12 * s, 4 * s, {
+      stroke: flowerC, strokeWidth: 0.8, fill: flowerC, fillStyle: 'solid', ...ro, seed: ro.seed + 14
+    })
+  } else {
+    /* Full: big bloom + fruit dots */
+    rc.line(cx, cy + 8 * s, cx, cy - 10 * s, { stroke: stemC, strokeWidth: 1.8, ...ro })
+    rc.ellipse(cx - 7 * s, cy + 1 * s, 7 * s, 3.5 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 10
+    })
+    rc.ellipse(cx + 7 * s, cy - 3 * s, 7 * s, 3.5 * s, {
+      stroke: leafC, strokeWidth: 0.8, fill: leafC, fillStyle: 'solid', ...ro, seed: ro.seed + 11
+    })
+    /* big flower */
+    for (var q = 0; q < 6; q++) {
+      var qa = (q / 6) * Math.PI * 2 - Math.PI / 2
+      rc.circle(cx + Math.cos(qa) * 6 * s, cy - 12 * s + Math.sin(qa) * 6 * s, 5 * s, {
+        stroke: '#D0A0A0', strokeWidth: 0.8, fill: '#D0A0A0', fillStyle: 'solid',
+        roughness: 0.4, disableMultiStroke: true, seed: ro.seed + 20 + q
+      })
+    }
+    rc.circle(cx, cy - 12 * s, 5 * s, {
+      stroke: flowerC, strokeWidth: 1, fill: flowerC, fillStyle: 'solid', ...ro, seed: ro.seed + 14
+    })
+    /* fruit */
+    rc.circle(cx + 8 * s, cy - 6 * s, 3 * s, {
+      stroke: '#D87860', strokeWidth: 0.8, fill: '#D87860', fillStyle: 'solid',
+      roughness: 0.3, disableMultiStroke: true, seed: ro.seed + 30
+    })
+  }
+}
+
 /* draw the 3x2 grid on a canvas */
 function drawGrid(cvs, garden, score, w, h) {
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -87,20 +178,15 @@ function drawGrid(cvs, garden, score, w, h) {
           disableMultiStroke: true, seed: 600 + idx
         })
 
-        /* stamp visual */
-        var scx = x + cellW / 2, scy = y + cellH / 2 - 6
-        var stampR = Math.min(cellW, cellH) * 0.28
-        var stampColor = idx === score.stage ? '#6AAF5C' : '#C4A6D0'
-        rc.circle(scx, scy, stampR * 2, {
-          stroke: stampColor, strokeWidth: 1.8, roughness: 0.8,
-          disableMultiStroke: true, seed: 650 + idx
-        })
-        ctx.fillStyle = stampColor
-        ctx.font = Math.round(stampR * 0.8) + "px " + FONT
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        var icons = ['\u{1F331}', '\u{1F33F}', '\u{1FAB4}', '\u{1F333}', '\u{1F33C}', '\u{1F33B}']
-        ctx.fillText(icons[idx] || '\u2713', scx, scy + 1)
+        /* stamp visual — Rough.js icons */
+        var scx = x + cellW / 2, scy = y + cellH / 2 - 4
+        var ss = Math.min(cellW, cellH) / 88
+        var active = idx === score.stage
+        var sc1 = active ? '#6AAF5C' : '#9BB89C'
+        var sc2 = active ? '#4AAF5C' : '#A8B89A'
+        var sc3 = active ? '#ECC44E' : '#D4B896'
+        var sro = { roughness: 0.6, disableMultiStroke: true, seed: 650 + idx }
+        drawStageIcon(rc, ctx, idx, scx, scy, ss, sc1, sc2, sc3, sro)
       } else {
         /* dashed frame */
         ctx.setLineDash(LOCKED_DASH)
