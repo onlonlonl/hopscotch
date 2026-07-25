@@ -27,7 +27,7 @@ const stampLabels = {
 
 /* draw the 3 dimension tab icons on a canvas */
 function drawTabs(cvs, active) {
-  var IW = 44, IH = 44, GAP = 8, TH = IH * 3 + GAP * 2
+  var IW = 32, IH = 32, GAP = 6, TH = IH * 3 + GAP * 2
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
   cvs.width = IW * dpr; cvs.height = TH * dpr
   cvs.style.width = IW + 'px'; cvs.style.height = TH + 'px'
@@ -44,21 +44,21 @@ function drawTabs(cvs, active) {
 
     if (i === 0) {
       /* Ink: small rectangle frame with a dot */
-      rc.rectangle(cx - 11, cy - 8, 22, 16, { stroke: sc, strokeWidth: sw, ...ro, seed: 10 })
+      rc.rectangle(cx - 8, cy - 6, 16, 12, { stroke: sc, strokeWidth: sw, ...ro, seed: 10 })
       ctx.fillStyle = sc; ctx.globalAlpha = ac ? 1 : 0.5
-      ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill()
       ctx.globalAlpha = 1
     } else if (i === 1) {
       /* Thread: infinity/lemniscate */
       ctx.strokeStyle = sc; ctx.lineWidth = sw; ctx.globalAlpha = ac ? 1 : 0.6
       ctx.beginPath()
-      for (var t = 0; t <= 60; t++) { var a = t / 60 * Math.PI * 2, s = Math.sin(a), c2 = Math.cos(a), d = 1 + s * s; var px = cx + 14 * c2 / d, py = cy + 8 * s * c2 / d; t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py) }
+      for (var t = 0; t <= 60; t++) { var a = t / 60 * Math.PI * 2, s = Math.sin(a), c2 = Math.cos(a), d = 1 + s * s; var px = cx + 10 * c2 / d, py = cy + 6 * s * c2 / d; t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py) }
       ctx.stroke(); ctx.globalAlpha = 1
     } else {
       /* Compass: circle + crosshairs */
-      rc.circle(cx, cy, 24, { stroke: sc, strokeWidth: sw, ...ro, seed: 30 })
-      rc.line(cx, cy - 7, cx, cy + 7, { stroke: sc, strokeWidth: sw * 0.7, ...ro, seed: 31 })
-      rc.line(cx - 7, cy, cx + 7, cy, { stroke: sc, strokeWidth: sw * 0.7, ...ro, seed: 32 })
+      rc.circle(cx, cy, 18, { stroke: sc, strokeWidth: sw, ...ro, seed: 30 })
+      rc.line(cx, cy - 5, cx, cy + 5, { stroke: sc, strokeWidth: sw * 0.7, ...ro, seed: 31 })
+      rc.line(cx - 5, cy, cx + 5, cy, { stroke: sc, strokeWidth: sw * 0.7, ...ro, seed: 32 })
     }
   }
 }
@@ -131,7 +131,7 @@ export default function App() {
   const handleTabClick = useCallback((e) => {
     var rect = tabRef.current.getBoundingClientRect()
     var y = e.clientY - rect.top
-    var IH = 44, GAP = 8
+    var IH = 32, GAP = 6
     var idx = Math.floor(y / (IH + GAP))
     if (idx < 0) idx = 0; if (idx > 2) idx = 2
     if (idx !== dimIndex && !flipping) {
