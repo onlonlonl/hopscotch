@@ -338,7 +338,7 @@ function CardsPanel({ open, onClose, locations, onFocus, setLocations, cityName 
               <div onClick={async function(){
                 if(!poiInput.trim()||!isConnected()||poiSearching) return
                 setPoiSearching(true)
-                await supaPost('service_requests',{service:'amap',action:'poi',params:JSON.stringify({keywords:poiInput.trim(),city:cityName||''})})
+                await supaPost('service_requests',{service:'amap',action:'poi',params:{keywords:poiInput.trim(),city:cityName||''}})
                 await new Promise(function(r){setTimeout(r,800)})
                 var rows = await supaGet('service_requests','service=eq.amap&action=eq.poi&order=id.desc&limit=1')
                 setPoiSearching(false)
