@@ -67,7 +67,7 @@ export default function CompassView({ locations }) {
     if (!containerRef.current || mapRef.current) return
     var map = L.map(containerRef.current, {
       center: [30.27, 120.15],
-      zoom: 12,
+      zoom: 10,
       zoomControl: false,
       attributionControl: false,
     })

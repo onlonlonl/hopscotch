@@ -19,8 +19,7 @@ body {
 
 /* Leaflet: warm muted tiles */
 .leaflet-tile-pane {
-  filter: brightness(1.06) contrast(0.92);
-  opacity: 0.82;
+  opacity: 0.78;
 }
 
 /* Leaflet: remove default marker styles */
