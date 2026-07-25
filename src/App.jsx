@@ -179,7 +179,7 @@ function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCit
     var rc = rough.canvas(cvs)
     rc.rectangle(3, 3, W - 6, H - 6, {
       stroke: 'rgba(255,255,255,0.7)', strokeWidth: 1.8,
-      fill: '#E0E8F0', fillStyle: 'solid',
+      fill: '#FFFFFF', fillStyle: 'solid',
       roughness: 0.5, bowing: 0.6, disableMultiStroke: true, seed: 200
     })
     rc.line(16, 138, W - 16, 138, { stroke: 'rgba(255,255,255,0.5)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 201 })
@@ -195,13 +195,13 @@ function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCit
     flex: 1, minWidth: 0, boxSizing: 'border-box',
     padding: '7px 10px', fontSize: 13,
     border: '1.5px solid rgba(255,255,255,0.7)',
-    background: 'rgba(255,255,255,0.4)', color: '#5A6A7A',
+    background: 'rgba(224,232,240,0.4)', color: '#5A6A7A',
     outline: 'none', fontFamily: font,
   }
   var btnS = {
     padding: '7px 14px', fontSize: 12,
     border: '1.5px solid rgba(255,255,255,0.7)',
-    background: 'rgba(255,255,255,0.35)', color: '#5A6A7A',
+    background: 'rgba(224,232,240,0.35)', color: '#5A6A7A',
     cursor: 'pointer', fontFamily: font,
   }
 
@@ -249,6 +249,68 @@ function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCit
 }
 
 
+
+function CardsPanel({ open, onClose, locations, onFocus }) {
+  var borderRef = useRef(null)
+  useEffect(function() {
+    if (!open || !borderRef.current) return
+    var cvs = borderRef.current, W = 240, H = 380
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = W * dpr; cvs.height = H * dpr
+    cvs.style.width = W + 'px'; cvs.style.height = H + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    rc.rectangle(3, 3, W - 6, H - 6, {
+      stroke: 'rgba(200,200,200,0.6)', strokeWidth: 1.8,
+      fill: '#FFFFFF', fillStyle: 'solid',
+      roughness: 0.5, bowing: 0.6, disableMultiStroke: true, seed: 300
+    })
+  }, [open])
+  if (!open) return null
+  var font = "-apple-system, 'PingFang SC', sans-serif"
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
+      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 240, height: 380 }}>
+        <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
+        <div style={{ position: 'relative', padding: '16px 18px', zIndex: 1, height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: 14, color: '#6A7A8A', letterSpacing: 3, fontFamily: font, marginBottom: 14 }}>
+            Places
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+            {locations.map(function(loc) {
+              return (
+                <div key={loc.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 10px', marginBottom: 6,
+                  background: '#FAFBFC', borderRadius: 6,
+                  border: '1px solid rgba(200,210,220,0.5)',
+                }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 4, background: loc.color, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: loc.color, fontFamily: font, lineHeight: 1.4 }}>
+                      {loc.display_name || loc.label}
+                    </div>
+                    {loc.story_name && <div style={{ fontSize: 11, color: '#8A9AAA', fontFamily: font, lineHeight: 1.3 }}>{loc.story_name}</div>}
+                    {loc.label !== (loc.display_name || loc.label) && <div style={{ fontSize: 10, color: '#B0BAC4', fontFamily: font }}>{loc.label}</div>}
+                  </div>
+                  {loc.errands > 0 && <div style={{ fontSize: 10, color: '#B0BAC4', fontFamily: font, flexShrink: 0 }}>{loc.errands}x</div>}
+                  {loc.lat != null && <div onClick={function(e) { e.stopPropagation(); onFocus(loc) }}
+                    style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, color: '#2E94B9', cursor: 'pointer', flexShrink: 0, borderRadius: 4,
+                      border: '1px solid rgba(46,148,185,0.3)' }}>
+                    ◎
+                  </div>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function App() {
   const [view, setView] = useState('home')
   const [expanding, setExpanding] = useState(false)
@@ -259,6 +321,7 @@ export default function App() {
   const [dimIndex, setDimIndex] = useState(0)
   const [flipping, setFlipping] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [cardsOpen, setCardsOpen] = useState(false)
   const [cityInput, setCityInput] = useState('')
   const [cityName, setCityName] = useState('Hangzhou')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
@@ -311,7 +374,8 @@ export default function App() {
   function onZoneTouchStart(e) {
     var t = e.touches[0], z = findZone(t.clientX, t.clientY)
     if (!z) return
-    longPressRef.current = setTimeout(function () { setDragFrom(z) }, 500)
+    var startEvt = e
+    longPressRef.current = setTimeout(function () { setDragFrom(z); try { startEvt.preventDefault() } catch(ex){} }, 500)
   }
   function onZoneTouchMove(e) {
     if (!dragFrom) { clearTimeout(longPressRef.current); return }
@@ -394,8 +458,9 @@ export default function App() {
         opacity: expanding ? 0 : 1,
         transform: expanding ? 'scale(1.1)' : 'scale(1)',
         transition: 'opacity 0.35s ease, transform 0.35s ease',
+        WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none',
       }}
-      onTouchStart={onZoneTouchStart} onTouchMove={onZoneTouchMove} onTouchEnd={onZoneTouchEnd}>
+      onTouchStart={onZoneTouchStart} onContextMenu={function(e){e.preventDefault()}} onTouchMove={onZoneTouchMove} onTouchEnd={onZoneTouchEnd}>
         <HopscotchCanvas onZoneTap={handleZoneTap} />
         {weatherCellRect && <WeatherCell cellRect={weatherCellRect} />}
         {dragFrom && zoneNames.map(function (zn) {
@@ -430,13 +495,15 @@ export default function App() {
             setCityInput('')
             setSettingsOpen(false)
           }} />
+        <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations}
+          onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
-            onClick={() => setSettingsOpen(!settingsOpen)} style={{ cursor: 'pointer' }} />
+            onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
           <canvas ref={el => { if (el && !el._drawn) { drawBrush(el); el._drawn = true } }}
             onClick={() => console.log('workshop')} style={{ cursor: 'pointer' }} />
           <canvas ref={el => { if (el && !el._drawn) { drawCards(el); el._drawn = true } }}
-            onClick={() => console.log('cards')} style={{ cursor: 'pointer' }} />
+            onClick={() => { setCardsOpen(!cardsOpen); setSettingsOpen(false) }} style={{ cursor: 'pointer' }} />
         </div>
       </div>
     )
