@@ -13,12 +13,13 @@ html, body, #root {
 }
 
 body {
-  background: #E0E8F0;
+  background: #FAF6F0;
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Leaflet: warm muted tiles */
 .leaflet-tile-pane {
-  filter: saturate(0.25) brightness(1.06) sepia(0.12);
+  filter: saturate(0.35) brightness(1.1) sepia(0.08);
 }
 
 /* Leaflet: remove default marker styles */

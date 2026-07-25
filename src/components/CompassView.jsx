@@ -66,14 +66,14 @@ export default function CompassView({ locations }) {
   useEffect(function() {
     if (!containerRef.current || mapRef.current) return
     var map = L.map(containerRef.current, {
-      center: [22.55, 114.05],
+      center: [30.27, 120.15],
       zoom: 12,
       zoomControl: false,
       attributionControl: false,
     })
     mapRef.current = map
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
       maxZoom: 19, subdomains: 'abcd',
     }).addTo(map)
 
