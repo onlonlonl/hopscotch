@@ -15,3 +15,19 @@ html, body, #root {
 body {
   background: #E0E8F0;
 }
+
+/* Leaflet: warm muted tiles */
+.leaflet-tile-pane {
+  filter: saturate(0.25) brightness(1.06) sepia(0.12);
+}
+
+/* Leaflet: remove default marker styles */
+.hopscotch-marker {
+  background: none !important;
+  border: none !important;
+}
+
+/* Leaflet: hide zoom control + attribution if somehow shown */
+.leaflet-control-zoom, .leaflet-control-attribution {
+  display: none !important;
+}

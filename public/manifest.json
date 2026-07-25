@@ -1,0 +1,12 @@
+{
+  "name": "Hopscotch",
+  "short_name": "Hopscotch",
+  "start_url": "/hopscotch/",
+  "display": "standalone",
+  "background_color": "#FAF6F0",
+  "theme_color": "#FAF6F0",
+  "icons": [
+    { "src": "/hopscotch/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/hopscotch/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
