@@ -120,11 +120,7 @@ function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIO
       ctx.textAlign = 'center'
       ctx.fillText(loc.display_name || loc.label, pos[0], pos[1] + 18 * s)
 
-      if (loc.errands > 0) {
-        ctx.fillStyle = 'rgba(160, 150, 140, 0.4)'
-        ctx.font = (7 * s) + "px '-apple-system', 'PingFang SC', sans-serif"
-        ctx.fillText(loc.errands + '×', pos[0], pos[1] + 26 * s)
-      }
+
     }
 
     ctx.restore()
