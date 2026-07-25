@@ -40,9 +40,9 @@ function prerenderIcon(loc, idx) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
   /* solid cream circle with soft shadow */
-  ctx.shadowColor = 'rgba(80,60,40,0.18)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2
-  ctx.fillStyle = '#FAF6F0'; ctx.beginPath(); ctx.arc(sz/2, sz/2, sz/2-pad, 0, Math.PI*2); ctx.fill()
-  ctx.shadowColor = 'transparent'
+  /* no shadow */
+  ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(sz/2, sz/2, sz/2-pad, 0, Math.PI*2); ctx.fill()
+  /* clean */
 
   /* rough border */
   var rc = rough.canvas(cvs)
@@ -126,7 +126,7 @@ export default function CompassView({ locations }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#DDE6EE' }} />
       {selected && cardPos && (
         <div onClick={function(e) { e.stopPropagation() }} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1000, pointerEvents: 'none' }}>
           <div style={{ pointerEvents: 'auto' }}>
