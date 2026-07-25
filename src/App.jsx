@@ -166,6 +166,150 @@ function drawInkBrush(cvs) {
 }
 
 /* === Settings Panel === */
+function SettingsPanel({ open, onClose, cityName, onCityChange }) {
+  var borderRef = useRef(null)
+  var [input, setInput] = useState('')
+  var [results, setResults] = useState([])
+  var [searching, setSearching] = useState(false)
+
+  useEffect(function() {
+    if (!open) { setInput(''); setResults([]); setSearching(false) }
+  }, [open])
+
+  useEffect(function() {
+    if (!open || !borderRef.current) return
+    var cvs = borderRef.current
+    var W = 224, H = 360
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = W * dpr; cvs.height = H * dpr
+    cvs.style.width = W + 'px'; cvs.style.height = H + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    rc.rectangle(3, 3, W - 6, H - 6, {
+      stroke: 'rgba(46,148,185,0.3)', strokeWidth: 1.8,
+      fill: '#FFFFFF', fillStyle: 'solid',
+      roughness: 0.5, bowing: 0.6, disableMultiStroke: true, seed: 200
+    })
+  }, [open, results])
+
+  async function doSearch() {
+    if (!input.trim() || !isConnected() || searching) return
+    setSearching(true)
+    setResults([])
+    await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: input.trim() } })
+    await new Promise(function(r) { setTimeout(r, 1500) })
+    var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
+    setSearching(false)
+    if (rows && rows[0] && rows[0].result) {
+      try {
+        var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
+        if (res.results) setResults(res.results)
+      } catch(e) {}
+    }
+  }
+
+  async function pickCity(r) {
+    if (!r.location) return
+    var loc = r.location.split(',')
+    var lng = parseFloat(loc[0]), lat = parseFloat(loc[1])
+    var name = r.city || r.formatted_address || input.trim()
+    await supaPatch('settings', 'key=eq.hopscotch_city', { value: JSON.stringify({ name: name, lat: lat, lng: lng }) })
+    onCityChange(name, lat, lng)
+    onClose()
+  }
+
+  if (!open) return null
+
+  var font = "-apple-system, 'PingFang SC', sans-serif"
+  var label = { fontSize: 11, color: '#8A9AAA', letterSpacing: 1, fontFamily: font, marginBottom: 8 }
+  var txt = { fontSize: 12, color: '#6A7A8A', fontFamily: font, lineHeight: 1.6 }
+  var inputS = {
+    flex: 1, minWidth: 0, boxSizing: 'border-box',
+    padding: '7px 10px', fontSize: 13,
+    border: '1.5px solid rgba(46,148,185,0.25)',
+    background: 'rgba(240,244,248,0.6)', color: '#5A6A7A',
+    outline: 'none', fontFamily: font,
+  }
+  var btnS = {
+    padding: '7px 14px', fontSize: 12,
+    border: '1.5px solid rgba(46,148,185,0.25)',
+    background: 'rgba(240,244,248,0.5)', color: '#5A6A7A',
+    cursor: 'pointer', fontFamily: font,
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
+      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 360 }}>
+        <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
+        <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1 }}>
+
+          <div style={{ fontSize: 14, color: '#6A7A8A', letterSpacing: 3, fontFamily: font, marginBottom: 20 }}>
+            Settings
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={label}>{'City \u00b7 ' + cityName}</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={input} onChange={function(e) { setInput(e.target.value) }}
+                placeholder="city name" style={inputS} />
+              <button onClick={doSearch} style={btnS}>{searching ? '...' : 'GO'}</button>
+            </div>
+            {results.length > 0 && <div style={{ marginTop: 6 }}>
+              {results.map(function(r, i) {
+                return <div key={i} onClick={function() { pickCity(r) }}
+                  style={{ padding: '6px 4px', fontSize: 12, color: '#5A6A7A', fontFamily: font,
+                    cursor: 'pointer', borderBottom: '1px solid rgba(200,210,220,0.3)' }}>
+                  {r.formatted_address || r.city}
+                </div>
+              })}
+            </div>}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={label}>Cache</div>
+            <button onClick={function() {
+              if ('caches' in window) caches.keys().then(function(n) { n.forEach(function(k) { caches.delete(k) }) })
+              if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function(r) { r.forEach(function(s) { s.unregister() }) })
+              setTimeout(function() { window.location.reload() }, 300)
+            }} style={{ ...btnS, width: '100%', padding: '8px 0' }}>Clear & Reload</button>
+          </div>
+
+          <div>
+            <div style={label}>About</div>
+            <div style={txt}>Hopscotch v0.1</div>
+            <div style={{ ...txt, fontSize: 11, color: '#9AAABB', marginTop: 2 }}>
+              A living handbook.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  )
+}
+/* Ink view: blue filled brush button */
+function drawInkBrush(cvs) {
+  var S = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+  cvs.width = S * dpr; cvs.height = S * dpr
+  cvs.style.width = S + 'px'; cvs.style.height = S + 'px'
+  var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  var rc = rough.canvas(cvs)
+  /* blue filled rounded frame */
+  rc.rectangle(2, 2, S - 4, S - 4, {
+    stroke: '#2E94B9', strokeWidth: 1.5, fill: '#2E94B9', fillStyle: 'solid',
+    roughness: 0.5, bowing: 0.8, disableMultiStroke: true, seed: 100
+  })
+  var c = 'rgba(255,255,255,0.95)'
+  /* pencil glyph */
+  ctx.fillStyle = c
+  ctx.font = '24px serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('✎', S / 2, S / 2 + 1)
+}
+
+/* === Settings Panel === */
 function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCityConfirm, cityLoading }) {
   var borderRef = useRef(null)
 
@@ -262,10 +406,8 @@ export default function App() {
   const [flipping, setFlipping] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [cardsOpen, setCardsOpen] = useState(false)
-  const [cityInput, setCityInput] = useState('')
-  const [cityName, setCityName] = useState('Hangzhou')
+    const [cityName, setCityName] = useState('Hangzhou')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
-  const [cityLoading, setCityLoading] = useState(false)
 
   useEffect(function() {
     if (!isConnected()) return
@@ -411,30 +553,8 @@ export default function App() {
             borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' }} />
         })}
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
-          cityName={cityName} cityInput={cityInput} setCityInput={setCityInput} cityLoading={cityLoading}
-          onCityConfirm={async () => {
-            if (!cityInput.trim() || !isConnected()) return
-            setCityLoading(true)
-            try {
-              await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: cityInput.trim() } })
-              await new Promise(r => setTimeout(r, 1500))
-              var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
-              if (rows && rows[0] && rows[0].result) {
-                var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
-                if (res.results && res.results[0] && res.results[0].location) {
-                  var loc = res.results[0].location.split(',')
-                  var lng = parseFloat(loc[0]), lat = parseFloat(loc[1])
-                  var name = cityInput.trim()
-                  setCityName(name)
-                  setCityCenter([lat, lng])
-                  await supaPatch('settings', 'key=eq.hopscotch_city', { value: JSON.stringify({ name: name, lat: lat, lng: lng }) })
-                  setCityInput('')
-                  setSettingsOpen(false)
-                }
-              }
-            } catch(e) { console.error('geocode error', e) }
-            setCityLoading(false)
-          }} />
+          cityName={cityName}
+          onCityChange={function(name, lat, lng) { setCityName(name); setCityCenter([lat, lng]) }} />
         <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations} setLocations={setLocations} cityName={cityName}
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
