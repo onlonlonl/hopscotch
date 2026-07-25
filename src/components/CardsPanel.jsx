@@ -55,7 +55,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
   /* --- edit state --- */
   var [editId, setEditId] = useState(null)
-  var [editFields, setEditFields] = useState({ display_name: '', story_name: '', label: '' })
+  var [editFields, setEditFields] = useState({ ink_name: '', label: '' })
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -134,8 +134,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
           } else {
             setEditId(ref.id)
             setEditFields({
-              display_name: loc.display_name || '',
-              story_name: loc.story_name || '',
+              ink_name: loc.ink_name || '',
+              
               label: loc.label || '',
             })
             cardRefs.current = {}
@@ -163,8 +163,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
   async function handleSaveEdit(locId) {
     var patch = {
-      display_name: editFields.display_name || null,
-      story_name: editFields.story_name || null,
+      ink_name: editFields.ink_name || null,
+      
       label: editFields.label,
     }
     if (isConnected()) {
@@ -231,7 +231,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   label: poi.name, name: poi.name, city: poi.cityname || cityName || '',
                   address: poi.address || '', lng: loc[0], lat: loc[1],
                   category: poi.type ? poi.type.split(';')[0] : '',
-                  display_name: null, story_name: null, story: null, lux_note: null,
+                  ink_name: null, story: null, lux_note: null,
                   color: '#E8A87C', weather: 'clear', icon_type: 'house',
                   lux_x: 0, lux_y: 0, inf_t: 0, inf_w: 0,
                 }
@@ -278,10 +278,10 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', height: CARD_H, boxSizing: 'border-box' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: loc.color, fontFamily: FONT, lineHeight: 1.3 }}>
-                          {loc.display_name || <span style={{ color: '#C8D0D8', fontStyle: 'italic', fontWeight: 400 }}>{loc.label}</span>}
+                          {loc.ink_name || <span style={{ color: '#C8D0D8', fontStyle: 'italic', fontWeight: 400 }}>{loc.label}</span>}
                         </div>
                         <div style={{ fontSize: 10, color: '#9AAAB8', fontFamily: FONT, lineHeight: 1.3 }}>
-                          {[loc.story_name, loc.label !== (loc.display_name || loc.label) ? loc.label : null].filter(Boolean).join(' · ')}
+                          {loc.ink_name && loc.ink_name !== loc.label ? loc.label : ""}
                         </div>
                         {loc.errands > 0 && <div style={{ fontSize: 9, color: '#B0BAC4', fontFamily: FONT }}>{loc.errands} errands</div>}
                       </div>
@@ -295,13 +295,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                       <div style={{ padding: '4px 10px 8px', background: '#FAFCFE' }}>
                         <div style={{ marginBottom: 5 }}>
                           <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Display Name</div>
-                          <input value={editFields.display_name} onChange={function (e) { setEditFields(function (p) { return { ...p, display_name: e.target.value } }) }}
+                          <input value={editFields.ink_name} onChange={function (e) { setEditFields(function (p) { return { ...p, ink_name: e.target.value } }) }}
                             placeholder={loc.label} style={inputS} />
-                        </div>
-                        <div style={{ marginBottom: 5 }}>
-                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Story Name</div>
-                          <input value={editFields.story_name} onChange={function (e) { setEditFields(function (p) { return { ...p, story_name: e.target.value } }) }}
-                            placeholder="a secret name" style={inputS} />
                         </div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                           <div onClick={function () { setEditId(null); cardRefs.current = {} }}

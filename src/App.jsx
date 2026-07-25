@@ -15,9 +15,9 @@ import { initSupabase } from './lib/supabase'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
 
 const INITIAL = [
-  { id: 'home', label: '\u5bb6', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9, lat: 30.33, lng: 120.06, weather: 'warm', story_name: 'Honey Jar', display_name: 'Home', inf_t: 0.127, inf_w: 0.94, story: 'The place where mornings start slow and the light is always golden.' },
-  { id: 'office', label: '\u65b0\u516c\u53f8', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5, lat: 30.30, lng: 120.04, weather: 'cloudy', story_name: 'The Hive', display_name: 'Office', inf_t: 0.456, inf_w: 0.52, story: 'Busy bees. Coffee machine hums at 2pm.' },
-  { id: 'metro', label: '\u5730\u9435\u7ad9', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3, lat: 30.28, lng: 120.33, weather: 'drizzle', story_name: 'Waiting Room', display_name: 'Metro', inf_t: 0.831, inf_w: 0.33, story: 'Always raining here somehow.' },
+  { id: 'home', label: '\u5bb6', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9, lat: 30.33, lng: 120.06, weather: 'warm', ink_name: 'Home', inf_t: 0.127, inf_w: 0.94, story: 'The place where mornings start slow and the light is always golden.' },
+  { id: 'office', label: '\u65b0\u516c\u53f8', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5, lat: 30.30, lng: 120.04, weather: 'cloudy', ink_name: 'Office', inf_t: 0.456, inf_w: 0.52, story: 'Busy bees. Coffee machine hums at 2pm.' },
+  { id: 'metro', label: '\u5730\u9435\u7ad9', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3, lat: 30.28, lng: 120.33, weather: 'drizzle', ink_name: 'Metro', inf_t: 0.831, inf_w: 0.33, story: 'Always raining here somehow.' },
 ]
 const CONNS = [['home','office'],['home','metro']]
 const nodeColors = ['#E8A87C','#7BA7BC','#9BB89C','#C4A6D0','#D4B896','#B8C4D0','#D0A0A0','#A8B89A']
@@ -358,8 +358,8 @@ export default function App() {
     const { lux_x, lux_y } = mapRef.current.screenToLoc(sx, sy)
     const cLabel = stampLabels[type] || type
     setLocations(prev => [...prev, {
-      id: 'loc_' + Date.now(), label: cLabel, display_name: cLabel,
-      story_name: '', icon_type: type,
+      id: 'loc_' + Date.now(), label: cLabel, ink_name: cLabel,
+      icon_type: type,
       color: nodeColors[locations.length % nodeColors.length],
       lux_x, lux_y, scale: 0.85, errands: 0,
     }])

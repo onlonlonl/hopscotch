@@ -206,8 +206,8 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
 
   if (!location || !position) return null
   var loc = location
-  var storyName = loc.story_name || loc.label || ''
-  var displayName = loc.display_name || loc.label || ''
+  var inkName = loc.ink_name || loc.label || ''
+  
   var story = loc.story || ''
   var hasInf = loc.inf_t != null && loc.inf_w != null
 
@@ -217,9 +217,9 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
           <div style={{flex:1,minWidth:0,paddingRight:4}}>
-            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{storyName}</div>
+            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{inkName}</div>
             <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
-              <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{displayName}</span>
+              <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{loc.label}</span>
               {hasInf && (
                 <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',whiteSpace:'nowrap',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
                   <span style={{marginRight:2}}>∞</span>

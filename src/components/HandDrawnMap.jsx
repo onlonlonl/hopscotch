@@ -7,12 +7,12 @@ import rough from 'roughjs'
 import { recipes } from './IconGallery'
 
 const MOCK_LOCATIONS = [
-  { id: 'home', label: '家', display_name: '家', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9 },
-  { id: 'office-new', label: '新公司', display_name: '公司', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5 },
-  { id: 'metro', label: '地鐵站', display_name: '地鐵站', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3 },
-  { id: 'airport', label: '機場', display_name: '機場', icon_type: 'plane', color: '#B8C4D0', lux_x: 15, lux_y: 20, scale: 0.7, errands: 1 },
-  { id: 'tokyo', label: '東京', display_name: '東京', icon_type: 'torii', color: '#D0A0A0', lux_x: 85, lux_y: 15, scale: 0.8, errands: 0 },
-  { id: 'taiwan', label: '台灣', display_name: '台灣', icon_type: 'lantern', color: '#C4A6D0', lux_x: 80, lux_y: 75, scale: 0.7, errands: 0 },
+  { id: 'home', label: '家', ink_name: '家', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9 },
+  { id: 'office-new', label: '新公司', ink_name: '公司', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5 },
+  { id: 'metro', label: '地鐵站', ink_name: '地鐵站', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3 },
+  { id: 'airport', label: '機場', ink_name: '機場', icon_type: 'plane', color: '#B8C4D0', lux_x: 15, lux_y: 20, scale: 0.7, errands: 1 },
+  { id: 'tokyo', label: '東京', ink_name: '東京', icon_type: 'torii', color: '#D0A0A0', lux_x: 85, lux_y: 15, scale: 0.8, errands: 0 },
+  { id: 'taiwan', label: '台灣', ink_name: '台灣', icon_type: 'lantern', color: '#C4A6D0', lux_x: 80, lux_y: 75, scale: 0.7, errands: 0 },
 ]
 
 const CONNECTIONS = [
@@ -118,7 +118,7 @@ function HandDrawnMapInner({ locations = MOCK_LOCATIONS, connections = CONNECTIO
       ctx.fillStyle = loc.color
       ctx.font = (9 * s) + "px '-apple-system', 'PingFang SC', sans-serif"
       ctx.textAlign = 'center'
-      ctx.fillText(loc.display_name || loc.label, pos[0], pos[1] + 18 * s)
+      ctx.fillText(loc.ink_name || loc.label, pos[0], pos[1] + 18 * s)
 
 
     }

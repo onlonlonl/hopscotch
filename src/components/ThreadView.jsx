@@ -241,7 +241,7 @@ export default function ThreadView({ locations = [], onNodeTap }) {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: PANEL_H, background: bgColor, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(122,92,60,0.06)' }}>
         <div style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 104 }}>
           <div style={{ fontFamily: "-apple-system,'PingFang SC',sans-serif", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: locs[activeIdx] ? locs[activeIdx].color : '#7A5C3C', transition: 'color 0.2s ease', marginBottom: 4 }}>
-            {locs[activeIdx] ? (locs[activeIdx].display_name || locs[activeIdx].label || '') : ''}
+            {locs[activeIdx] ? (locs[activeIdx].ink_name || locs[activeIdx].label || '') : ''}
           </div>
           <SilkAnchor color={locs[activeIdx] ? locs[activeIdx].color : 'rgba(122,92,60,0.25)'} />
         </div>
@@ -256,7 +256,7 @@ export default function ThreadView({ locations = [], onNodeTap }) {
                 color: i === activeIdx ? (loc.color || '#7A5C3C') : '#A09888',
                 fontWeight: i === activeIdx ? 600 : 400, transition: 'color 0.2s ease',
               }}>
-                {loc.display_name || loc.label || loc.id}
+                {loc.ink_name || loc.label || loc.id}
               </div>
             ))}
           </div>
