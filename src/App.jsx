@@ -564,7 +564,7 @@ export default function App() {
             if (!cityInput.trim() || !isConnected()) return
             setCityLoading(true)
             try {
-              await supaPost('service_requests', { service: 'amap', action: 'geocode', params: JSON.stringify({ address: cityInput.trim() }) })
+              await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: cityInput.trim() } })
               await new Promise(r => setTimeout(r, 800))
               var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
               if (rows && rows[0] && rows[0].result) {
