@@ -179,7 +179,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   useEffect(function() {
     if (!open || !borderRef.current) return
     var cvs = borderRef.current
-    var W = 224, H = 360
+    var W = 224, H = 300
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = W * dpr; cvs.height = H * dpr
     cvs.style.width = W + 'px'; cvs.style.height = H + 'px'
@@ -242,7 +242,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
-      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 360 }}>
+      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 300 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
         <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1 }}>
 
