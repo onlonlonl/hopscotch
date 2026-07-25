@@ -253,7 +253,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               var isSwiped = swipeId === loc.id
               var isEditing = editId === loc.id
               var tx = isSwiped ? swipeX : 0
-              var cardH = isEditing ? CARD_H + 110 : CARD_H
+              var cardH = isEditing ? CARD_H + 148 : CARD_H
 
               return (
                 <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden',
@@ -294,9 +294,14 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     {isEditing && (
                       <div style={{ padding: '4px 10px 8px', background: '#FAFCFE' }}>
                         <div style={{ marginBottom: 5 }}>
-                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Display Name</div>
+                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Compass</div>
+                          <input value={editFields.label} onChange={function (e) { setEditFields(function (p) { return { ...p, label: e.target.value } }) }}
+                            placeholder="short alias" style={inputS} />
+                        </div>
+        <div style={{ marginBottom: 5 }}>
+                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Ink</div>
                           <input value={editFields.ink_name} onChange={function (e) { setEditFields(function (p) { return { ...p, ink_name: e.target.value } }) }}
-                            placeholder={loc.label} style={inputS} />
+                            placeholder="lux name" style={inputS} />
                         </div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                           <div onClick={function () { setEditId(null); cardRefs.current = {} }}
