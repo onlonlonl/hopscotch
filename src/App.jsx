@@ -288,7 +288,7 @@ function drawFlatBorder(rc, w, h, wt, c) {
   }
 }
 
-function CardsPanel({ open, onClose, locations, onFocus }) {
+function CardsPanel({ open, onClose, locations, onFocus, setLocations, cityName }) {
   var borderRef = useRef(null)
   var cardRefs = useRef({})
   useEffect(function() {
@@ -311,6 +311,10 @@ function CardsPanel({ open, onClose, locations, onFocus }) {
       })
     }, 50)
   }, [open, locations])
+  var [adding, setAdding] = useState(false)
+  var [poiInput, setPoiInput] = useState('')
+  var [poiResults, setPoiResults] = useState([])
+  var [poiSearching, setPoiSearching] = useState(false)
   if (!open) return null
   var font = "-apple-system, 'PingFang SC', sans-serif"
   return (
@@ -319,7 +323,55 @@ function CardsPanel({ open, onClose, locations, onFocus }) {
       <div style={{position:'fixed',top:58,right:12,zIndex:201,width:240,height:380}}>
         <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
         <div style={{position:'relative',padding:'16px 18px',zIndex:1,height:'100%',boxSizing:'border-box',display:'flex',flexDirection:'column'}}>
-          <div style={{fontSize:13,color:'#6A7A8A',letterSpacing:3,fontFamily:font,marginBottom:12}}>Places</div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+            <div style={{fontSize:13,color:'#6A7A8A',letterSpacing:3,fontFamily:font}}>Places</div>
+            <div onClick={function(){setAdding(!adding);setPoiResults([]);setPoiInput('')}}
+              style={{width:22,height:22,display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:16,color:adding?'#C0C0C0':'#2E94B9',cursor:'pointer',fontFamily:font}}>+</div>
+          </div>
+          {adding && <div style={{marginBottom:10}}>
+            <div style={{display:'flex',gap:6,marginBottom:6}}>
+              <input value={poiInput} onChange={function(e){setPoiInput(e.target.value)}}
+                placeholder="search a place" style={{flex:1,minWidth:0,padding:'6px 8px',fontSize:12,
+                  border:'1.5px solid rgba(46,148,185,0.25)',background:'rgba(240,244,248,0.6)',
+                  color:'#5A6A7A',outline:'none',fontFamily:font,boxSizing:'border-box'}} />
+              <div onClick={async function(){
+                if(!poiInput.trim()||!isConnected()||poiSearching) return
+                setPoiSearching(true)
+                await supaPost('service_requests',{service:'amap',action:'poi',params:JSON.stringify({keywords:poiInput.trim(),city:cityName||''})})
+                await new Promise(function(r){setTimeout(r,800)})
+                var rows = await supaGet('service_requests','service=eq.amap&action=eq.poi&order=id.desc&limit=1')
+                setPoiSearching(false)
+                if(rows&&rows[0]&&rows[0].result){
+                  try{var d=JSON.parse(rows[0].result);if(d.pois)setPoiResults(d.pois.slice(0,5))}catch(e){}
+                }
+              }} style={{padding:'6px 10px',fontSize:11,border:'1.5px solid rgba(46,148,185,0.25)',
+                background:'rgba(240,244,248,0.5)',color:'#5A6A7A',cursor:'pointer',fontFamily:font,
+                whiteSpace:'nowrap'}}>{poiSearching?'...':'GO'}</div>
+            </div>
+            {poiResults.map(function(poi,i){
+              return <div key={i} onClick={async function(){
+                var loc = poi.location ? poi.location.split(',') : [0,0]
+                var newLoc = {
+                  id: poi.name.replace(/[^a-zA-Z0-9]/g,'').toLowerCase().slice(0,12) + '_' + Date.now().toString(36),
+                  label: poi.name, name: poi.name, city: poi.cityname||cityName||'',
+                  address: poi.address||'', lng: loc[0], lat: loc[1],
+                  category: poi.type ? poi.type.split(';')[0] : '',
+                  display_name: null, story_name: null, story: null, lux_note: null,
+                  color: '#E8A87C', weather: 'clear', icon_type: 'house',
+                  lux_x: 0, lux_y: 0, inf_t: 0, inf_w: 0,
+                }
+                await supaPost('locations', newLoc)
+                setLocations(function(prev){return[...prev,{...newLoc,errands:0,lat:parseFloat(newLoc.lat),lng:parseFloat(newLoc.lng)}]})
+                setAdding(false); setPoiResults([]); setPoiInput('')
+                cardRefs.current = {}
+              }} style={{padding:'6px 8px',fontSize:11,color:'#5A6A7A',fontFamily:font,cursor:'pointer',
+                borderBottom:'1px solid rgba(200,210,220,0.3)',lineHeight:1.4}}>
+                <div style={{fontWeight:500}}>{poi.name}</div>
+                <div style={{fontSize:10,color:'#9AAAB8'}}>{poi.address}</div>
+              </div>
+            })}
+          </div>}
           <div style={{flex:1,overflowY:'auto',overflowX:'hidden',WebkitOverflowScrolling:'touch'}}>
             {locations.map(function(loc) {
               return (
@@ -327,7 +379,7 @@ function CardsPanel({ open, onClose, locations, onFocus }) {
                   <canvas ref={function(el){if(el)cardRefs.current[loc.id]=el}} style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}} />
                   <div style={{position:'relative',display:'flex',alignItems:'center',gap:8,padding:'6px 10px',height:56,boxSizing:'border-box'}}>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:14,fontWeight:600,color:loc.color,fontFamily:font,lineHeight:1.3}}>{loc.display_name || loc.label}</div>
+                      <div style={{fontSize:14,fontWeight:600,color:loc.color,fontFamily:font,lineHeight:1.3}}>{loc.display_name || <span style={{color:'#C8D0D8',fontStyle:'italic',fontWeight:400}}>{loc.label}</span>}</div>
                       <div style={{fontSize:10,color:'#9AAAB8',fontFamily:font,lineHeight:1.3}}>{[loc.story_name, loc.label !== (loc.display_name||loc.label) ? loc.label : null].filter(Boolean).join(' · ')}</div>
                       {loc.errands > 0 && <div style={{fontSize:9,color:'#B0BAC4',fontFamily:font}}>{loc.errands} errands</div>}
                     </div>
@@ -531,7 +583,7 @@ export default function App() {
             setCityInput('')
             setSettingsOpen(false)
           }} />
-        <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations}
+        <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations} setLocations={setLocations} cityName={cityName}
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
