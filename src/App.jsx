@@ -421,19 +421,19 @@ export default function App() {
               var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
               if (rows && rows[0] && rows[0].result) {
                 var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
-                if (res.results && res.results[0]) {
+                if (res.results && res.results[0] && res.results[0].location) {
                   var loc = res.results[0].location.split(',')
                   var lng = parseFloat(loc[0]), lat = parseFloat(loc[1])
                   var name = cityInput.trim()
                   setCityName(name)
                   setCityCenter([lat, lng])
                   await supaPatch('settings', 'key=eq.hopscotch_city', { value: JSON.stringify({ name: name, lat: lat, lng: lng }) })
+                  setCityInput('')
+                  setSettingsOpen(false)
                 }
               }
             } catch(e) { console.error('geocode error', e) }
             setCityLoading(false)
-            setCityInput('')
-            setSettingsOpen(false)
           }} />
         <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations} setLocations={setLocations} cityName={cityName}
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
