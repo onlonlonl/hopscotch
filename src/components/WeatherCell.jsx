@@ -108,15 +108,27 @@ export default function WeatherCell({ cellRect }) {
     var bufs = []
     for (var f = 0; f < FRAMES; f++) {
       var off = document.createElement('canvas'); off.width = w * dpr; off.height = h * dpr
-      var ctx = off.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h)
+      var ctx = off.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#E0E8F0'; ctx.fillRect(0, 0, w, h)
+      var _s = Math.min(w, h) / 88, _pad = 6 * _s
+      var _rc2 = rough.canvas(off)
+      _rc2.rectangle(_pad, _pad + 2 * _s, w - _pad * 2, h - _pad * 2.5, {
+        stroke: '#E0D8D0', strokeWidth: 0.6, roughness: 0.4,
+        fill: '#F8F8F6', fillStyle: 'solid',
+        disableMultiStroke: true, seed: 42
+      })
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(_pad + 1, _pad + 2 * _s + 1, w - _pad * 2 - 2, h - _pad * 2.5 - 2)
+      ctx.clip()
       try { fn(rough.canvas(off), ctx, level, f, 42 + f * 100, w, h) } catch (e) {}
+      ctx.restore()
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
       ctx.font = Math.max(9, Math.round(10 * Math.min(w, h) / 88)) + "px -apple-system, 'PingFang SC', sans-serif"
       var tc = {clear:'#B8942C',cloudy:'#7888A0',rain:'#4870A0',storm:'#3A4860',fog:'#9A907A',wind:'#4A8890',snow:'#6080A8'}
       ctx.fillStyle = tc[type] || 'rgba(120,110,100,0.7)'
       var t = weather.temp_high + '\u00B0'
       if (weather.temp_low != null && weather.temp_low !== weather.temp_high) t = weather.temp_low + '\u2013' + weather.temp_high + '\u00B0'
-      ctx.fillText(t, w / 2, h - 2)
+      ctx.fillText(t, w / 2, h - _pad * 2 - 1)
       bufs.push(off)
     }
     framesRef.current = bufs; idxRef.current = 0; show(0, w, h, dpr)

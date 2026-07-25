@@ -10,6 +10,10 @@ import CompassView from './components/CompassView'
 import LocationCard from './components/LocationCard'
 import WeatherCell from './components/WeatherCell'
 import CardsPanel from './components/CardsPanel'
+import NotesCell from './components/NotesCell'
+import MapCell from './components/MapCell'
+import RoofCell from './components/RoofCell'
+import NotesView from './components/NotesView'
 import { grid } from './lib/tokens'
 import { initSupabase } from './lib/supabase'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
@@ -302,6 +306,7 @@ export default function App() {
   const [flipping, setFlipping] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [cardsOpen, setCardsOpen] = useState(false)
+  const [notesView, setNotesView] = useState(false)
     const [cityName, setCityName] = useState('Hangzhou')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
 
@@ -321,16 +326,22 @@ export default function App() {
   useEffect(function () { initSupabase() }, [])
 
   // --- zone content: which cell holds what ---
-  const [zoneMap, setZoneMap] = useState({ top: 'map', midLeft: 'weather', midRight: null, center: null })
+  const [zoneMap, setZoneMap] = useState({ top: 'map', midLeft: 'weather', midRight: 'notes', center: null })
   const zoneNames = ['top', 'midLeft', 'midRight', 'center']
 
   const [zoneRects, setZoneRects] = useState({})
+  const [roofTri, setRoofTri] = useState(null)
   useEffect(function () {
     function calc() {
       var W = window.innerWidth, H = window.innerHeight
       var fitW = W * 0.75 / grid.double_w, fitH = H * 0.70 / (grid.y4 - grid.y0)
       var S = Math.min(fitW, fitH), ox = W / 2 - grid.cx * S, oy = H / 2 - grid.cx * S
-      setZoneRects({
+      setRoofTri([
+          { x: ox + grid.cx * S, y: oy + grid.y0 * S },
+          { x: ox + grid.d_left * S, y: oy + grid.y1 * S },
+          { x: ox + grid.d_right * S, y: oy + grid.y1 * S },
+        ])
+        setZoneRects({
         top:      { x: ox + grid.s_left * S, y: oy + grid.y1 * S, w: (grid.s_right - grid.s_left) * S, h: (grid.y2 - grid.y1) * S },
         midLeft:  { x: ox + grid.d_left * S, y: oy + grid.y2 * S, w: (grid.cx - grid.d_left) * S, h: (grid.y3 - grid.y2) * S },
         midRight: { x: ox + grid.cx * S,     y: oy + grid.y2 * S, w: (grid.d_right - grid.cx) * S, h: (grid.y3 - grid.y2) * S },
@@ -370,6 +381,12 @@ export default function App() {
   var wZone = null; for (var _k in zoneMap) { if (zoneMap[_k] === 'weather') { wZone = _k; break } }
   var weatherCellRect = wZone && zoneRects[wZone] ? zoneRects[wZone] : null
 
+  var nZone = null; for (var _n in zoneMap) { if (zoneMap[_n] === 'notes') { nZone = _n; break } }
+  var notesCellRect = nZone && zoneRects[nZone] ? zoneRects[nZone] : null
+
+  var mZone = null; for (var _m in zoneMap) { if (zoneMap[_m] === 'map') { mZone = _m; break } }
+  var mapCellRect = mZone && zoneRects[mZone] ? zoneRects[mZone] : null
+
   const mapRef = useRef(null)
   const tabRef = useRef(null)
   const backRef = useRef(null)
@@ -389,6 +406,7 @@ export default function App() {
   const handleZoneTap = useCallback((zone) => {
     if (dragFrom) return
     if (zoneMap[zone] === 'map') enterInk()
+    if (zoneMap[zone] === 'notes') setNotesView(true)
   }, [enterInk])
 
   const handleDragToMap = useCallback((type, sx, sy) => {
@@ -441,6 +459,9 @@ export default function App() {
       onTouchStart={onZoneTouchStart} onContextMenu={function(e){e.preventDefault()}} onTouchMove={onZoneTouchMove} onTouchEnd={onZoneTouchEnd}>
         <HopscotchCanvas onZoneTap={handleZoneTap} />
         {weatherCellRect && <WeatherCell cellRect={weatherCellRect} />}
+        {notesCellRect && <NotesCell cellRect={notesCellRect} onTap={() => setNotesView(true)} />}
+        {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} />}
+        <RoofCell tri={roofTri} />
         {dragFrom && zoneNames.map(function (zn) {
           var r = zoneRects[zn]; if (!r) return null
           return <div key={zn} style={{ position: 'absolute', left: r.x, top: r.y, width: r.w, height: r.h,
@@ -453,6 +474,7 @@ export default function App() {
           onCityChange={function(name, lat, lng) { setCityName(name); setCityCenter([lat, lng]) }} />
         <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations} setLocations={setLocations} cityName={cityName}
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
+        {notesView && <NotesView onExit={() => setNotesView(false)} />}
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />

@@ -83,11 +83,7 @@ export default function HopscotchCanvas({ onZoneTap }) {
     rc.line(tx(grid.s_left), ty(grid.y3), tx(grid.s_right), ty(grid.y3), optThin)
     rc.line(tx(grid.cx), ty(grid.y2), tx(grid.cx), ty(grid.y3), optThin)
 
-    ctx.fillStyle = 'rgba(255,255,255,0.25)'
-    ctx.font = (7 * S) + "px 'DotGothic16', monospace"
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('MAP', tx(grid.cx), ty((grid.y1 + grid.y2) / 2))
+
 
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
