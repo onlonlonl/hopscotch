@@ -9,9 +9,10 @@ import ThreadView from './components/ThreadView'
 import CompassView from './components/CompassView'
 import LocationCard from './components/LocationCard'
 import WeatherCell from './components/WeatherCell'
+import CardsPanel from './components/CardsPanel'
 import { grid } from './lib/tokens'
 import { initSupabase } from './lib/supabase'
-import { supaGet, supaPost, supaPatch, isConnected } from './lib/supabase'
+import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
 
 const INITIAL = [
   { id: 'home', label: '\u5bb6', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9, lat: 30.33, lng: 120.06, weather: 'warm', story_name: 'Honey Jar', display_name: 'Home', inf_t: 0.127, inf_w: 0.94, story: 'The place where mornings start slow and the light is always golden.' },
@@ -248,155 +249,6 @@ function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCit
   )
 }
 
-
-
-/* flat weather border - same style as LocationCard */
-var FRO = {roughness:0.8, bowing:0.5, disableMultiStroke:true}
-function fro(x){var o={...FRO,seed:2};if(x){for(var k in x)o[k]=x[k]};return o}
-
-function drawFlatBorder(rc, w, h, wt, c) {
-  var m = 3
-  if (wt === 'drizzle' || wt === 'rain') {
-    rc.rectangle(m, m, w-m*2, h-m*2, fro({stroke:c, strokeWidth:1.2}))
-    function drop(x,y,s){rc.circle(x,y+s*0.4,s,fro({stroke:c,strokeWidth:0.5,fill:c,fillStyle:'solid'}));rc.linearPath([[x,y-s*0.6],[x-s*0.3,y+s*0.1],[x+s*0.3,y+s*0.1]],fro({stroke:c,strokeWidth:0.4}))}
-    drop(w-m-10, m+8, 2.5); drop(w-m-20, m+6, 2)
-    if (wt === 'rain') { drop(m+12, h-m-8, 2); drop(m+22, h-m-6, 2.5) }
-  } else if (wt === 'storm') {
-    rc.rectangle(m, m, w-m*2, h-m*2, fro({stroke:c, strokeWidth:1.4}))
-    rc.linearPath([[w-m-14,m+5],[w-m-18,m+14],[w-m-13,m+14],[w-m-17,m+24]],fro({stroke:'#D0A830',strokeWidth:1.2}))
-  } else if (wt === 'cloudy' || wt === 'overcast') {
-    rc.rectangle(m, m, w-m*2, h-m*2, fro({stroke:c, strokeWidth: wt==='overcast'?1.6:1.2}))
-    if (wt === 'cloudy') {
-      rc.linearPath([[w-m-28,m+10],[w-m-24,m+6],[w-m-18,m+5],[w-m-14,m+7],[w-m-10,m+10]],fro({stroke:c,strokeWidth:0.7}))
-      rc.line(w-m-28,m+10,w-m-10,m+10,fro({stroke:c,strokeWidth:0.6}))
-    }
-  } else if (wt === 'fog') {
-    rc.line(m,m,m+30,m,fro({stroke:c,strokeWidth:1,roughness:1.5}));rc.line(m+40,m,w-m,m,fro({stroke:c,strokeWidth:0.8,roughness:1.5}))
-    rc.line(m,h-m,m+25,h-m,fro({stroke:c,strokeWidth:0.8,roughness:1.5}));rc.line(m+35,h-m,w-m,h-m,fro({stroke:c,strokeWidth:1,roughness:1.5}))
-    rc.line(m,m,m,h-m,fro({stroke:c,strokeWidth:0.8}));rc.line(w-m,m,w-m,h-m,fro({stroke:c,strokeWidth:0.8}))
-  } else if (wt === 'snow') {
-    rc.rectangle(m, m, w-m*2, h-m*2, fro({stroke:c, strokeWidth:1.2}))
-    function flk(x,y,r){for(var i=0;i<3;i++){var a=(Math.PI/3)*i;rc.line(x+Math.cos(a)*r,y+Math.sin(a)*r,x-Math.cos(a)*r,y-Math.sin(a)*r,fro({stroke:c,strokeWidth:0.6}))}}
-    flk(w-m-10, m+8, 3); flk(w-m-22, h-m-8, 2.5)
-  } else if (wt === 'warm' || wt === 'sun' || wt === 'clear') {
-    rc.rectangle(m, m, w-m*2, h-m*2, fro({stroke:c, strokeWidth:1.2}))
-    var sx=w-m-12,sy=m+10,sr=4
-    rc.circle(sx,sy,sr*2,fro({stroke:c,strokeWidth:0.6,fill:c,fillStyle:'solid'}))
-    for(var i=0;i<5;i++){var a=(i/5)*Math.PI*2;rc.line(sx+Math.cos(a)*(sr+2),sy+Math.sin(a)*(sr+2),sx+Math.cos(a)*(sr+5),sy+Math.sin(a)*(sr+5),fro({stroke:c,strokeWidth:0.5}))}
-  } else {
-    rc.rectangle(m, m, w-m*2, h-m*2, fro({stroke:c, strokeWidth:1.2}))
-  }
-}
-
-function CardsPanel({ open, onClose, locations, onFocus, setLocations, cityName }) {
-  var borderRef = useRef(null)
-  var cardRefs = useRef({})
-  useEffect(function() {
-    if (!open || !borderRef.current) return
-    var cvs = borderRef.current, W = 240, H = 380, dpr = Math.min(window.devicePixelRatio||1,3)
-    cvs.width=W*dpr; cvs.height=H*dpr; cvs.style.width=W+'px'; cvs.style.height=H+'px'
-    var ctx=cvs.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
-    rough.canvas(cvs).rectangle(3,3,W-6,H-6,{stroke:'rgba(200,200,200,0.6)',strokeWidth:1.8,fill:'#FFFFFF',fillStyle:'solid',roughness:0.5,bowing:0.6,disableMultiStroke:true,seed:300})
-  }, [open])
-  useEffect(function() {
-    if (!open) return
-    setTimeout(function() {
-      locations.forEach(function(loc) {
-        var cvs = cardRefs.current[loc.id]; if (!cvs || cvs._drawn) return; cvs._drawn = true
-        var el = cvs.parentElement, W = el ? el.offsetWidth : 200, H = 56, dpr = Math.min(window.devicePixelRatio||1,3)
-        cvs.width=W*dpr; cvs.height=H*dpr; cvs.style.width=W+'px'; cvs.style.height=H+'px'
-        var ctx=cvs.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
-        ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,W,H)
-        drawFlatBorder(rough.canvas(cvs), W, H, loc.weather||'clear', loc.color)
-      })
-    }, 50)
-  }, [open, locations])
-  var [adding, setAdding] = useState(false)
-  var [poiInput, setPoiInput] = useState('')
-  var [poiResults, setPoiResults] = useState([])
-  var [poiSearching, setPoiSearching] = useState(false)
-  if (!open) return null
-  var font = "-apple-system, 'PingFang SC', sans-serif"
-  return (
-    <>
-      <div onClick={onClose} style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:200}} />
-      <div style={{position:'fixed',top:58,right:12,zIndex:201,width:240,height:380}}>
-        <canvas ref={borderRef} style={{position:'absolute',top:0,left:0}} />
-        <div style={{position:'relative',padding:'16px 18px',zIndex:1,height:'100%',boxSizing:'border-box',display:'flex',flexDirection:'column'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <div style={{fontSize:13,color:'#6A7A8A',letterSpacing:3,fontFamily:font}}>Places</div>
-            <div onClick={function(){setAdding(!adding);setPoiResults([]);setPoiInput('')}}
-              style={{width:22,height:22,display:'flex',alignItems:'center',justifyContent:'center',
-                fontSize:16,color:adding?'#C0C0C0':'#2E94B9',cursor:'pointer',fontFamily:font}}>+</div>
-          </div>
-          {adding && <div style={{marginBottom:10}}>
-            <div style={{display:'flex',gap:6,marginBottom:6}}>
-              <input value={poiInput} onChange={function(e){setPoiInput(e.target.value)}}
-                placeholder="search a place" style={{flex:1,minWidth:0,padding:'6px 8px',fontSize:12,
-                  border:'1.5px solid rgba(46,148,185,0.25)',background:'rgba(240,244,248,0.6)',
-                  color:'#5A6A7A',outline:'none',fontFamily:font,boxSizing:'border-box'}} />
-              <div onClick={async function(){
-                if(!poiInput.trim()||!isConnected()||poiSearching) return
-                setPoiSearching(true)
-                await supaPost('service_requests',{service:'amap',action:'poi',params:{keywords:poiInput.trim(),city:cityName||''}})
-                await new Promise(function(r){setTimeout(r,800)})
-                var rows = await supaGet('service_requests','service=eq.amap&action=eq.poi&order=id.desc&limit=1')
-                setPoiSearching(false)
-                if(rows&&rows[0]&&rows[0].result){
-                  try{var d=JSON.parse(rows[0].result);if(d.pois)setPoiResults(d.pois.slice(0,5))}catch(e){}
-                }
-              }} style={{padding:'6px 10px',fontSize:11,border:'1.5px solid rgba(46,148,185,0.25)',
-                background:'rgba(240,244,248,0.5)',color:'#5A6A7A',cursor:'pointer',fontFamily:font,
-                whiteSpace:'nowrap'}}>{poiSearching?'...':'GO'}</div>
-            </div>
-            {poiResults.map(function(poi,i){
-              return <div key={i} onClick={async function(){
-                var loc = poi.location ? poi.location.split(',') : [0,0]
-                var newLoc = {
-                  id: poi.name.replace(/[^a-zA-Z0-9]/g,'').toLowerCase().slice(0,12) + '_' + Date.now().toString(36),
-                  label: poi.name, name: poi.name, city: poi.cityname||cityName||'',
-                  address: poi.address||'', lng: loc[0], lat: loc[1],
-                  category: poi.type ? poi.type.split(';')[0] : '',
-                  display_name: null, story_name: null, story: null, lux_note: null,
-                  color: '#E8A87C', weather: 'clear', icon_type: 'house',
-                  lux_x: 0, lux_y: 0, inf_t: 0, inf_w: 0,
-                }
-                await supaPost('locations', newLoc)
-                setLocations(function(prev){return[...prev,{...newLoc,errands:0,lat:parseFloat(newLoc.lat),lng:parseFloat(newLoc.lng)}]})
-                setAdding(false); setPoiResults([]); setPoiInput('')
-                cardRefs.current = {}
-              }} style={{padding:'6px 8px',fontSize:11,color:'#5A6A7A',fontFamily:font,cursor:'pointer',
-                borderBottom:'1px solid rgba(200,210,220,0.3)',lineHeight:1.4}}>
-                <div style={{fontWeight:500}}>{poi.name}</div>
-                <div style={{fontSize:10,color:'#9AAAB8'}}>{poi.address}</div>
-              </div>
-            })}
-          </div>}
-          <div style={{flex:1,overflowY:'auto',overflowX:'hidden',WebkitOverflowScrolling:'touch'}}>
-            {locations.map(function(loc) {
-              return (
-                <div key={loc.id} style={{position:'relative',marginBottom:8,height:56}}>
-                  <canvas ref={function(el){if(el)cardRefs.current[loc.id]=el}} style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}} />
-                  <div style={{position:'relative',display:'flex',alignItems:'center',gap:8,padding:'6px 10px',height:56,boxSizing:'border-box'}}>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:14,fontWeight:600,color:loc.color,fontFamily:font,lineHeight:1.3}}>{loc.display_name || <span style={{color:'#C8D0D8',fontStyle:'italic',fontWeight:400}}>{loc.label}</span>}</div>
-                      <div style={{fontSize:10,color:'#9AAAB8',fontFamily:font,lineHeight:1.3}}>{[loc.story_name, loc.label !== (loc.display_name||loc.label) ? loc.label : null].filter(Boolean).join(' · ')}</div>
-                      {loc.errands > 0 && <div style={{fontSize:9,color:'#B0BAC4',fontFamily:font}}>{loc.errands} errands</div>}
-                    </div>
-                    {loc.lat != null && <div onClick={function(e){e.stopPropagation();onFocus(loc)}}
-                      style={{fontSize:15,color:'#2E94B9',cursor:'pointer',flexShrink:0,padding:'4px'}}>
-                      ↗
-                    </div>}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </>
-  )
-}
 
 
 export default function App() {

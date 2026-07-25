@@ -47,3 +47,11 @@ export async function supaPatch(table, match, data) {
   })
   return res.ok ? res.json() : null
 }
+
+export async function supaDelete(table, match) {
+  if (!HEADERS) return null
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${match}`, {
+    method: 'DELETE', headers: HEADERS,
+  })
+  return res.ok ? res.json() : null
+}
