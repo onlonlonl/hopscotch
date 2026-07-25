@@ -346,7 +346,6 @@ function CardsPanel({ open, onClose, locations, onFocus }) {
   )
 }
 
-}
 
 export default function App() {
   const [view, setView] = useState('home')
