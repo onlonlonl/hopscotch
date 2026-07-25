@@ -8,6 +8,9 @@ import { recipes } from './components/IconGallery'
 import ThreadView from './components/ThreadView'
 import CompassView from './components/CompassView'
 import LocationCard from './components/LocationCard'
+import WeatherCell from './components/WeatherCell'
+import { grid } from './lib/tokens'
+import { initSupabase } from './lib/supabase'
 import { supaGet, supaPost, supaPatch, isConnected } from './lib/supabase'
 
 const INITIAL = [
@@ -273,6 +276,58 @@ export default function App() {
       }
     })
   }, [])
+  // --- init supabase ---
+  useEffect(function () { initSupabase() }, [])
+
+  // --- zone content: which cell holds what ---
+  const [zoneMap, setZoneMap] = useState({ top: 'map', midLeft: 'weather', midRight: null, center: null })
+  const zoneNames = ['top', 'midLeft', 'midRight', 'center']
+
+  const [zoneRects, setZoneRects] = useState({})
+  useEffect(function () {
+    function calc() {
+      var W = window.innerWidth, H = window.innerHeight
+      var fitW = W * 0.75 / grid.double_w, fitH = H * 0.70 / (grid.y4 - grid.y0)
+      var S = Math.min(fitW, fitH), ox = W / 2 - grid.cx * S, oy = H / 2 - grid.cx * S
+      setZoneRects({
+        top:      { x: ox + grid.s_left * S, y: oy + grid.y1 * S, w: (grid.s_right - grid.s_left) * S, h: (grid.y2 - grid.y1) * S },
+        midLeft:  { x: ox + grid.d_left * S, y: oy + grid.y2 * S, w: (grid.cx - grid.d_left) * S, h: (grid.y3 - grid.y2) * S },
+        midRight: { x: ox + grid.cx * S,     y: oy + grid.y2 * S, w: (grid.d_right - grid.cx) * S, h: (grid.y3 - grid.y2) * S },
+        center:   { x: ox + grid.s_left * S, y: oy + grid.y3 * S, w: (grid.s_right - grid.s_left) * S, h: (grid.y4 - grid.y3) * S },
+      })
+    }
+    calc(); window.addEventListener('resize', calc)
+    return function () { window.removeEventListener('resize', calc) }
+  }, [])
+
+  // --- drag to swap zones ---
+  const [dragFrom, setDragFrom] = useState(null)
+  const [dragOver, setDragOver] = useState(null)
+  const longPressRef = useRef(null)
+  function findZone(cx, cy) {
+    for (var i = 0; i < zoneNames.length; i++) { var r = zoneRects[zoneNames[i]]; if (r && cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) return zoneNames[i] }
+    return null
+  }
+  function onZoneTouchStart(e) {
+    var t = e.touches[0], z = findZone(t.clientX, t.clientY)
+    if (!z) return
+    longPressRef.current = setTimeout(function () { setDragFrom(z) }, 500)
+  }
+  function onZoneTouchMove(e) {
+    if (!dragFrom) { clearTimeout(longPressRef.current); return }
+    var t = e.touches[0], z = findZone(t.clientX, t.clientY)
+    setDragOver(z && z !== dragFrom ? z : null)
+  }
+  function onZoneTouchEnd() {
+    clearTimeout(longPressRef.current)
+    if (dragFrom && dragOver) {
+      setZoneMap(function (p) { var n = { ...p }, tmp = n[dragFrom]; n[dragFrom] = n[dragOver]; n[dragOver] = tmp; return n })
+    }
+    setDragFrom(null); setDragOver(null)
+  }
+  var wZone = null; for (var _k in zoneMap) { if (zoneMap[_k] === 'weather') { wZone = _k; break } }
+  var weatherCellRect = wZone && zoneRects[wZone] ? zoneRects[wZone] : null
+
   const mapRef = useRef(null)
   const tabRef = useRef(null)
   const backRef = useRef(null)
@@ -290,7 +345,8 @@ export default function App() {
   }, [])
 
   const handleZoneTap = useCallback((zone) => {
-    if (zone === 'top') enterInk()
+    if (dragFrom) return
+    if (zoneMap[zone] === 'map') enterInk()
   }, [enterInk])
 
   const handleDragToMap = useCallback((type, sx, sy) => {
@@ -338,8 +394,17 @@ export default function App() {
         opacity: expanding ? 0 : 1,
         transform: expanding ? 'scale(1.1)' : 'scale(1)',
         transition: 'opacity 0.35s ease, transform 0.35s ease',
-      }}>
+      }}
+      onTouchStart={onZoneTouchStart} onTouchMove={onZoneTouchMove} onTouchEnd={onZoneTouchEnd}>
         <HopscotchCanvas onZoneTap={handleZoneTap} />
+        {weatherCellRect && <WeatherCell cellRect={weatherCellRect} />}
+        {dragFrom && zoneNames.map(function (zn) {
+          var r = zoneRects[zn]; if (!r) return null
+          return <div key={zn} style={{ position: 'absolute', left: r.x, top: r.y, width: r.w, height: r.h,
+            border: dragFrom === zn ? '2px solid #2E94B9' : dragOver === zn ? '2px dashed #2E94B9' : 'none',
+            background: dragFrom === zn ? 'rgba(46,148,185,0.08)' : dragOver === zn ? 'rgba(46,148,185,0.12)' : 'transparent',
+            borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' }} />
+        })}
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
           cityName={cityName} cityInput={cityInput} setCityInput={setCityInput} cityLoading={cityLoading}
           onCityConfirm={async () => {
