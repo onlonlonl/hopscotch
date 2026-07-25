@@ -178,12 +178,12 @@ function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCit
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
     rc.rectangle(3, 3, W - 6, H - 6, {
-      stroke: 'rgba(255,255,255,0.7)', strokeWidth: 1.8,
+      stroke: 'rgba(46,148,185,0.3)', strokeWidth: 1.8,
       fill: '#FFFFFF', fillStyle: 'solid',
       roughness: 0.5, bowing: 0.6, disableMultiStroke: true, seed: 200
     })
-    rc.line(16, 138, W - 16, 138, { stroke: 'rgba(255,255,255,0.5)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 201 })
-    rc.line(16, 210, W - 16, 210, { stroke: 'rgba(255,255,255,0.5)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 202 })
+    rc.line(16, 138, W - 16, 138, { stroke: 'rgba(46,148,185,0.25)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 201 })
+    rc.line(16, 210, W - 16, 210, { stroke: 'rgba(46,148,185,0.25)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 202 })
   }, [open])
 
   if (!open) return null
@@ -194,14 +194,14 @@ function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCit
   var inputS = {
     flex: 1, minWidth: 0, boxSizing: 'border-box',
     padding: '7px 10px', fontSize: 13,
-    border: '1.5px solid rgba(255,255,255,0.7)',
-    background: 'rgba(224,232,240,0.4)', color: '#5A6A7A',
+    border: '1.5px solid rgba(46,148,185,0.25)',
+    background: 'rgba(240,244,248,0.6)', color: '#5A6A7A',
     outline: 'none', fontFamily: font,
   }
   var btnS = {
     padding: '7px 14px', fontSize: 12,
-    border: '1.5px solid rgba(255,255,255,0.7)',
-    background: 'rgba(224,232,240,0.35)', color: '#5A6A7A',
+    border: '1.5px solid rgba(46,148,185,0.25)',
+    background: 'rgba(240,244,248,0.5)', color: '#5A6A7A',
     cursor: 'pointer', fontFamily: font,
   }
 
@@ -280,11 +280,11 @@ function CardsPanel({ open, onClose, locations, onFocus }) {
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
             {locations.map(function(loc) {
               return (
-                <div key={loc.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 10px', marginBottom: 6,
-                  background: '#FAFBFC', borderRadius: 6,
-                  border: '1px solid rgba(200,210,220,0.5)',
+                <div key={loc.id} style={{ position: 'relative', marginBottom: 6 }}>
+                <canvas ref={function(cvs) { if (cvs && !cvs._d) { cvs._d = true; var dpr = Math.min(window.devicePixelRatio||1,3); var W = cvs.parentElement.offsetWidth||200, H = 52; cvs.width=W*dpr; cvs.height=H*dpr; cvs.style.width=W+'px'; cvs.style.height=H+'px'; var ctx=cvs.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); var rc=rough.canvas(cvs); rc.rectangle(2,2,W-4,H-4,{stroke:'rgba(180,190,200,0.5)',strokeWidth:1,fill:'#FFFFFF',fillStyle:'solid',roughness:0.4,bowing:0.5,disableMultiStroke:true,seed:400+loc.id.charCodeAt(0)}) } }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
+                <div style={{
+                  position: 'relative', display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 10px', height: 52, boxSizing: 'border-box',
                 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: loc.color, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -297,10 +297,10 @@ function CardsPanel({ open, onClose, locations, onFocus }) {
                   {loc.errands > 0 && <div style={{ fontSize: 10, color: '#B0BAC4', fontFamily: font, flexShrink: 0 }}>{loc.errands}x</div>}
                   {loc.lat != null && <div onClick={function(e) { e.stopPropagation(); onFocus(loc) }}
                     style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, color: '#2E94B9', cursor: 'pointer', flexShrink: 0, borderRadius: 4,
-                      border: '1px solid rgba(46,148,185,0.3)' }}>
+                      fontSize: 13, color: '#2E94B9', cursor: 'pointer', flexShrink: 0 }}>
                     ◎
                   </div>}
+                </div>
                 </div>
               )
             })}

@@ -108,7 +108,7 @@ export default function WeatherCell({ cellRect }) {
     var bufs = []
     for (var f = 0; f < FRAMES; f++) {
       var off = document.createElement('canvas'); off.width = w * dpr; off.height = h * dpr
-      var ctx = off.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h)
+      var ctx = off.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h)
       try { fn(rough.canvas(off), ctx, level, f, 42 + f * 100, w, h) } catch (e) {}
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
       ctx.font = Math.max(9, Math.round(10 * Math.min(w, h) / 88)) + "px -apple-system, 'PingFang SC', sans-serif"

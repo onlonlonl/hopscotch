@@ -9,7 +9,7 @@ html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'DotGothic16', monospace;
+  font-family: -apple-system, 'PingFang SC', sans-serif;
 }
 
 body {
