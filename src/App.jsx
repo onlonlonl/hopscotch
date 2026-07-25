@@ -421,8 +421,8 @@ export default function App() {
               var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
               if (rows && rows[0] && rows[0].result) {
                 var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
-                if (res.geocodes && res.geocodes[0]) {
-                  var loc = res.geocodes[0].location.split(',')
+                if (res.results && res.results[0]) {
+                  var loc = res.results[0].location.split(',')
                   var lng = parseFloat(loc[0]), lat = parseFloat(loc[1])
                   var name = cityInput.trim()
                   setCityName(name)
