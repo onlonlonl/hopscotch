@@ -112,7 +112,8 @@ export default function WeatherCell({ cellRect }) {
       try { fn(rough.canvas(off), ctx, level, f, 42 + f * 100, w, h) } catch (e) {}
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
       ctx.font = Math.max(9, Math.round(10 * Math.min(w, h) / 88)) + "px -apple-system, 'PingFang SC', sans-serif"
-      ctx.fillStyle = 'rgba(120,110,100,0.7)'
+      var tc = {clear:'#B8942C',cloudy:'#7888A0',rain:'#4870A0',storm:'#3A4860',fog:'#9A907A',wind:'#4A8890',snow:'#6080A8'}
+      ctx.fillStyle = tc[type] || 'rgba(120,110,100,0.7)'
       var t = weather.temp_high + '\u00B0'
       if (weather.temp_low != null && weather.temp_low !== weather.temp_high) t = weather.temp_low + '\u2013' + weather.temp_high + '\u00B0'
       ctx.fillText(t, w / 2, h - 2)

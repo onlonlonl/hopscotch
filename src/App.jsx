@@ -194,28 +194,20 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
 
   async function doSearch() {
     if (!input.trim()) return
-    if (!isConnected()) { setInput('[no connection]'); return }
-    if (searching) return
+    if (!isConnected() || searching) return
     setSearching(true)
     setResults([])
     try {
-      var posted = await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: input.trim() } })
-      if (!posted) { setInput('[post failed]'); setSearching(false); return }
+      await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: input.trim() } })
       await new Promise(function(r) { setTimeout(r, 1500) })
       var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
-      setSearching(false)
-      if (!rows || !rows[0] || !rows[0].result) { setInput('[no rows]'); return }
-      var raw = rows[0].result
-      var res = typeof raw === 'string' ? JSON.parse(raw) : raw
-      if (res && res.results && res.results.length > 0) {
-        setResults(res.results)
-      } else {
-        setInput('[empty: ' + JSON.stringify(raw).slice(0,40) + ']')
+      if (rows && rows[0] && rows[0].result) {
+        var raw = rows[0].result
+        var res = typeof raw === 'string' ? JSON.parse(raw) : raw
+        if (res && res.results && res.results.length > 0) setResults(res.results)
       }
-    } catch(e) {
-      setSearching(false)
-      setInput('[err: ' + e.message + ']')
-    }
+    } catch(e) { console.error('city search', e) }
+    setSearching(false)
   }
 
   async function pickCity(r) {
