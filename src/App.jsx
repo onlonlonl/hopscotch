@@ -193,18 +193,28 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   }, [open, results])
 
   async function doSearch() {
-    if (!input.trim() || !isConnected() || searching) return
+    if (!input.trim()) return
+    if (!isConnected()) { setInput('[no connection]'); return }
+    if (searching) return
     setSearching(true)
     setResults([])
-    await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: input.trim() } })
-    await new Promise(function(r) { setTimeout(r, 1500) })
-    var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
-    setSearching(false)
-    if (rows && rows[0] && rows[0].result) {
-      try {
-        var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
-        if (res.results) setResults(res.results)
-      } catch(e) {}
+    try {
+      var posted = await supaPost('service_requests', { service: 'amap', action: 'geocode', params: { address: input.trim() } })
+      if (!posted) { setInput('[post failed]'); setSearching(false); return }
+      await new Promise(function(r) { setTimeout(r, 1500) })
+      var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
+      setSearching(false)
+      if (!rows || !rows[0] || !rows[0].result) { setInput('[no rows]'); return }
+      var raw = rows[0].result
+      var res = typeof raw === 'string' ? JSON.parse(raw) : raw
+      if (res && res.results && res.results.length > 0) {
+        setResults(res.results)
+      } else {
+        setInput('[empty: ' + JSON.stringify(raw).slice(0,40) + ']')
+      }
+    } catch(e) {
+      setSearching(false)
+      setInput('[err: ' + e.message + ']')
     }
   }
 
