@@ -13,7 +13,7 @@ html, body, #root {
 }
 
 body {
-  background: #FAF6F0;
+  background: #E0E8F0;
   padding-top: env(safe-area-inset-top);
 }
 

@@ -8,6 +8,7 @@ import { recipes } from './components/IconGallery'
 import ThreadView from './components/ThreadView'
 import CompassView from './components/CompassView'
 import LocationCard from './components/LocationCard'
+import { supaGet, supaPost, supaPatch, isConnected } from './lib/supabase'
 
 const INITIAL = [
   { id: 'home', label: '\u5bb6', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9, lat: 30.33, lng: 120.06, weather: 'warm', story_name: 'Honey Jar', display_name: 'Home', inf_t: 0.127, inf_w: 0.94, story: 'The place where mornings start slow and the light is always golden.' },
@@ -75,6 +76,176 @@ function drawBack(cvs) {
   rc.line(12, 18, 22, 24, { stroke: '#8A7A68', strokeWidth: 1.3, roughness: 0.4, disableMultiStroke: true, seed: 79 })
 }
 
+
+/* === Home toolbar icons (white, in rounded frames) === */
+var ICO = 38, ICO_RO = { roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
+
+function _icoSetup(cvs) {
+  var dpr = Math.min(window.devicePixelRatio || 1, 3)
+  cvs.width = ICO * dpr; cvs.height = ICO * dpr
+  cvs.style.width = ICO + 'px'; cvs.style.height = ICO + 'px'
+  var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  return { ctx: ctx, rc: rough.canvas(cvs) }
+}
+
+function _icoFrame(rc) {
+  rc.rectangle(2, 2, ICO - 4, ICO - 4, {
+    stroke: 'rgba(255,255,255,0.7)', strokeWidth: 1.2, roughness: 0.4,
+    fill: 'rgba(255,255,255,0.08)', fillStyle: 'solid',
+    disableMultiStroke: true, seed: 70
+  })
+}
+
+function drawGear(cvs) {
+  var { ctx, rc } = _icoSetup(cvs)
+  _icoFrame(rc)
+  var cx = ICO / 2, cy = ICO / 2, pts = []
+  for (var i = 0; i < 6; i++) {
+    var a = (i / 6) * Math.PI * 2 - Math.PI / 2, da = Math.PI * 2 / 6
+    pts.push([cx + 12 * Math.cos(a), cy + 12 * Math.sin(a)])
+    pts.push([cx + 12 * Math.cos(a + da * 0.3), cy + 12 * Math.sin(a + da * 0.3)])
+    pts.push([cx + 8 * Math.cos(a + da * 0.4), cy + 8 * Math.sin(a + da * 0.4)])
+    pts.push([cx + 8 * Math.cos(a + da * 0.9), cy + 8 * Math.sin(a + da * 0.9)])
+  }
+  var d = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1)
+  for (var j = 1; j < pts.length; j++) d += ' L ' + pts[j][0].toFixed(1) + ' ' + pts[j][1].toFixed(1)
+  d += ' Z'
+  rc.path(d, { stroke: 'rgba(255,255,255,0.9)', strokeWidth: 1.5, fill: 'rgba(255,255,255,0.9)', fillStyle: 'solid', ...ICO_RO, seed: 88 })
+  /* center hole */
+  rc.circle(cx, cy, 7, { stroke: '#E0E8F0', strokeWidth: 1.2, fill: '#E0E8F0', fillStyle: 'solid', roughness: 0.3, disableMultiStroke: true, seed: 89 })
+}
+
+function drawBrush(cvs) {
+  var { ctx, rc } = _icoSetup(cvs)
+  _icoFrame(rc)
+  var c = 'rgba(255,255,255,0.9)'
+  /* pencil glyph */
+  ctx.fillStyle = "rgba(255,255,255,0.9)"
+  ctx.font = "20px serif"
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+  ctx.fillText("✎", ICO / 2, ICO / 2 + 1)
+}
+
+function drawCards(cvs) {
+  var { ctx, rc } = _icoSetup(cvs)
+  _icoFrame(rc)
+  var c = 'rgba(255,255,255,0.9)'
+  /* back card (offset) */
+  rc.rectangle(13, 10, 16, 18, { stroke: c, strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 95 })
+  /* front card (larger, overlapping) */
+  rc.rectangle(9, 13, 16, 18, { stroke: c, strokeWidth: 1.4, fill: 'rgba(255,255,255,0.15)', fillStyle: 'solid', roughness: 0.4, disableMultiStroke: true, seed: 96 })
+  /* lines on front card */
+  rc.line(12, 19, 22, 19, { stroke: c, strokeWidth: 0.8, roughness: 0.3, disableMultiStroke: true, seed: 97 })
+  rc.line(12, 23, 20, 23, { stroke: c, strokeWidth: 0.8, roughness: 0.3, disableMultiStroke: true, seed: 98 })
+}
+
+/* Ink view: blue filled brush button */
+function drawInkBrush(cvs) {
+  var S = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+  cvs.width = S * dpr; cvs.height = S * dpr
+  cvs.style.width = S + 'px'; cvs.style.height = S + 'px'
+  var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  var rc = rough.canvas(cvs)
+  /* blue filled rounded frame */
+  rc.rectangle(2, 2, S - 4, S - 4, {
+    stroke: '#2E94B9', strokeWidth: 1.5, fill: '#2E94B9', fillStyle: 'solid',
+    roughness: 0.5, bowing: 0.8, disableMultiStroke: true, seed: 100
+  })
+  var c = 'rgba(255,255,255,0.95)'
+  /* pencil glyph */
+  ctx.fillStyle = c
+  ctx.font = '24px serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('✎', S / 2, S / 2 + 1)
+}
+
+/* === Settings Panel === */
+function SettingsPanel({ open, onClose, cityName, cityInput, setCityInput, onCityConfirm, cityLoading }) {
+  var borderRef = useRef(null)
+
+  useEffect(function() {
+    if (!open || !borderRef.current) return
+    var cvs = borderRef.current
+    var W = 224, H = 320
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = W * dpr; cvs.height = H * dpr
+    cvs.style.width = W + 'px'; cvs.style.height = H + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    rc.rectangle(3, 3, W - 6, H - 6, {
+      stroke: 'rgba(255,255,255,0.7)', strokeWidth: 1.8,
+      fill: '#E0E8F0', fillStyle: 'solid',
+      roughness: 0.5, bowing: 0.6, disableMultiStroke: true, seed: 200
+    })
+    rc.line(16, 138, W - 16, 138, { stroke: 'rgba(255,255,255,0.5)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 201 })
+    rc.line(16, 210, W - 16, 210, { stroke: 'rgba(255,255,255,0.5)', strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 202 })
+  }, [open])
+
+  if (!open) return null
+
+  var font = "-apple-system, 'PingFang SC', sans-serif"
+  var label = { fontSize: 11, color: '#8A9AAA', letterSpacing: 1, fontFamily: font, marginBottom: 8 }
+  var txt = { fontSize: 12, color: '#6A7A8A', fontFamily: font, lineHeight: 1.6 }
+  var inputS = {
+    flex: 1, minWidth: 0, boxSizing: 'border-box',
+    padding: '7px 10px', fontSize: 13,
+    border: '1.5px solid rgba(255,255,255,0.7)',
+    background: 'rgba(255,255,255,0.4)', color: '#5A6A7A',
+    outline: 'none', fontFamily: font,
+  }
+  var btnS = {
+    padding: '7px 14px', fontSize: 12,
+    border: '1.5px solid rgba(255,255,255,0.7)',
+    background: 'rgba(255,255,255,0.35)', color: '#5A6A7A',
+    cursor: 'pointer', fontFamily: font,
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
+      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 320 }}>
+        <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
+        <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1 }}>
+
+          <div style={{ fontSize: 14, color: '#6A7A8A', letterSpacing: 3, fontFamily: font, marginBottom: 20 }}>
+            Settings
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={label}>{'City · ' + cityName}</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={cityInput} onChange={function(e) { setCityInput(e.target.value) }}
+                placeholder="city name" style={inputS} />
+              <button onClick={onCityConfirm} style={btnS}>{cityLoading ? '...' : 'OK'}</button>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24, paddingTop: 8 }}>
+            <div style={label}>Cache</div>
+            <button onClick={function() {
+              if ('caches' in window) caches.keys().then(function(n) { n.forEach(function(k) { caches.delete(k) }) })
+              if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function(r) { r.forEach(function(s) { s.unregister() }) })
+              setTimeout(function() { window.location.reload() }, 300)
+            }} style={{ ...btnS, width: '100%', padding: '8px 0' }}>Clear & Reload</button>
+          </div>
+
+          <div style={{ paddingTop: 8 }}>
+            <div style={label}>About</div>
+            <div style={txt}>Hopscotch v0.1</div>
+            <div style={{ ...txt, fontSize: 11, color: '#9AAABB', marginTop: 2 }}>
+              A living handbook.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  )
+}
+
+
 export default function App() {
   const [view, setView] = useState('home')
   const [expanding, setExpanding] = useState(false)
@@ -84,6 +255,24 @@ export default function App() {
   const [card, setCard] = useState(null)
   const [dimIndex, setDimIndex] = useState(0)
   const [flipping, setFlipping] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [cityInput, setCityInput] = useState('')
+  const [cityName, setCityName] = useState('Hangzhou')
+  const [cityCenter, setCityCenter] = useState([30.27, 120.15])
+  const [cityLoading, setCityLoading] = useState(false)
+
+  useEffect(function() {
+    if (!isConnected()) return
+    supaGet('settings', 'key=eq.hopscotch_city').then(function(rows) {
+      if (rows && rows[0]) {
+        try {
+          var c = JSON.parse(rows[0].value)
+          if (c.name) setCityName(c.name)
+          if (c.lat && c.lng) setCityCenter([c.lat, c.lng])
+        } catch(e) {}
+      }
+    })
+  }, [])
   const mapRef = useRef(null)
   const tabRef = useRef(null)
   const backRef = useRef(null)
@@ -124,8 +313,10 @@ export default function App() {
   /* draw tabs + back button */
   useEffect(() => {
     if (view !== 'ink') return
-    if (tabRef.current) drawTabs(tabRef.current, dimIndex)
-    if (backRef.current) drawBack(backRef.current)
+    requestAnimationFrame(() => {
+      if (tabRef.current) drawTabs(tabRef.current, dimIndex)
+      if (backRef.current) drawBack(backRef.current)
+    })
   }, [view, dimIndex, panelOpen, card])
 
   const handleTabClick = useCallback((e) => {
@@ -143,19 +334,52 @@ export default function App() {
   if (view === 'home') {
     return (
       <div style={{
-        width: '100vw', height: '100vh',
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         opacity: expanding ? 0 : 1,
         transform: expanding ? 'scale(1.1)' : 'scale(1)',
         transition: 'opacity 0.35s ease, transform 0.35s ease',
       }}>
         <HopscotchCanvas onZoneTap={handleZoneTap} />
+        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
+          cityName={cityName} cityInput={cityInput} setCityInput={setCityInput} cityLoading={cityLoading}
+          onCityConfirm={async () => {
+            if (!cityInput.trim() || !isConnected()) return
+            setCityLoading(true)
+            try {
+              await supaPost('service_requests', { service: 'amap', action: 'geocode', params: JSON.stringify({ address: cityInput.trim() }) })
+              await new Promise(r => setTimeout(r, 800))
+              var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.geocode&order=id.desc&limit=1')
+              if (rows && rows[0] && rows[0].result) {
+                var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
+                if (res.geocodes && res.geocodes[0]) {
+                  var loc = res.geocodes[0].location.split(',')
+                  var lng = parseFloat(loc[0]), lat = parseFloat(loc[1])
+                  var name = cityInput.trim()
+                  setCityName(name)
+                  setCityCenter([lat, lng])
+                  await supaPatch('settings', 'key=eq.hopscotch_city', { value: JSON.stringify({ name: name, lat: lat, lng: lng }) })
+                }
+              }
+            } catch(e) { console.error('geocode error', e) }
+            setCityLoading(false)
+            setCityInput('')
+            setSettingsOpen(false)
+          }} />
+        <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
+          <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
+            onClick={() => setSettingsOpen(!settingsOpen)} style={{ cursor: 'pointer' }} />
+          <canvas ref={el => { if (el && !el._drawn) { drawBrush(el); el._drawn = true } }}
+            onClick={() => console.log('workshop')} style={{ cursor: 'pointer' }} />
+          <canvas ref={el => { if (el && !el._drawn) { drawCards(el); el._drawn = true } }}
+            onClick={() => console.log('cards')} style={{ cursor: 'pointer' }} />
+        </div>
       </div>
     )
   }
 
   return (
     <div style={{
-      width: '100vw', height: '100vh', position: 'relative',
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       overflow: 'hidden',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
@@ -191,7 +415,7 @@ export default function App() {
           transform: 'rotateY(240deg)',
           overflow: 'hidden',
         }}>
-          {dimIndex === 2 && <CompassView locations={locations} />}
+          {dimIndex === 2 && <CompassView locations={locations} center={cityCenter} />}
         </div>
       </div>
       </div>
@@ -229,12 +453,13 @@ export default function App() {
       )}
 
       {!panelOpen && !card && dimIndex === 0 && (
-        <button onClick={() => setPanelOpen(true)} style={{
-          position:'fixed', bottom:16, right:16, width:44, height:44,
-          background:'#2E94B9', border:'none', borderRadius:12,
-          color:'#fff', fontSize:18, cursor:'pointer',
-          boxShadow:'0 2px 10px rgba(0,0,0,0.12)', zIndex:101,
-        }}>{'\u270e'}</button>
+        <canvas ref={el => { if (el && !el._drawn) { drawInkBrush(el); el._drawn = true } }}
+          onClick={() => setPanelOpen(true)}
+          style={{
+            position:'fixed', bottom:16, right:16,
+            zIndex:101, cursor:'pointer',
+            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.15))',
+          }} />
       )}
 
       <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)}

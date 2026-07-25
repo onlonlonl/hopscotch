@@ -55,7 +55,7 @@ function prerenderIcon(loc, idx) {
 }
 
 /* ── Leaflet-based CompassView ── */
-export default function CompassView({ locations }) {
+export default function CompassView({ locations, center }) {
   var containerRef = useRef(null), mapRef = useRef(null), markersRef = useRef([])
   var ss = useState(null), selected = ss[0], setSelected = ss[1]
   var pp = useState(null), cardPos = pp[0], setCardPos = pp[1]
@@ -66,7 +66,7 @@ export default function CompassView({ locations }) {
   useEffect(function() {
     if (!containerRef.current || mapRef.current) return
     var map = L.map(containerRef.current, {
-      center: [30.27, 120.15],
+      center: center || [30.27, 120.15],
       zoom: 10,
       zoomControl: false,
       attributionControl: false,
