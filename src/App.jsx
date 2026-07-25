@@ -14,6 +14,8 @@ import NotesCell from './components/NotesCell'
 import MapCell from './components/MapCell'
 import RoofCell from './components/RoofCell'
 import NotesView from './components/NotesView'
+import GardenCell from './components/GardenCell'
+import GardenView from './components/GardenView'
 import { grid } from './lib/tokens'
 import { initSupabase } from './lib/supabase'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
@@ -307,6 +309,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [cardsOpen, setCardsOpen] = useState(false)
   const [notesView, setNotesView] = useState(false)
+  const [gardenView, setGardenView] = useState(false)
+  const [garden, setGarden] = useState(null)
     const [cityName, setCityName] = useState('Hangzhou')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
 
@@ -324,9 +328,16 @@ export default function App() {
   }, [])
   // --- init supabase ---
   useEffect(function () { initSupabase() }, [])
+  // load garden
+  useEffect(function () {
+    if (!isConnected()) return
+    supaGet('hopscotch_garden', 'order=id.desc&limit=1').then(function(r) {
+      if (r && r[0]) setGarden(r[0])
+    })
+  }, [])
 
   // --- zone content: which cell holds what ---
-  const [zoneMap, setZoneMap] = useState({ top: 'map', midLeft: 'weather', midRight: 'notes', center: null })
+  const [zoneMap, setZoneMap] = useState({ top: 'map', midLeft: 'weather', midRight: 'notes', center: 'garden' })
   const zoneNames = ['top', 'midLeft', 'midRight', 'center']
 
   const [zoneRects, setZoneRects] = useState({})
@@ -387,6 +398,10 @@ export default function App() {
   var mZone = null; for (var _m in zoneMap) { if (zoneMap[_m] === 'map') { mZone = _m; break } }
   var mapCellRect = mZone && zoneRects[mZone] ? zoneRects[mZone] : null
 
+  
+  var gZone = null; for (var _g in zoneMap) { if (zoneMap[_g] === 'garden') { gZone = _g; break } }
+  var gardenCellRect = gZone && zoneRects[gZone] ? zoneRects[gZone] : null
+
   const mapRef = useRef(null)
   const tabRef = useRef(null)
   const backRef = useRef(null)
@@ -407,6 +422,7 @@ export default function App() {
     if (dragFrom) return
     if (zoneMap[zone] === 'map') enterInk()
     if (zoneMap[zone] === 'notes') setNotesView(true)
+    if (zoneMap[zone] === 'garden') setGardenView(true)
   }, [enterInk])
 
   const handleDragToMap = useCallback((type, sx, sy) => {
@@ -461,6 +477,7 @@ export default function App() {
         {weatherCellRect && <WeatherCell cellRect={weatherCellRect} />}
         {notesCellRect && <NotesCell cellRect={notesCellRect} onTap={() => setNotesView(true)} />}
         {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} />}
+        {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} />
         {dragFrom && zoneNames.map(function (zn) {
           var r = zoneRects[zn]; if (!r) return null
@@ -475,6 +492,7 @@ export default function App() {
         <CardsPanel open={cardsOpen} onClose={() => setCardsOpen(false)} locations={locations} setLocations={setLocations} cityName={cityName}
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         {notesView && <NotesView onExit={() => setNotesView(false)} />}
+        {gardenView && <GardenView onExit={() => setGardenView(false)} />}
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
