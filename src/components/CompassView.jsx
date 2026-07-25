@@ -70,11 +70,16 @@ export default function CompassView({ locations }) {
       zoom: 10,
       zoomControl: false,
       attributionControl: false,
+      wheelPxPerZoomLevel: 120,
+      zoomSnap: 0.5,
     })
     mapRef.current = map
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
       maxZoom: 19, subdomains: 'abcd',
+      updateWhenZooming: false,
+      updateWhenIdle: true,
+      keepBuffer: 4,
     }).addTo(map)
 
     map.on('click', function() { setSelected(null); setCardPos(null) })
