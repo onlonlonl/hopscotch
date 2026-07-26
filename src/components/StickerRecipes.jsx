@@ -4,7 +4,7 @@ var BG = '#FAF6F0'
 
 export var stickerCategories = {
   flora: { label: 'Flora', items: [
-    { type: 'rose', label: 'rose' },
+    { type: 'plumeria', label: 'plumeria' },
     { type: 'sakura', label: 'sakura' },
     { type: 'leaf', label: 'leaf' },
     { type: 'wind', label: 'wind' },
@@ -36,37 +36,30 @@ export var stickerRecipes = {
 
   // ═══ Flora ═══
 
-  rose: function(rc, ctx, x, y, s, color) {
+  plumeria: function(rc, ctx, x, y, s, color) {
     var fo = { stroke: color, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
-    // big base circle
-    rc.circle(x, y, 22*s, fo)
-    // petal separation arcs — BG color curves at different angles
-    ctx.strokeStyle = BG; ctx.lineWidth = 1.2*s; ctx.lineCap = 'round'
-    // outer ring petals
-    var arcs = [[0.3, 10*s], [1.2, 10*s], [2.1, 10*s], [3.0, 10*s], [3.9, 10*s], [4.8, 10*s]]
-    for (var i = 0; i < arcs.length; i++) {
-      ctx.beginPath(); ctx.arc(x, y, arcs[i][1], arcs[i][0], arcs[i][0] + 1.3); ctx.stroke()
+    var w = { stroke: BG, strokeWidth: 1.2*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    // 5 elongated petals in pinwheel — each rotated ~15deg from radial
+    var angles = [-90, -18, 54, 126, 198]
+    var twist = 15
+    for (var i = 0; i < 5; i++) {
+      var a = (angles[i] + twist) * Math.PI / 180
+      var px = x + Math.cos(a) * 5*s, py = y + Math.sin(a) * 5*s
+      // draw petal as filled ellipse — long and plump
+      ctx.save()
+      ctx.translate(px, py)
+      ctx.rotate(a + Math.PI/2)
+      // use rough ellipse at origin after rotation
+      rc.ellipse(0, 0, 7*s, 16*s, fo)
+      ctx.restore()
     }
-    // middle ring
-    ctx.lineWidth = 1*s
-    var mid = [[0.8, 7*s], [2.0, 7*s], [3.2, 7*s], [4.4, 7*s], [5.6, 7*s]]
-    for (var i = 0; i < mid.length; i++) {
-      ctx.beginPath(); ctx.arc(x, y, mid[i][1], mid[i][0], mid[i][0] + 1.0); ctx.stroke()
+    // BG lines between petals to create separation
+    for (var i = 0; i < 5; i++) {
+      var a = angles[i] * Math.PI / 180
+      rc.line(x, y, x + Math.cos(a) * 9*s, y + Math.sin(a) * 9*s, { ...w, strokeWidth: 1*s, seed: 50+i })
     }
-    // inner ring
-    ctx.lineWidth = 0.8*s
-    var inner = [[0.5, 4*s], [1.8, 4*s], [3.1, 4*s], [4.4, 4*s]]
-    for (var i = 0; i < inner.length; i++) {
-      ctx.beginPath(); ctx.arc(x, y, inner[i][1], inner[i][0], inner[i][0] + 0.9); ctx.stroke()
-    }
-    // tight center spiral
-    ctx.beginPath()
-    for (var t = 0; t < 1; t += 0.02) {
-      var a = t * Math.PI * 3, r = t * 2.5*s
-      var px = x + Math.cos(a) * r, py = y + Math.sin(a) * r
-      if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
-    }
-    ctx.stroke()
+    // warm center
+    rc.circle(x, y, 4*s, { stroke: color, fill: color, fillStyle: 'solid', strokeWidth: 0.3*s, roughness: 0.3, disableMultiStroke: true, seed: 60 })
   },
 
   sakura: function(rc, ctx, x, y, s, color) {

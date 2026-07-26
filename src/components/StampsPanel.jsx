@@ -153,7 +153,7 @@ function RoughBack({ onClick }) {
 
 function StickerThumb({ recipeFn, color, size }) {
   var ref = useRef(null)
-  var sz = size || 68
+  var sz = size || 58
   useEffect(function() {
     if (!ref.current || !recipeFn) return
     var cvs = ref.current
@@ -163,7 +163,7 @@ function StickerThumb({ recipeFn, color, size }) {
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, sz, sz)
     var rc = rough.canvas(cvs)
-    recipeFn(rc, ctx, sz / 2, sz / 2, sz / 42, color || '#A09080')
+    recipeFn(rc, ctx, sz / 2, sz / 2, sz / 56, color || '#A09080')
   }, [recipeFn, color, sz])
   return <canvas ref={ref} style={{ display: 'block' }} />
 }
