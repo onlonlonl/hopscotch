@@ -169,20 +169,21 @@ export default function ThreadView({ locations = [], onNodeTap }) {
   }, [])
 
   useEffect(() => {
-    if (!infRef.current || !dims.w || locs.length === 0) return
+    if (!infRef.current || !dims.w) return
     const c = infRef.current; c.width = infSize; c.height = infSize; c.style.width = infSize+'px'; c.style.height = infSize+'px'
     drawInfinity(c, locs, sc, ox, oy)
     const hl = hlRef.current; if (hl) { hl.width = infSize; hl.height = infSize; hl.style.width = infSize+'px'; hl.style.height = infSize+'px' }
   }, [dims.w, locs.length, infSize, sc, ox, oy])
 
   useEffect(() => {
-    if (!trackRef.current || !dims.w || locs.length === 0) return
+    if (!trackRef.current || !dims.w) return
     const c = trackRef.current; c.width = trackPad * 2 + trackW; c.height = 50
     drawTrack(c, locs, trackPad, trackW)
   }, [dims.w, locs.length, trackW, trackPad])
 
   useEffect(() => {
-    if (!hlRef.current || locs.length === 0) return
+    if (!hlRef.current) return
+    if (locs.length === 0) { var _hc = hlRef.current.getContext('2d'); _hc.clearRect(0,0,hlRef.current.width,hlRef.current.height); return }
     drawHighlight(hlRef.current, locs, activeIdx, sc, ox, oy)
   }, [activeIdx, locs.length, infSize, sc, ox, oy])
 
@@ -232,7 +233,6 @@ export default function ThreadView({ locations = [], onNodeTap }) {
   }, [locs, trackPad, trackW])
 
   const bgColor = '#FAF6F0'
-  if (locs.length === 0) return <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#FAF6F0' }} />
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', background: bgColor, position: 'relative', overflow: 'hidden' }}>

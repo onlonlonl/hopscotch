@@ -238,7 +238,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
     outline: 'none', fontFamily: font,
   }
   var btnS = {
-    padding: '7px 14px', fontSize: 12, textAlign: 'center',
+    padding: '7px 6px', fontSize: 12, textAlign: 'center', boxSizing: 'border-box',
     border: '1.5px solid rgba(46,148,185,0.25)',
     background: 'rgba(240,244,248,0.5)', color: '#5A6A7A',
     cursor: 'pointer', fontFamily: font,
@@ -260,7 +260,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
             <div style={{ display: 'flex', gap: 6 }}>
               <input value={input} onChange={function(e) { setInput(e.target.value) }}
                 placeholder="city name" style={inputS} />
-              <button onClick={doSearch} style={{...btnS, width:48}}>{searching ? '...' : 'GO'}</button>
+              <button onClick={doSearch} style={{...btnS, width:56, flexShrink:0}}>{searching ? '...' : 'GO'}</button>
             </div>
             {results.length > 0 && <div style={{ marginTop: 6 }}>
               {results.map(function(r, i) {
@@ -281,7 +281,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
               <button onClick={function() {
                 localStorage.setItem('hopscotch_ai_key', apiKey.trim())
                 setKeySaved(true)
-              }} style={{...btnS, width:48}}>{keySaved ? 'OK' : 'SAVE'}</button>
+              }} style={{...btnS, width:56, flexShrink:0}}>{keySaved ? 'OK' : 'SAVE'}</button>
             </div>
             <div style={{ ...txt, fontSize: 10, color: '#9AAABB', marginTop: 4 }}>AI key, stored on this device</div>
           </div>
