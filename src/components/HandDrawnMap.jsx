@@ -319,10 +319,15 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
         }
       }
     }
+    function killSelect(e) { e.preventDefault() }
+    canvas.addEventListener('selectstart', killSelect)
+    canvas.addEventListener('contextmenu', killSelect)
     canvas.addEventListener('touchstart', onTouchStart, { passive: false })
     canvas.addEventListener('touchmove', onTouchMove, { passive: false })
     canvas.addEventListener('touchend', onTouchEnd)
     return function() {
+      canvas.removeEventListener('selectstart', killSelect)
+      canvas.removeEventListener('contextmenu', killSelect)
       canvas.removeEventListener('touchstart', onTouchStart)
       canvas.removeEventListener('touchmove', onTouchMove)
       canvas.removeEventListener('touchend', onTouchEnd)
@@ -368,10 +373,13 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
       ref={canvasRef}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
+      onContextMenu={function(e) { e.preventDefault() }}
       style={{
         display: 'block', width: '100%', height: '100%',
         borderRadius: fullscreen ? 0 : 4,
         touchAction: 'none', cursor: 'grab',
+        userSelect: 'none', WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none', WebkitTapHighlightColor: 'transparent',
       }}
     />
   )

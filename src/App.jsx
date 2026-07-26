@@ -1013,11 +1013,13 @@ export default function App() {
   }
 
   return (
-    <div style={{
+    <div onContextMenu={function(e){ e.preventDefault() }} style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       overflow: 'hidden',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
+      userSelect: 'none', WebkitUserSelect: 'none',
+      WebkitTouchCallout: 'none', WebkitTapHighlightColor: 'transparent',
     }}>
       <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, perspective: '1200px' }}>
       <div style={{
@@ -1116,9 +1118,9 @@ export default function App() {
             var ctx = el.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
             ctx.clearRect(0, 0, sz, sz)
             var rc = rough.canvas(el)
-            var col = overTrash ? '#C48A7A' : '#B0A898'
+            var col = overTrash ? '#C48A7A' : '#2E94B9'
             rc.circle(sz/2, sz/2, sz-3, {
-              stroke: col, fill: overTrash ? '#FFF0EC' : 'rgba(250,246,240,0.92)',
+              stroke: col, fill: overTrash ? '#FFF0EC' : 'rgba(240,248,252,0.94)',
               fillStyle: 'solid', strokeWidth: 1.2, roughness: 0.5,
               disableMultiStroke: true, seed: 30
             })
