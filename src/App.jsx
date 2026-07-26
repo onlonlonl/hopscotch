@@ -524,11 +524,12 @@ export default function App() {
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         {notesView && <NotesView onExit={() => setNotesView(false)} />}
         {gardenView && <GardenView onExit={() => setGardenView(false)} />}
+        <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onStickerPlace={(shapes, label) => console.log("sticker:", label, shapes)} onPatternPlace={(pid, cid) => console.log("pattern:", pid, cid)} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
           <canvas ref={el => { if (el && !el._drawn) { drawBrush(el); el._drawn = true } }}
-            onClick={() => console.log('workshop')} style={{ cursor: 'pointer' }} />
+            onClick={() => { setPanelOpen(!panelOpen); setSettingsOpen(false); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
           <canvas ref={el => { if (el && !el._drawn) { drawCards(el); el._drawn = true } }}
             onClick={() => { setCardsOpen(!cardsOpen); setSettingsOpen(false) }} style={{ cursor: 'pointer' }} />
         </div>
