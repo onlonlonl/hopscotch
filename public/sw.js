@@ -1,4 +1,4 @@
-var CACHE = 'hopscotch-v22'
+var CACHE = 'hopscotch-v23'
 var SHELL = ['./', './index.html']
 
 self.addEventListener('install', function(e) {

@@ -238,7 +238,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
     outline: 'none', fontFamily: font,
   }
   var btnS = {
-    padding: '7px 14px', fontSize: 12,
+    padding: '7px 14px', fontSize: 12, textAlign: 'center',
     border: '1.5px solid rgba(46,148,185,0.25)',
     background: 'rgba(240,244,248,0.5)', color: '#5A6A7A',
     cursor: 'pointer', fontFamily: font,
@@ -575,6 +575,9 @@ export default function App() {
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
   const [weatherColor, setWeatherColor] = useState(null)
 
+  // --- init supabase (synchronous, before any effect) ---
+  useState(function () { initSupabase(); return true })
+
   // fetch weather color from weather_cache
   useEffect(function () {
     if (!isConnected()) return
@@ -629,8 +632,6 @@ export default function App() {
       }
     })
   }, [])
-  // --- init supabase ---
-  useEffect(function () { initSupabase() }, [])
   // load garden + trip/place counts
   useEffect(function () {
     if (!isConnected()) return
