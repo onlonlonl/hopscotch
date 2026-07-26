@@ -444,7 +444,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                         var sx = touch.clientX, sy = touch.clientY, started = false
                         function onMove(ev) {
                           var t = ev.touches[0]
-                          if (!started && Math.abs(t.clientX - sx) + Math.abs(t.clientY - sy) > 12) {
+                          var dy = t.clientY - sy; if (!started && dy < -10) {
                             started = true
                             setDragging({ type: '__pattern__', patternId: pt.id, colorId: selColor })
                           }

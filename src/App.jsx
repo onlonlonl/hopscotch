@@ -355,7 +355,7 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }} />
     <canvas ref={previewRef} onTouchStart={handleTouch}
       style={{ position: "absolute", left: minX, top: minY, zIndex: 51, touchAction: "none" }} />
-    <div style={{ position: "fixed", right: 16, top: "30%", bottom: "30%", zIndex: 52, width: 36, display: "flex", flexDirection: "column", alignItems: "center" }}
+    <div style={{ position: "fixed", right: 16, top: "20%", zIndex: 52, width: 40, height: 120, display: "flex", flexDirection: "column", alignItems: "center" }}
       onTouchStart={function(e) {
         e.preventDefault()
         var t0 = e.touches[0], startY = t0.clientY, startTile = tile
@@ -373,13 +373,13 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
         cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
         var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
         var rc2 = rough.canvas(cvs)
-        rc2.line(8, 10, 28, 10, { stroke: "#B0A898", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 20 })
-        rc2.line(18, 4, 18, 16, { stroke: "#B0A898", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 21 })
-        rc2.line(10, 28, 26, 28, { stroke: "#B0A898", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 22 })
-        ctx2.fillStyle = "#B0A898"; ctx2.font = "9px -apple-system, sans-serif"; ctx2.textAlign = "center"
+        rc2.line(8, 10, 28, 10, { stroke: "#5A4A38", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 20 })
+        rc2.line(18, 4, 18, 16, { stroke: "#5A4A38", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 21 })
+        rc2.line(10, 28, 26, 28, { stroke: "#5A4A38", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 22 })
+        ctx2.fillStyle = "#5A4A38"; ctx2.font = "9px -apple-system, sans-serif"; ctx2.textAlign = "center"
         ctx2.fillText("zoom", 18, 24)
       }} style={{ marginBottom: 4 }} />
-      <div style={{ flex: 1, width: 2, background: "rgba(176,168,152,0.4)", borderRadius: 1 }} />
+      <div style={{ flex: 1, width: 4, background: "rgba(255,255,255,0.85)", borderRadius: 2, boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }} />
     </div>
     <div style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 52, display: "flex", gap: 16 }}>
       <canvas ref={function(cvs) {
