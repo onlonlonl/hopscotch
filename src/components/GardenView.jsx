@@ -371,6 +371,33 @@ export default function GardenView({ onExit }) {
     setPlanting(true)
   }
 
+  /* regenerate stamps */
+  async function handleRegen() {
+    if (!garden || !isConnected() || generating) return
+    setGenerating(true)
+    try {
+      var safeName = (garden.plant_name || '').replace(/"/g, '').replace(/'/g, '').substring(0, 40)
+      await supaPost('commands', { cmd: 'cd ~/lucid && python3 gen_stamps.py "' + safeName + '"', status: 'pending' })
+      var stamps = null
+      for (var attempt = 0; attempt < 10; attempt++) {
+        await new Promise(function(r) { setTimeout(r, 1500) })
+        var cmds = await supaGet('commands', 'order=id.desc&limit=1')
+        if (cmds && cmds[0] && cmds[0].status === 'done' && cmds[0].result) {
+          try {
+            var parsed = JSON.parse(cmds[0].result)
+            if (Array.isArray(parsed) && parsed.length === 6) { stamps = parsed; break }
+          } catch(e) {}
+        }
+      }
+      if (stamps) {
+        await supaPatch('hopscotch_garden', 'id=eq.' + garden.id, { stamps: stamps })
+        var g2 = {...garden, stamps: stamps}
+        setGarden(g2)
+      }
+    } catch(e) { console.error('regen', e) }
+    setGenerating(false)
+  }
+
   var W = Math.min(window.innerWidth - 40, 340)
   var gridH = W * 0.72
 
@@ -464,6 +491,16 @@ export default function GardenView({ onExit }) {
             <span>{'\u2600\uFE0F'} {score.days}d</span>
             <span>{'\uD83D\uDE97'} {score.trips}</span>
             <span>{'\uD83D\uDCCD'} {score.places}</span>
+          </div>
+
+          {/* regenerate stamps */}
+          <div onClick={handleRegen} style={{
+            fontSize: 11, color: generating ? '#B8A898' : '#9A8A7A', fontFamily: FONT,
+            cursor: generating ? 'default' : 'pointer', marginBottom: 12,
+            textDecoration: 'underline', textUnderlineOffset: 3,
+            opacity: generating ? 0.5 : 0.7,
+          }}>
+            {generating ? 'drawing...' : 'Redraw stamps'}
           </div>
 
           {/* harvest button */}
