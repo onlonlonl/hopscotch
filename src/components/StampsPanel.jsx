@@ -440,16 +440,25 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                   return (
                     <div key={pt.id}
                       onTouchStart={function(e) {
-                        e.preventDefault()
                         var touch = e.touches[0]
-                        setDragging({ type: '__pattern__', patternId: pt.id, colorId: selColor })
-                        setDragPos({ x: touch.clientX - 30, y: touch.clientY - 30 })
-                        function onMove(ev) { ev.preventDefault(); var t = ev.touches[0]; setDragPos({ x: t.clientX - 30, y: t.clientY - 30 }) }
+                        var sx = touch.clientX, sy = touch.clientY, started = false
+                        function onMove(ev) {
+                          var t = ev.touches[0]
+                          if (!started && Math.abs(t.clientX - sx) + Math.abs(t.clientY - sy) > 12) {
+                            started = true
+                            setDragging({ type: '__pattern__', patternId: pt.id, colorId: selColor })
+                          }
+                          if (started) { ev.preventDefault(); setDragPos({ x: t.clientX - 30, y: t.clientY - 30 }) }
+                        }
                         function onEnd(ev) {
-                          var t = ev.changedTouches[0]
-                          var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
-                          if (t.clientY < panelTop && onPatternPlace) onPatternPlace(pt.id, selColor, t.clientX, t.clientY)
-                          setDragging(null); setDragPos(null)
+                          if (started) {
+                            var t = ev.changedTouches[0]
+                            var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
+                            if (t.clientY < panelTop && onPatternPlace) onPatternPlace(pt.id, selColor, t.clientX, t.clientY)
+                            setDragging(null); setDragPos(null)
+                          } else {
+                            setSelPattern(pt.id)
+                          }
                           window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd)
                         }
                         window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onEnd)
