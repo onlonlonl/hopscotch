@@ -1,223 +1,288 @@
-// StickerRecipes — decorative journal sticker elements
-// Format: drawFromJSON shapes arrays (circle/ellipse/line/rect)
-// Coordinate system: center (0,0), range roughly -14 to 14
-// Colors: muted莫兰迪 palette only
+// StickerRecipes — single-color + negative-space, same as IconGallery
+// Signature: (rc, ctx, x, y, s, color) where s = scale, color = single fill color
+var BG = '#FAF6F0'
 
 export var stickerCategories = {
-  flora: {
-    label: 'Flora',
-    items: [
-      { type: 'leaf', label: 'leaf' },
-      { type: 'branch', label: 'branch' },
-      { type: 'daisy', label: 'daisy' },
-      { type: 'wreath', label: 'wreath' },
-      { type: 'mushroom', label: 'mushroom' },
-      { type: 'crescent', label: 'moon' },
-      { type: 'starburst', label: 'star' },
-    ],
-  },
-  frame: {
-    label: 'Frame',
-    items: [
-      { type: 'ribbon', label: 'ribbon' },
-      { type: 'tape', label: 'tape' },
-      { type: 'tag', label: 'tag' },
-      { type: 'divider_wave', label: 'wave' },
-      { type: 'divider_dot', label: 'dots' },
-      { type: 'postcard', label: 'postcard' },
-      { type: 'stamp_frame', label: 'stamp' },
-    ],
-  },
-  trinket: {
-    label: 'Trinket',
-    items: [
-      { type: 'envelope', label: 'letter' },
-      { type: 'key', label: 'key' },
-      { type: 'bottle', label: 'bottle' },
-      { type: 'teacup', label: 'cup' },
-      { type: 'book', label: 'book' },
-      { type: 'candle', label: 'candle' },
-      { type: 'wax_seal', label: 'seal' },
-    ],
-  },
+  flora: { label: 'Flora', items: [
+    { type: 'hibiscus', label: 'hibiscus' },
+    { type: 'daisy', label: 'daisy' },
+    { type: 'leaf', label: 'leaf' },
+    { type: 'branch', label: 'branch' },
+    { type: 'mushroom', label: 'mushroom' },
+    { type: 'crescent', label: 'moon' },
+    { type: 'star5', label: 'star' },
+  ]},
+  frame: { label: 'Frame', items: [
+    { type: 'ribbon', label: 'ribbon' },
+    { type: 'tape', label: 'tape' },
+    { type: 'tag', label: 'tag' },
+    { type: 'divider_wave', label: 'wave' },
+    { type: 'divider_dot', label: 'dots' },
+    { type: 'postcard', label: 'postcard' },
+    { type: 'stamp_frame', label: 'stamp' },
+  ]},
+  trinket: { label: 'Trinket', items: [
+    { type: 'envelope', label: 'letter' },
+    { type: 'key', label: 'key' },
+    { type: 'bow', label: 'bow' },
+    { type: 'teacup', label: 'cup' },
+    { type: 'book', label: 'book' },
+    { type: 'candle', label: 'candle' },
+    { type: 'heart', label: 'heart' },
+  ]},
 }
 
 export var stickerRecipes = {
-  leaf: [
-    { t: 'line', x1: 0, y1: 8, x2: 0, y2: -4, stroke: '#6B8E5A' },
-    { t: 'ellipse', x: -1, y: -2, w: 10, h: 16, fill: '#8BAF7A', stroke: '#6B8E5A' },
-    { t: 'line', x1: 0, y1: -9, x2: 0, y2: 2, stroke: '#5E7E50' },
-    { t: 'line', x1: -3, y1: -4, x2: 0, y2: -1, stroke: '#5E7E50' },
-    { t: 'line', x1: 3, y1: -5, x2: 0, y2: -2, stroke: '#5E7E50' },
-  ],
-  branch: [
-    { t: 'line', x1: -10, y1: 4, x2: 10, y2: -4, stroke: '#8B7A68' },
-    { t: 'ellipse', x: -5, y: 0, w: 6, h: 10, fill: '#A8C49A', stroke: '#7A9B6A' },
-    { t: 'ellipse', x: 0, y: -2, w: 5, h: 9, fill: '#8BAF7A', stroke: '#6B8E5A' },
-    { t: 'ellipse', x: 5, y: -4, w: 6, h: 10, fill: '#A8C49A', stroke: '#7A9B6A' },
-    { t: 'circle', x: -7, y: 2, r: 2, fill: '#C4A6D0', stroke: '#A888B0' },
-    { t: 'circle', x: 7, y: -5, r: 1.5, fill: '#D0A0A0', stroke: '#C48A7A' },
-  ],
-  daisy: [
-    { t: 'line', x1: 0, y1: 8, x2: 0, y2: 0, stroke: '#7A9B6A' },
-    { t: 'ellipse', x: -3, y: 4, w: 5, h: 8, stroke: '#8BAF7A' },
-    { t: 'ellipse', x: 0, y: -5, w: 5, h: 3, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'ellipse', x: -4, y: -3, w: 5, h: 3, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'ellipse', x: 4, y: -3, w: 5, h: 3, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'ellipse', x: -3, y: -1, w: 5, h: 3, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'ellipse', x: 3, y: -1, w: 5, h: 3, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'circle', x: 0, y: -3, r: 2.5, fill: '#E8C868', stroke: '#D4B878' },
-  ],
-  wreath: [
-    { t: 'ellipse', x: -6, y: -5, w: 5, h: 8, stroke: '#7A9B6A' },
-    { t: 'ellipse', x: 6, y: -5, w: 5, h: 8, stroke: '#8BAF7A' },
-    { t: 'ellipse', x: -8, y: 0, w: 4, h: 7, fill: '#A8C49A', stroke: '#7A9B6A' },
-    { t: 'ellipse', x: 8, y: 0, w: 4, h: 7, fill: '#A8C49A', stroke: '#7A9B6A' },
-    { t: 'ellipse', x: -5, y: 5, w: 5, h: 7, stroke: '#6B8E5A' },
-    { t: 'ellipse', x: 5, y: 5, w: 5, h: 7, stroke: '#7A9B6A' },
-    { t: 'circle', x: -3, y: -7, r: 1.5, fill: '#D0A0A0', stroke: '#C48A7A' },
-    { t: 'circle', x: 3, y: -7, r: 1.5, fill: '#C4A6D0', stroke: '#A888B0' },
-    { t: 'circle', x: 0, y: 8, r: 1.5, fill: '#D4B878', stroke: '#C8A850' },
-  ],
-  mushroom: [
-    { t: 'rect', x: -2, y: 0, w: 4, h: 8, fill: '#FAF0E6', stroke: '#9A8A78' },
-    { t: 'ellipse', x: 0, y: 0, w: 16, h: 10, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'circle', x: -3, y: -2, r: 1.5, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'circle', x: 3, y: -1, r: 1, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'circle', x: 0, y: -3, r: 1.2, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'ellipse', x: 0, y: 8, w: 8, h: 2, stroke: '#9A8A78' },
-  ],
-  crescent: [
-    { t: 'circle', x: 0, y: 0, r: 7, fill: '#E8C868', stroke: '#D4B878' },
-    { t: 'circle', x: 3, y: -2, r: 6, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: -5, y: -5, r: 1, stroke: '#D4B878' },
-    { t: 'circle', x: -8, y: 2, r: 0.8, stroke: '#D4B878' },
-    { t: 'circle', x: -3, y: 6, r: 0.6, stroke: '#D4B878' },
-  ],
-  starburst: [
-    { t: 'line', x1: 0, y1: -8, x2: 0, y2: 8, stroke: '#D4B878' },
-    { t: 'line', x1: -8, y1: 0, x2: 8, y2: 0, stroke: '#D4B878' },
-    { t: 'line', x1: -6, y1: -6, x2: 6, y2: 6, stroke: '#E8C868' },
-    { t: 'line', x1: 6, y1: -6, x2: -6, y2: 6, stroke: '#E8C868' },
-    { t: 'circle', x: 0, y: 0, r: 2.5, fill: '#E8C868', stroke: '#D4B878' },
-  ],
-  ribbon: [
-    { t: 'rect', x: -12, y: -3, w: 24, h: 6, fill: '#D0A0A0', stroke: '#C48A7A' },
-    { t: 'line', x1: -12, y1: -3, x2: -14, y2: -5, stroke: '#C48A7A' },
-    { t: 'line', x1: -12, y1: 3, x2: -14, y2: 5, stroke: '#C48A7A' },
-    { t: 'line', x1: -14, y1: -5, x2: -14, y2: 5, stroke: '#C48A7A' },
-    { t: 'line', x1: 12, y1: -3, x2: 14, y2: -5, stroke: '#C48A7A' },
-    { t: 'line', x1: 12, y1: 3, x2: 14, y2: 5, stroke: '#C48A7A' },
-    { t: 'line', x1: 14, y1: -5, x2: 14, y2: 5, stroke: '#C48A7A' },
-  ],
-  tape: [
-    { t: 'rect', x: -12, y: -2.5, w: 24, h: 5, fill: '#B8C4D0', stroke: '#7BA7BC' },
-    { t: 'line', x1: -12, y1: -2, x2: -11, y2: 2, stroke: '#7BA7BC' },
-    { t: 'line', x1: 12, y1: -1, x2: 11, y2: 2.5, stroke: '#7BA7BC' },
-    { t: 'line', x1: -4, y1: -2.5, x2: -4, y2: 2.5, stroke: '#9BB0C0', sw: 0.6 },
-    { t: 'line', x1: 4, y1: -2.5, x2: 4, y2: 2.5, stroke: '#9BB0C0', sw: 0.6 },
-  ],
-  tag: [
-    { t: 'rect', x: -6, y: -4, w: 12, h: 14, fill: '#FAF0E6', stroke: '#9A8A78' },
-    { t: 'circle', x: 0, y: -2, r: 2, stroke: '#9A8A78' },
-    { t: 'line', x1: -4, y1: 3, x2: 4, y2: 3, stroke: '#C0B8A8', sw: 0.6 },
-    { t: 'line', x1: -4, y1: 5, x2: 4, y2: 5, stroke: '#C0B8A8', sw: 0.6 },
-    { t: 'line', x1: -4, y1: 7, x2: 2, y2: 7, stroke: '#C0B8A8', sw: 0.6 },
-    { t: 'line', x1: -1, y1: -6, x2: 1, y2: -8, stroke: '#9A8A78' },
-    { t: 'line', x1: 1, y1: -8, x2: 3, y2: -7, stroke: '#9A8A78' },
-  ],
-  divider_wave: [
-    { t: 'line', x1: -12, y1: 0, x2: -8, y2: -2, stroke: '#C0B8A8' },
-    { t: 'line', x1: -8, y1: -2, x2: -4, y2: 2, stroke: '#C0B8A8' },
-    { t: 'line', x1: -4, y1: 2, x2: 0, y2: -2, stroke: '#C0B8A8' },
-    { t: 'line', x1: 0, y1: -2, x2: 4, y2: 2, stroke: '#C0B8A8' },
-    { t: 'line', x1: 4, y1: 2, x2: 8, y2: -2, stroke: '#C0B8A8' },
-    { t: 'line', x1: 8, y1: -2, x2: 12, y2: 0, stroke: '#C0B8A8' },
-  ],
-  divider_dot: [
-    { t: 'circle', x: -10, y: 0, r: 1.2, fill: '#C0B8A8', stroke: '#C0B8A8' },
-    { t: 'circle', x: -6, y: 0, r: 1.2, fill: '#D0C8C0', stroke: '#C0B8A8' },
-    { t: 'circle', x: -2, y: 0, r: 1.2, fill: '#C0B8A8', stroke: '#C0B8A8' },
-    { t: 'circle', x: 2, y: 0, r: 1.2, fill: '#D0C8C0', stroke: '#C0B8A8' },
-    { t: 'circle', x: 6, y: 0, r: 1.2, fill: '#C0B8A8', stroke: '#C0B8A8' },
-    { t: 'circle', x: 10, y: 0, r: 1.2, fill: '#D0C8C0', stroke: '#C0B8A8' },
-  ],
-  postcard: [
-    { t: 'rect', x: -11, y: -8, w: 22, h: 16, stroke: '#9A8A78' },
-    { t: 'rect', x: -10, y: -7, w: 20, h: 14, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'line', x1: 0, y1: -7, x2: 0, y2: 7, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'line', x1: 3, y1: -1, x2: 8, y2: -1, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'line', x1: 3, y1: 1, x2: 8, y2: 1, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'line', x1: 3, y1: 3, x2: 6, y2: 3, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'rect', x: 5, y: -6, w: 4, h: 4, stroke: '#D0A0A0', sw: 0.6 },
-  ],
-  stamp_frame: [
-    { t: 'rect', x: -8, y: -10, w: 16, h: 20, fill: '#FAF0E6', stroke: '#9A8A78' },
-    { t: 'circle', x: -8, y: -6, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: -8, y: -2, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: -8, y: 2, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: -8, y: 6, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: 8, y: -6, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: 8, y: -2, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: 8, y: 2, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-    { t: 'circle', x: 8, y: 6, r: 1, fill: '#FAF6F0', stroke: '#FAF6F0' },
-  ],
-  envelope: [
-    { t: 'rect', x: -10, y: -6, w: 20, h: 14, fill: '#FAF0E6', stroke: '#9A8A78' },
-    { t: 'line', x1: -10, y1: -6, x2: 0, y2: 2, stroke: '#9A8A78' },
-    { t: 'line', x1: 10, y1: -6, x2: 0, y2: 2, stroke: '#9A8A78' },
-    { t: 'circle', x: 0, y: 4, r: 2, fill: '#D0A0A0', stroke: '#C48A7A' },
-    { t: 'ellipse', x: 6, y: -8, w: 4, h: 6, fill: '#A8C49A', stroke: '#7A9B6A' },
-  ],
-  key: [
-    { t: 'circle', x: 0, y: -6, r: 4, stroke: '#9A8A78' },
-    { t: 'circle', x: 0, y: -6, r: 2, stroke: '#9A8A78' },
-    { t: 'line', x1: 0, y1: -2, x2: 0, y2: 8, stroke: '#9A8A78' },
-    { t: 'line', x1: 0, y1: 4, x2: 3, y2: 4, stroke: '#9A8A78' },
-    { t: 'line', x1: 0, y1: 7, x2: 4, y2: 7, stroke: '#9A8A78' },
-    { t: 'line', x1: 3, y1: 4, x2: 3, y2: 6, stroke: '#9A8A78' },
-  ],
-  bottle: [
-    { t: 'rect', x: -2, y: -10, w: 4, h: 4, stroke: '#9A8A78' },
-    { t: 'line', x1: -2, y1: -6, x2: -4, y2: -3, stroke: '#9A8A78' },
-    { t: 'line', x1: 2, y1: -6, x2: 4, y2: -3, stroke: '#9A8A78' },
-    { t: 'rect', x: -4, y: -3, w: 8, h: 13, fill: '#B8C4D0', stroke: '#7BA7BC' },
-    { t: 'ellipse', x: 0, y: 10, w: 8, h: 2, stroke: '#7BA7BC' },
-    { t: 'rect', x: -3, y: 0, w: 6, h: 5, fill: '#FAF0E6', stroke: '#C0B8A8', sw: 0.6 },
-    { t: 'circle', x: 0, y: -11, r: 1.5, fill: '#9A8A78', stroke: '#7A6850' },
-  ],
-  teacup: [
-    { t: 'rect', x: -6, y: -3, w: 12, h: 10, fill: '#FAF0E6', stroke: '#9A8A78' },
-    { t: 'ellipse', x: 0, y: -3, w: 12, h: 3, stroke: '#9A8A78' },
-    { t: 'ellipse', x: 0, y: 7, w: 8, h: 2, stroke: '#9A8A78' },
-    { t: 'circle', x: 8, y: 1, r: 3, stroke: '#9A8A78' },
-    { t: 'line', x1: -2, y1: -6, x2: -1, y2: -8, stroke: '#C0B8A8', sw: 0.7 },
-    { t: 'line', x1: 1, y1: -7, x2: 2, y2: -9, stroke: '#C0B8A8', sw: 0.7 },
-  ],
-  book: [
-    { t: 'rect', x: -7, y: -8, w: 14, h: 18, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'rect', x: -5, y: -7, w: 12, h: 16, fill: '#FAF0E6', stroke: '#D4B878', sw: 0.5 },
-    { t: 'line', x1: -7, y1: -8, x2: -7, y2: 10, stroke: '#B07060', sw: 2 },
-    { t: 'line', x1: -3, y1: -3, x2: 4, y2: -3, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'line', x1: -3, y1: -1, x2: 4, y2: -1, stroke: '#C0B8A8', sw: 0.5 },
-    { t: 'line', x1: -3, y1: 1, x2: 2, y2: 1, stroke: '#C0B8A8', sw: 0.5 },
-  ],
-  candle: [
-    { t: 'rect', x: -3, y: -2, w: 6, h: 12, fill: '#FAF0E6', stroke: '#D4B878' },
-    { t: 'line', x1: 0, y1: -2, x2: 0, y2: -5, stroke: '#9A8A78', sw: 0.8 },
-    { t: 'ellipse', x: 0, y: -6, w: 4, h: 5, fill: '#E8C868', stroke: '#D4B878' },
-    { t: 'circle', x: 0, y: -7, r: 1, fill: '#FAF0E6', stroke: '#E8C868' },
-    { t: 'ellipse', x: 0, y: 10, w: 8, h: 2, stroke: '#D4B878' },
-    { t: 'line', x1: -2, y1: 3, x2: 2, y2: 3, stroke: '#D0A0A0', sw: 0.5 },
-  ],
-  wax_seal: [
-    { t: 'circle', x: 0, y: 0, r: 7, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'circle', x: -5, y: -5, r: 2, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'circle', x: 5, y: -4, r: 2.5, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'circle', x: -4, y: 5, r: 2, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'circle', x: 5, y: 4, r: 1.5, fill: '#C48A7A', stroke: '#B07060' },
-    { t: 'circle', x: 0, y: 0, r: 4, stroke: '#FAF0E6', sw: 0.6 },
-    { t: 'line', x1: -2, y1: -1, x2: 2, y2: -1, stroke: '#FAF0E6', sw: 0.6 },
-    { t: 'line', x1: -1, y1: 1, x2: 1, y2: 1, stroke: '#FAF0E6', sw: 0.6 },
-  ],
+
+  // ═══ Flora ═══
+
+  hibiscus: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, bowing: 0.5, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 1.2*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    var angles = [-90, -18, 54, 126, 198]
+    for (var i = 0; i < 5; i++) {
+      var a = angles[i] * Math.PI / 180
+      rc.ellipse(x + Math.cos(a)*5*s, y + Math.sin(a)*5*s, 13*s, 17*s, fo)
+    }
+    for (var i = 0; i < 5; i++) {
+      var a = angles[i] * Math.PI / 180
+      rc.line(x + Math.cos(a)*2*s, y + Math.sin(a)*2*s, x + Math.cos(a)*11*s, y + Math.sin(a)*11*s, { ...w, strokeWidth: 1.4*s, seed: 50+i })
+    }
+    rc.circle(x, y, 5*s, { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 80 })
+    var sx = x - 8*s, sy = y - 13*s
+    rc.line(x - s, y - s, sx, sy, { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 90 })
+    ctx.fillStyle = color
+    ctx.beginPath(); ctx.arc(sx - s, sy - 1.5*s, 0.9*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(sx + 1.5*s, sy - 0.5*s, 0.7*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(sx - 1.5*s, sy + s, 0.6*s, 0, Math.PI*2); ctx.fill()
+  },
+
+  daisy: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    for (var i = 0; i < 8; i++) {
+      var a = i * Math.PI / 4
+      rc.ellipse(x + Math.cos(a)*6*s, y + Math.sin(a)*6*s, 5*s, 10*s, fo)
+    }
+    rc.circle(x, y, 5*s, { ...w, fill: BG, fillStyle: 'solid', strokeWidth: 0.5*s, seed: 60 })
+    rc.circle(x, y, 3.5*s, { stroke: color, fill: color, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 61 })
+  },
+
+  leaf: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 1*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.ellipse(x, y - 2*s, 12*s, 20*s, fo)
+    rc.line(x, y - 12*s, x, y + 8*s, { ...w, strokeWidth: 1.2*s, seed: 50 })
+    rc.line(x - 4*s, y - 5*s, x, y - 2*s, { ...w, strokeWidth: 0.8*s, seed: 51 })
+    rc.line(x + 4*s, y - 6*s, x, y - 3*s, { ...w, strokeWidth: 0.8*s, seed: 52 })
+    rc.line(x - 3.5*s, y + 1*s, x, y + 3*s, { ...w, strokeWidth: 0.8*s, seed: 53 })
+    rc.line(x + 3.5*s, y, x, y + 2*s, { ...w, strokeWidth: 0.8*s, seed: 54 })
+    rc.line(x, y + 8*s, x, y + 13*s, { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 55 })
+  },
+
+  branch: function(rc, ctx, x, y, s, color) {
+    var o = { stroke: color, strokeWidth: 1.2*s, roughness: 0.5, disableMultiStroke: true, seed: 42 }
+    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.line(x - 12*s, y + 5*s, x + 12*s, y - 5*s, o)
+    rc.ellipse(x - 7*s, y + 1*s, 5*s, 8*s, fo)
+    rc.ellipse(x - 2*s, y - s, 4*s, 7*s, fo)
+    rc.ellipse(x + 4*s, y - 3*s, 5*s, 8*s, fo)
+    rc.ellipse(x + 9*s, y - 5*s, 4*s, 6*s, fo)
+    ctx.fillStyle = color
+    ctx.beginPath(); ctx.arc(x - 10*s, y + 3*s, 1.2*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x + 7*s, y - 5*s, 1*s, 0, Math.PI*2); ctx.fill()
+  },
+
+  mushroom: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, fill: BG, fillStyle: 'solid', roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.rectangle(x - 3*s, y, 6*s, 10*s, fo)
+    rc.ellipse(x, y, 20*s, 14*s, fo)
+    rc.circle(x - 4*s, y - 2*s, 3*s, { ...w, strokeWidth: 0.5*s, seed: 50 })
+    rc.circle(x + 3*s, y - 1*s, 2*s, { ...w, strokeWidth: 0.5*s, seed: 51 })
+    rc.circle(x, y - 4*s, 2.5*s, { ...w, strokeWidth: 0.5*s, seed: 52 })
+    rc.circle(x + 5*s, y - 3*s, 1.5*s, { ...w, strokeWidth: 0.5*s, seed: 53 })
+  },
+
+  crescent: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.circle(x, y, 18*s, fo)
+    rc.circle(x + 4*s, y - 3*s, 15*s, { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 50 })
+    ctx.fillStyle = color
+    ctx.beginPath(); ctx.arc(x + 6*s, y - 8*s, 0.8*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x + 10*s, y - 3*s, 0.6*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x + 7*s, y + 5*s, 0.7*s, 0, Math.PI*2); ctx.fill()
+  },
+
+  star5: function(rc, ctx, x, y, s, color) {
+    var pts = []
+    for (var i = 0; i < 5; i++) {
+      var a1 = (i * 72 - 90) * Math.PI / 180
+      pts.push([x + Math.cos(a1)*10*s, y + Math.sin(a1)*10*s])
+      var a2 = (i * 72 + 36 - 90) * Math.PI / 180
+      pts.push([x + Math.cos(a2)*4*s, y + Math.sin(a2)*4*s])
+    }
+    var path = 'M ' + pts[0][0] + ' ' + pts[0][1]
+    for (var i = 1; i < pts.length; i++) path += ' L ' + pts[i][0] + ' ' + pts[i][1]
+    path += ' Z'
+    rc.path(path, { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' })
+  },
+
+  // ═══ Frame ═══
+
+  ribbon: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.rectangle(x - 12*s, y - 4*s, 24*s, 8*s, fo)
+    var p1 = 'M '+(x-12*s)+' '+(y-4*s)+' L '+(x-15*s)+' '+(y-6*s)+' L '+(x-15*s)+' '+(y+6*s)+' L '+(x-12*s)+' '+(y+4*s)+' Z'
+    var p2 = 'M '+(x+12*s)+' '+(y-4*s)+' L '+(x+15*s)+' '+(y-6*s)+' L '+(x+15*s)+' '+(y+6*s)+' L '+(x+12*s)+' '+(y+4*s)+' Z'
+    rc.path(p1, fo); rc.path(p2, fo)
+    rc.line(x - 12*s, y, x + 12*s, y, { stroke: BG, strokeWidth: 0.8*s, roughness: 0.3, disableMultiStroke: true, seed: 50 })
+  },
+
+  tape: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.rectangle(x - 14*s, y - 3*s, 28*s, 6*s, fo)
+    rc.line(x - 14*s, y - 2*s, x - 13*s, y + 2*s, { stroke: BG, strokeWidth: 0.8*s, roughness: 0.5, disableMultiStroke: true, seed: 50 })
+    rc.line(x + 14*s, y - 1*s, x + 13*s, y + 3*s, { stroke: BG, strokeWidth: 0.8*s, roughness: 0.5, disableMultiStroke: true, seed: 51 })
+  },
+
+  tag: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 0.7*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.rectangle(x - 7*s, y - 5*s, 14*s, 16*s, fo)
+    rc.circle(x, y - 2*s, 4*s, { ...w, fill: BG, fillStyle: 'solid', seed: 50 })
+    rc.line(x - 4*s, y + 3*s, x + 4*s, y + 3*s, { ...w, seed: 51 })
+    rc.line(x - 4*s, y + 5*s, x + 4*s, y + 5*s, { ...w, seed: 52 })
+    rc.line(x - 4*s, y + 7*s, x + 2*s, y + 7*s, { ...w, seed: 53 })
+    rc.line(x - s, y - 7*s, x + s, y - 9*s, { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 54 })
+  },
+
+  divider_wave: function(rc, ctx, x, y, s, color) {
+    var o = { stroke: color, strokeWidth: 1.2*s, roughness: 0.4, disableMultiStroke: true }
+    var pts = [[-14,0],[-10,-3],[-6,3],[-2,-3],[2,3],[6,-3],[10,3],[14,0]]
+    for (var i = 0; i < pts.length - 1; i++)
+      rc.line(x + pts[i][0]*s, y + pts[i][1]*s, x + pts[i+1][0]*s, y + pts[i+1][1]*s, { ...o, seed: 50+i })
+  },
+
+  divider_dot: function(rc, ctx, x, y, s, color) {
+    for (var i = -3; i <= 3; i++) {
+      ctx.fillStyle = color
+      ctx.beginPath(); ctx.arc(x + i * 4*s, y, 1.3*s, 0, Math.PI*2); ctx.fill()
+    }
+  },
+
+  postcard: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 0.7*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.rectangle(x - 12*s, y - 9*s, 24*s, 18*s, fo)
+    rc.line(x, y - 8*s, x, y + 8*s, { ...w, strokeWidth: 0.8*s, seed: 50 })
+    rc.line(x + 3*s, y - 1*s, x + 9*s, y - 1*s, { ...w, seed: 51 })
+    rc.line(x + 3*s, y + 2*s, x + 9*s, y + 2*s, { ...w, seed: 52 })
+    rc.line(x + 3*s, y + 5*s, x + 7*s, y + 5*s, { ...w, seed: 53 })
+    rc.rectangle(x + 6*s, y - 7*s, 4*s, 4*s, { ...w, fill: BG, fillStyle: 'solid', seed: 54 })
+  },
+
+  stamp_frame: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.rectangle(x - 9*s, y - 11*s, 18*s, 22*s, fo)
+    var bgc = { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.3*s, roughness: 0.2, disableMultiStroke: true }
+    for (var i = -8; i <= 8; i += 4) {
+      rc.circle(x - 9*s, y + i*s, 2.5*s, { ...bgc, seed: 60+i })
+      rc.circle(x + 9*s, y + i*s, 2.5*s, { ...bgc, seed: 70+i })
+    }
+    for (var i = -6; i <= 6; i += 4) {
+      rc.circle(x + i*s, y - 11*s, 2.5*s, { ...bgc, seed: 80+i })
+      rc.circle(x + i*s, y + 11*s, 2.5*s, { ...bgc, seed: 90+i })
+    }
+  },
+
+  // ═══ Trinket ═══
+
+  envelope: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 1*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.rectangle(x - 12*s, y - 7*s, 24*s, 16*s, fo)
+    rc.line(x - 12*s, y - 7*s, x, y + 3*s, { ...w, strokeWidth: 1.2*s, seed: 50 })
+    rc.line(x + 12*s, y - 7*s, x, y + 3*s, { ...w, strokeWidth: 1.2*s, seed: 51 })
+    rc.circle(x, y + 5*s, 3*s, { ...w, fill: BG, fillStyle: 'solid', seed: 52 })
+  },
+
+  key: function(rc, ctx, x, y, s, color) {
+    var o = { stroke: color, strokeWidth: 1.2*s, roughness: 0.4, disableMultiStroke: true, seed: 42 }
+    var fo = { ...o, fill: color, fillStyle: 'solid' }
+    rc.circle(x, y - 7*s, 10*s, fo)
+    rc.circle(x, y - 7*s, 4*s, { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 50 })
+    rc.line(x, y - 2*s, x, y + 10*s, o)
+    rc.line(x, y + 5*s, x + 3*s, y + 5*s, o)
+    rc.line(x, y + 8*s, x + 4*s, y + 8*s, o)
+  },
+
+  bow: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 0.8*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    // left loop
+    rc.ellipse(x - 7*s, y - 1*s, 12*s, 10*s, fo)
+    // right loop
+    rc.ellipse(x + 7*s, y - 1*s, 12*s, 10*s, fo)
+    // center knot
+    rc.circle(x, y, 5*s, fo)
+    // negative space inside loops
+    rc.ellipse(x - 7*s, y - 1*s, 5*s, 4*s, { ...w, fill: BG, fillStyle: 'solid', seed: 50 })
+    rc.ellipse(x + 7*s, y - 1*s, 5*s, 4*s, { ...w, fill: BG, fillStyle: 'solid', seed: 51 })
+    // tails
+    rc.line(x - 2*s, y + 2*s, x - 6*s, y + 10*s, { stroke: color, strokeWidth: 1.5*s, roughness: 0.5, disableMultiStroke: true, seed: 52 })
+    rc.line(x + 2*s, y + 2*s, x + 6*s, y + 10*s, { stroke: color, strokeWidth: 1.5*s, roughness: 0.5, disableMultiStroke: true, seed: 53 })
+  },
+
+  teacup: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 0.8*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.rectangle(x - 7*s, y - 4*s, 14*s, 12*s, fo)
+    rc.ellipse(x, y + 8*s, 10*s, 3*s, fo)
+    rc.ellipse(x, y - 4*s, 14*s, 3*s, { ...w, fill: BG, fillStyle: 'solid', seed: 50 })
+    rc.circle(x + 9*s, y + 1*s, 6*s, { stroke: color, strokeWidth: 1.2*s, roughness: 0.4, disableMultiStroke: true, seed: 51 })
+    // steam
+    rc.line(x - 2*s, y - 7*s, x - 1*s, y - 10*s, { stroke: color, strokeWidth: 0.6*s, roughness: 0.6, disableMultiStroke: true, seed: 52 })
+    rc.line(x + 2*s, y - 8*s, x + 1*s, y - 11*s, { stroke: color, strokeWidth: 0.6*s, roughness: 0.6, disableMultiStroke: true, seed: 53 })
+  },
+
+  book: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    rc.rectangle(x - 8*s, y - 10*s, 16*s, 20*s, fo)
+    rc.line(x - 8*s, y - 10*s, x - 8*s, y + 10*s, { stroke: color, strokeWidth: 2.5*s, roughness: 0.3, disableMultiStroke: true, seed: 50 })
+    rc.rectangle(x - 6*s, y - 9*s, 13*s, 18*s, { ...w, fill: BG, fillStyle: 'solid', seed: 51 })
+    rc.line(x - 3*s, y - 4*s, x + 4*s, y - 4*s, { stroke: color, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 52 })
+    rc.line(x - 3*s, y - 2*s, x + 4*s, y - 2*s, { stroke: color, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 53 })
+    rc.line(x - 3*s, y, x + 2*s, y, { stroke: color, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 54 })
+  },
+
+  candle: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.rectangle(x - 4*s, y - 3*s, 8*s, 14*s, fo)
+    rc.ellipse(x, y + 11*s, 12*s, 3*s, fo)
+    rc.line(x, y - 3*s, x, y - 7*s, { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 50 })
+    rc.ellipse(x, y - 9*s, 5*s, 7*s, fo)
+    rc.ellipse(x, y - 10*s, 2*s, 3*s, { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.3*s, roughness: 0.3, disableMultiStroke: true, seed: 51 })
+    rc.line(x - 3*s, y + 2*s, x + 3*s, y + 2*s, { stroke: BG, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 52 })
+  },
+
+  heart: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    rc.circle(x - 5*s, y - 3*s, 11*s, fo)
+    rc.circle(x + 5*s, y - 3*s, 11*s, fo)
+    var p = 'M '+(x-10.5*s)+' '+(y-1*s)+' L '+x+' '+(y+12*s)+' L '+(x+10.5*s)+' '+(y-1*s)+' Z'
+    rc.path(p, fo)
+    rc.ellipse(x, y - 2*s, 4*s, 3*s, { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.3*s, roughness: 0.3, disableMultiStroke: true, seed: 50 })
+  },
 }
+
+export var stickerColors = [
+  { id: 'rose', c: '#C48A7A', label: 'rose' },
+  { id: 'pink', c: '#D0A0A0', label: 'pink' },
+  { id: 'sky', c: '#7BA7BC', label: 'sky' },
+  { id: 'sage', c: '#9BB89C', label: 'sage' },
+  { id: 'lavender', c: '#C4A6D0', label: 'lavender' },
+  { id: 'sand', c: '#D4B896', label: 'sand' },
+  { id: 'grey', c: '#A09080', label: 'grey' },
+]

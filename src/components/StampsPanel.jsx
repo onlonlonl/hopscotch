@@ -1,7 +1,7 @@
 // StampsPanel v5 — Stickers + Patterns, Rough.js UI throughout
 import { useState, useRef, useEffect, useCallback } from 'react'
 import rough from 'roughjs'
-import { stickerCategories, stickerRecipes } from './StickerRecipes'
+import { stickerCategories, stickerRecipes, stickerColors } from './StickerRecipes'
 import { patternTypes, colorPresets, renderPattern } from './PatternLib'
 
 var RO = { roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
@@ -151,27 +151,11 @@ function RoughBack({ onClick }) {
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
-/* drawFromJSON for sticker shapes */
-function drawFromJSON(rc, ctx, shapes, cx, cy, s) {
-  if (!shapes || !shapes.length) return
-  for (var i = 0; i < shapes.length; i++) {
-    var sh = shapes[i]
-    var opts = { roughness: 0.6, disableMultiStroke: true, seed: 650 + i * 3 }
-    if (sh.fill) { opts.fill = sh.fill; opts.fillStyle = 'solid' }
-    if (sh.stroke) opts.stroke = sh.stroke
-    opts.strokeWidth = (sh.sw || 1.2) * s
-    if (sh.t === 'circle') rc.circle(cx + sh.x * s, cy + sh.y * s, (sh.r || 3) * 2 * s, opts)
-    else if (sh.t === 'ellipse') rc.ellipse(cx + sh.x * s, cy + sh.y * s, (sh.w || 6) * s, (sh.h || 3) * s, opts)
-    else if (sh.t === 'line') rc.line(cx + sh.x1 * s, cy + sh.y1 * s, cx + sh.x2 * s, cy + sh.y2 * s, opts)
-    else if (sh.t === 'rect') rc.rectangle(cx + sh.x * s, cy + sh.y * s, (sh.w || 4) * s, (sh.h || 4) * s, opts)
-  }
-}
-
-function StickerThumb({ shapes, size }) {
+function StickerThumb({ recipeFn, color, size }) {
   var ref = useRef(null)
   var sz = size || 52
   useEffect(function() {
-    if (!ref.current || !shapes) return
+    if (!ref.current || !recipeFn) return
     var cvs = ref.current
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = sz * dpr; cvs.height = sz * dpr
@@ -179,8 +163,8 @@ function StickerThumb({ shapes, size }) {
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, sz, sz)
     var rc = rough.canvas(cvs)
-    drawFromJSON(rc, ctx, shapes, sz / 2, sz / 2, sz / 32)
-  }, [shapes, sz])
+    recipeFn(rc, ctx, sz / 2, sz / 2, sz / 80, color || '#A09080')
+  }, [recipeFn, color, sz])
   return <canvas ref={ref} style={{ display: 'block' }} />
 }
 
@@ -203,7 +187,19 @@ function GenPreview({ shapes, size }) {
     ctx.clearRect(0, 0, sz, sz)
     var rc2 = rough.canvas(cvs)
     rc2.rectangle(4, 4, sz - 8, sz - 8, { stroke: '#D0C8C0', strokeWidth: 1, ...RO, seed: 80, fill: '#F5F2EC', fillStyle: 'solid' })
-    drawFromJSON(rc2, ctx, shapes, sz / 2, sz / 2, sz / 32)
+    // drawFromJSON for AI-generated stickers
+    if (shapes && shapes.length) {
+      for (var i = 0; i < shapes.length; i++) {
+        var sh = shapes[i], s = sz / 32, cx = sz/2, cy = sz/2
+        var opts = { roughness: 0.6, disableMultiStroke: true, seed: 650 + i * 3 }
+        if (sh.fill) { opts.fill = sh.fill; opts.fillStyle = 'solid' }
+        if (sh.stroke) opts.stroke = sh.stroke; opts.strokeWidth = (sh.sw || 1.2) * s
+        if (sh.t === 'circle') rc2.circle(cx + sh.x * s, cy + sh.y * s, (sh.r || 3) * 2 * s, opts)
+        else if (sh.t === 'ellipse') rc2.ellipse(cx + sh.x * s, cy + sh.y * s, (sh.w || 6) * s, (sh.h || 3) * s, opts)
+        else if (sh.t === 'line') rc2.line(cx + sh.x1 * s, cy + sh.y1 * s, cx + sh.x2 * s, cy + sh.y2 * s, opts)
+        else if (sh.t === 'rect') rc2.rectangle(cx + sh.x * s, cy + sh.y * s, (sh.w || 4) * s, (sh.h || 4) * s, opts)
+      }
+    }
   }, [shapes, sz])
   return <canvas ref={ref} style={{ display: 'block', margin: '0 auto 12px' }} />
 }
@@ -212,6 +208,7 @@ function GenPreview({ shapes, size }) {
 export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPlace, supaGet, supaPost, supaPatch }) {
   var [topTab, setTopTab] = useState('stickers')
   var [stickerTab, setStickerTab] = useState('flora')
+  var [stickerColor, setStickerColor] = useState('#A09080')
   var [selPattern, setSelPattern] = useState('polka')
   var [selColor, setSelColor] = useState('cream')
   var [genOpen, setGenOpen] = useState(false)
@@ -288,7 +285,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
 
   var currentItems = []
   var cat = stickerCategories[stickerTab]
-  if (cat) currentItems = cat.items.map(function(item) { return { type: item.type, label: item.label, shapes: stickerRecipes[item.type] } })
+  if (cat) currentItems = cat.items.map(function(item) { return { type: item.type, label: item.label, recipeFn: stickerRecipes[item.type] } })
   var customForTab = customStickers.filter(function(s) { return s.category === stickerTab && s.recipe })
   customForTab.forEach(function(s) { currentItems.push({ type: 'custom_' + s.id, label: s.name, shapes: s.recipe }) })
   var catEntries = Object.entries(stickerCategories)
@@ -341,12 +338,22 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                   <RoughPlusCircle size={32} onClick={function() { setGenOpen(true) }} />
                 </div>
               </div>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', padding: '2px 0 6px', flexWrap: 'wrap' }}>
+                {stickerColors.map(function(sc) {
+                  var active = stickerColor === sc.c
+                  return (
+                    <div key={sc.id} onClick={function() { setStickerColor(sc.c) }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 10, background: sc.c, border: active ? '2px solid #5A4A38' : '2px solid transparent' }} />
+                    </div>
+                  )
+                })}
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, padding: '6px 16px', flex: 1, overflowY: 'auto', alignContent: 'start' }}>
                 {currentItems.map(function(item) {
                   return (
-                    <div key={item.type} onClick={function() { onStickerPlace && onStickerPlace(item.shapes, item.label) }}
+                    <div key={item.type} onClick={function() { onStickerPlace && onStickerPlace(item.type, item.label, stickerColor) }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                      <StickerThumb shapes={item.shapes} />
+                      <StickerThumb recipeFn={item.recipeFn} color={stickerColor} />
                       <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3, textAlign: 'center' }}>{item.label}</span>
                     </div>
                   )
