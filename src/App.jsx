@@ -365,7 +365,7 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
   function handleTouchMove() { clearTimeout(longRef.current) }
   return <canvas ref={ref}
     onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchMove={handleTouchMove}
-    style={{ position: 'absolute', left: x, top: y, pointerEvents: 'auto', touchAction: 'none' }} />
+    style={{ position: "absolute", left: x - 5, top: y - 5, width: size + 10, height: size + 10, pointerEvents: "auto", touchAction: "none", zIndex: 10 }} />
 }
 
 export default function App() {
