@@ -177,6 +177,8 @@ function drawInkBrush(cvs) {
 /* === Settings Panel === */
 function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   var borderRef = useRef(null)
+  var [apiKey, setApiKey] = useState(function() { return localStorage.getItem('hopscotch_ai_key') || '' })
+  var [keySaved, setKeySaved] = useState(false)
   var [input, setInput] = useState('')
   var [results, setResults] = useState([])
   var [searching, setSearching] = useState(false)
@@ -188,7 +190,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   useEffect(function() {
     if (!open || !borderRef.current) return
     var cvs = borderRef.current
-    var W = 224, H = 300
+    var W = 224, H = 366
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = W * dpr; cvs.height = H * dpr
     cvs.style.width = W + 'px'; cvs.style.height = H + 'px'
@@ -251,7 +253,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
-      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 300 }}>
+      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 366 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
         <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1 }}>
 
@@ -275,6 +277,19 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
                 </div>
               })}
             </div>}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={label}>Sticker AI key</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={apiKey} onChange={function(e) { setApiKey(e.target.value); setKeySaved(false) }}
+                placeholder="sk-..." type="password" style={inputS} />
+              <button onClick={function() {
+                localStorage.setItem('hopscotch_ai_key', apiKey.trim())
+                setKeySaved(true)
+              }} style={btnS}>{keySaved ? 'OK' : 'SAVE'}</button>
+            </div>
+            <div style={{ ...txt, fontSize: 10, color: '#9AAABB', marginTop: 4 }}>DeepSeek key, stored on this device</div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -486,6 +501,22 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
         rc.rectangle(2, 2, size-4, size-4, { stroke: '#9A8A78', strokeWidth: 1.2, roughness: 0.6, disableMultiStroke: true, seed: 42 })
       }
       im.src = el.photoUrl
+      return
+    }
+    if (el.aiRecipe) {
+      var BGC = '#FAF6F0', MC = el.color || '#D0A0A0', sc = size / 40
+      for (var i = 0; i < el.aiRecipe.length; i++) {
+        var sh = el.aiRecipe[i]
+        var opts = { roughness: 0.5, disableMultiStroke: true, seed: 650 + i * 3 }
+        if (sh.fill) { opts.fill = sh.fill === 'BG' ? BGC : MC; opts.fillStyle = 'solid' }
+        if (sh.stroke) opts.stroke = sh.stroke === 'BG' ? BGC : MC
+        opts.strokeWidth = (sh.sw || 1) * sc
+        var ccx = size/2, ccy = size/2
+        if (sh.t === 'circle') rc.circle(ccx + sh.x*sc, ccy + sh.y*sc, (sh.r||3)*2*sc, opts)
+        else if (sh.t === 'ellipse') rc.ellipse(ccx + sh.x*sc, ccy + sh.y*sc, (sh.w||6)*sc, (sh.h||3)*sc, opts)
+        else if (sh.t === 'line') rc.line(ccx + sh.x1*sc, ccy + sh.y1*sc, ccx + sh.x2*sc, ccy + sh.y2*sc, opts)
+        else if (sh.t === 'rect') rc.rectangle(ccx + sh.x*sc, ccy + sh.y*sc, (sh.w||4)*sc, (sh.h||4)*sc, opts)
+      }
       return
     }
     var recipe = stickerRecipes[el.sticker_type]
@@ -717,10 +748,11 @@ export default function App() {
   var [movePos, setMovePos] = useState(null)
   var moveGhostRef = useRef(null)
 
-  function handleStickerPlace(type, label, color, cx, cy, photoUrl) {
+  function handleStickerPlace(type, label, color, cx, cy, photoUrl, aiRecipe) {
     var W = window.innerWidth, H = window.innerHeight
     var el = { id: 's_' + Date.now(), sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H }
     if (photoUrl) el.photoUrl = photoUrl
+    if (aiRecipe) el.aiRecipe = aiRecipe
     setPlacedStickers(function(prev) { return prev.concat([el]) })
   }
 

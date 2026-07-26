@@ -73,6 +73,33 @@ function RoughPlusCircle({ size, onClick }) {
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
+
+function RoughTrashSmall({ size, active, onClick }) {
+  var ref = useRef(null)
+  var sz = size || 36
+  useEffect(function() {
+    if (!ref.current) return
+    var cvs = ref.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, sz, sz)
+    var rc = rough.canvas(cvs)
+    var col = active ? '#C48A7A' : '#B0A898'
+    if (active) rc.circle(sz/2, sz/2, sz-2, { stroke: col, fill: '#FFF0EC', fillStyle: 'solid', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 30 })
+    var o = { stroke: col, strokeWidth: 1.2, roughness: 0.5, disableMultiStroke: true }
+    rc.line(10, 12, 26, 12, { ...o, seed: 31 })
+    rc.line(15, 12, 15, 9, { ...o, seed: 32 })
+    rc.line(15, 9, 21, 9, { ...o, seed: 33 })
+    rc.line(21, 9, 21, 12, { ...o, seed: 34 })
+    rc.line(12, 12, 13, 27, { ...o, seed: 35 })
+    rc.line(24, 12, 23, 27, { ...o, seed: 36 })
+    rc.line(13, 27, 23, 27, { ...o, seed: 37 })
+  }, [sz, active])
+  return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
+}
+
 function RoughBtn({ width, label, color, disabled, onClick }) {
   var ref = useRef(null)
   var w = width || 120, h = 38
@@ -149,6 +176,39 @@ function RoughBack({ onClick }) {
     ctx.fillText('back', 15, h / 2 + 1)
   }, [])
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
+}
+
+
+function drawAiShapes(rc, ctx, shapes, cx, cy, s, mainColor) {
+  var BGC = '#FAF6F0'
+  for (var i = 0; i < shapes.length; i++) {
+    var sh = shapes[i]
+    var opts = { roughness: 0.5, disableMultiStroke: true, seed: 650 + i * 3 }
+    if (sh.fill) { opts.fill = sh.fill === 'BG' ? BGC : mainColor; opts.fillStyle = 'solid' }
+    if (sh.stroke) opts.stroke = sh.stroke === 'BG' ? BGC : mainColor
+    opts.strokeWidth = (sh.sw || 1) * s
+    if (sh.t === 'circle') rc.circle(cx + sh.x * s, cy + sh.y * s, (sh.r || 3) * 2 * s, opts)
+    else if (sh.t === 'ellipse') rc.ellipse(cx + sh.x * s, cy + sh.y * s, (sh.w || 6) * s, (sh.h || 3) * s, opts)
+    else if (sh.t === 'line') rc.line(cx + sh.x1 * s, cy + sh.y1 * s, cx + sh.x2 * s, cy + sh.y2 * s, opts)
+    else if (sh.t === 'rect') rc.rectangle(cx + sh.x * s, cy + sh.y * s, (sh.w || 4) * s, (sh.h || 4) * s, opts)
+  }
+}
+
+function AiThumb({ shapes, color, size }) {
+  var ref = useRef(null)
+  var sz = size || 58
+  useEffect(function() {
+    if (!ref.current || !shapes) return
+    var cvs = ref.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, sz, sz)
+    var rc = rough.canvas(cvs)
+    drawAiShapes(rc, ctx, shapes, sz/2, sz/2, sz/40, color || '#D0A0A0')
+  }, [shapes, color, sz])
+  return <canvas ref={ref} style={{ display: 'block' }} />
 }
 
 function StickerThumb({ recipeFn, color, size }) {
@@ -346,6 +406,39 @@ function PhotoThumb({ dataUrl, size }) {
 }
 
 
+var AI_SYSTEM = "You design tiny hand-drawn sticker icons rendered by Rough.js. House style: SINGLE-COLOR SILHOUETTE plus NEGATIVE SPACE, like a paper cut-out where details show through as background-colored gaps.\n\nOUTPUT: a single JSON array of shapes. No markdown, no prose.\n\nCOORDINATES: center (0,0). X -14..14, Y -14..14. Centered.\n\nSHAPES (only these 4):\n{\"t\":\"circle\",\"x\":0,\"y\":0,\"r\":3,\"fill\":\"MAIN\",\"stroke\":\"MAIN\"}\n{\"t\":\"ellipse\",\"x\":0,\"y\":0,\"w\":8,\"h\":4,\"fill\":\"MAIN\",\"stroke\":\"MAIN\"}\n{\"t\":\"line\",\"x1\":0,\"y1\":0,\"x2\":5,\"y2\":5,\"stroke\":\"MAIN\",\"sw\":1}\n{\"t\":\"rect\",\"x\":-2,\"y\":-1,\"w\":4,\"h\":3,\"fill\":\"MAIN\",\"stroke\":\"MAIN\"}\n\nCOLORS — ONLY TWO VALUES:\n\"MAIN\" = the sticker color. \"BG\" = paper color, used to carve details out of the silhouette.\nNever output hex codes.\n\nMETHOD:\n1. Silhouette first: 2-6 filled MAIN shapes that read as the object at 50px.\n2. Carve details with thin BG lines on top (veins, rims, holes, panes).\n3. Optional 1-3 small MAIN accents outside the body.\n\nSTROKE WEIGHT: sw between 0.6 and 1.2 only. Thick strokes look clumsy.\n\nRULES: 5-12 shapes. Recognizable at 50x50. Leave breathing room. Prefer circles and ellipses.\n\nEXAMPLE — a leaf:\n[{\"t\":\"ellipse\",\"x\":0,\"y\":-2,\"w\":12,\"h\":20,\"fill\":\"MAIN\",\"stroke\":\"MAIN\",\"sw\":0.8},{\"t\":\"line\",\"x1\":0,\"y1\":-12,\"x2\":0,\"y2\":8,\"stroke\":\"BG\",\"sw\":1.1},{\"t\":\"line\",\"x1\":-4,\"y1\":-5,\"x2\":0,\"y2\":-2,\"stroke\":\"BG\",\"sw\":0.7},{\"t\":\"line\",\"x1\":4,\"y1\":-6,\"x2\":0,\"y2\":-3,\"stroke\":\"BG\",\"sw\":0.7},{\"t\":\"line\",\"x1\":0,\"y1\":8,\"x2\":0,\"y2\":13,\"stroke\":\"MAIN\",\"sw\":1}]\n\nEXAMPLE — a teacup:\n[{\"t\":\"rect\",\"x\":-6,\"y\":-3,\"w\":12,\"h\":10,\"fill\":\"MAIN\",\"stroke\":\"MAIN\",\"sw\":0.8},{\"t\":\"ellipse\",\"x\":0,\"y\":7,\"w\":10,\"h\":3,\"fill\":\"MAIN\",\"stroke\":\"MAIN\",\"sw\":0.8},{\"t\":\"ellipse\",\"x\":0,\"y\":-3,\"w\":12,\"h\":3,\"fill\":\"BG\",\"stroke\":\"BG\",\"sw\":0.6},{\"t\":\"circle\",\"x\":8,\"y\":1,\"r\":3,\"stroke\":\"MAIN\",\"sw\":1},{\"t\":\"line\",\"x1\":-2,\"y1\":-7,\"x2\":-1,\"y2\":-10,\"stroke\":\"MAIN\",\"sw\":0.6},{\"t\":\"line\",\"x1\":2,\"y1\":-8,\"x2\":1,\"y2\":-11,\"stroke\":\"MAIN\",\"sw\":0.6}]\n\nOUTPUT: only the JSON array."
+
+async function callAI(desc, prevRecipe, feedback) {
+  var key = localStorage.getItem('hopscotch_ai_key')
+  if (!key) throw new Error('no key')
+  var msgs = [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: 'Create a sticker element: "' + desc + '"' }]
+  if (prevRecipe && feedback) {
+    msgs.push({ role: 'assistant', content: JSON.stringify(prevRecipe) })
+    msgs.push({ role: 'user', content: 'Modify based on feedback: ' + feedback })
+  }
+  var res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'deepseek-chat', temperature: 0.7, max_tokens: 3000, messages: msgs })
+  })
+  var data = await res.json()
+  if (data.error) throw new Error(data.error.message || 'api error')
+  var text = (data.choices[0].message.content || '').trim()
+  if (text.indexOf('```') === 0) {
+    text = text.slice(text.indexOf('\n') + 1)
+    if (text.indexOf('```') >= 0) text = text.slice(0, text.lastIndexOf('```')).trim()
+  }
+  var shapes = JSON.parse(text)
+  if (!Array.isArray(shapes)) throw new Error('bad shape')
+  shapes.forEach(function(s) {
+    if (s.fill && s.fill !== 'BG') s.fill = 'MAIN'
+    if (s.stroke && s.stroke !== 'BG') s.stroke = 'MAIN'
+    if (s.sw) s.sw = Math.max(0.5, Math.min(1.3, s.sw))
+  })
+  return shapes
+}
+
+
 export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPlace, supaGet, supaPost, supaPatch }) {
   var [topTab, setTopTab] = useState('stickers')
   var [stickerTab, setStickerTab] = useState('flora')
@@ -359,10 +452,15 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   var [genResult, setGenResult] = useState(null)
   var [genId, setGenId] = useState(null)
   var [feedbackInput, setFeedbackInput] = useState('')
+  var [genError, setGenError] = useState('')
   var [photoStickers, setPhotoStickers] = useState(function() {
     try { return JSON.parse(localStorage.getItem('hopscotch_photo_stickers') || '[]') } catch(e) { return [] }
   })
+  var [aiStickers, setAiStickers] = useState(function() {
+    try { return JSON.parse(localStorage.getItem('hopscotch_ai_stickers') || '[]') } catch(e) { return [] }
+  })
   var [cropSrc, setCropSrc] = useState(null)
+  var [photoDeleteMode, setPhotoDeleteMode] = useState(false)
   var fileRef = useRef(null)
 
   useEffect(function() {
@@ -402,7 +500,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
         var t = ev.changedTouches ? ev.changedTouches[0] : ev
         var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
         if (t.clientY < panelTop && onStickerPlace) {
-          onStickerPlace(item.type, item.label, stickerColor, t.clientX, t.clientY, item.photoUrl)
+          onStickerPlace(item.type, item.label, stickerColor, t.clientX, t.clientY, item.photoUrl, item.aiRecipe)
         }
         setDragging(null); setDragPos(null)
       } else {
@@ -434,49 +532,25 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   }, [open, onClose])
 
   function handleGenerate() {
-    if (!genInput.trim() || genLoading || !supaPost) return
-    setGenLoading(true); setGenResult(null)
-    var name = genInput.trim().substring(0, 40)
-    supaPost('hopscotch_stickers', { name: name, description: name, category: stickerTab, status: 'pending' }).then(function(rows) {
-      if (!rows || !rows[0]) { setGenLoading(false); return }
-      var id = rows[0].id; setGenId(id)
-      var safeName = name.replace(/[^a-zA-Z0-9\u4e00-\u9fff\s\-.,!?]/g, '')
-      supaPost('commands', { cmd: 'nohup python3 ~/lucid/gen_sticker.py "' + safeName + '" ' + id + ' > /dev/null 2>&1 &', status: 'pending' })
-      var attempts = 0
-      var poll = setInterval(function() {
-        attempts++
-        if (attempts > 20) { clearInterval(poll); setGenLoading(false); return }
-        supaGet('hopscotch_stickers', 'id=eq.' + id).then(function(fresh) {
-          if (fresh && fresh[0] && fresh[0].status === 'done' && fresh[0].recipe) {
-            clearInterval(poll); setGenResult(fresh[0].recipe); setGenLoading(false)
-            setCustomStickers(function(prev) { return [fresh[0]].concat(prev) })
-          } else if (fresh && fresh[0] && fresh[0].status === 'failed') {
-            clearInterval(poll); setGenLoading(false)
-          }
-        })
-      }, 2000)
-    }).catch(function() { setGenLoading(false) })
+    if (!genInput.trim() || genLoading) return
+    var key = localStorage.getItem('hopscotch_ai_key')
+    if (!key) { setGenError('Add your AI key in Settings first'); return }
+    setGenLoading(true); setGenResult(null); setGenError('')
+    callAI(genInput.trim(), null, null).then(function(shapes) {
+      setGenResult(shapes); setGenLoading(false)
+    }).catch(function(e) {
+      setGenError(String(e.message || e)); setGenLoading(false)
+    })
   }
 
   function handleIterate() {
-    if (!feedbackInput.trim() || !genId || genLoading || !supaPost) return
-    setGenLoading(true)
-    var fb = feedbackInput.trim().replace(/[^a-zA-Z0-9\u4e00-\u9fff\s\-.,!?]/g, '').substring(0, 80)
-    var safeName = genInput.trim().replace(/[^a-zA-Z0-9\u4e00-\u9fff\s\-.,!?]/g, '').substring(0, 40)
-    if (supaPatch) supaPatch('hopscotch_stickers', 'id=eq.' + genId, { status: 'pending' })
-    supaPost('commands', { cmd: 'nohup python3 ~/lucid/gen_sticker.py "' + safeName + '" ' + genId + ' "' + fb + '" > /dev/null 2>&1 &', status: 'pending' })
-    setFeedbackInput('')
-    var attempts = 0
-    var poll = setInterval(function() {
-      attempts++
-      if (attempts > 20) { clearInterval(poll); setGenLoading(false); return }
-      supaGet('hopscotch_stickers', 'id=eq.' + genId).then(function(fresh) {
-        if (fresh && fresh[0] && fresh[0].status === 'done' && fresh[0].recipe) {
-          clearInterval(poll); setGenResult(fresh[0].recipe); setGenLoading(false)
-          setCustomStickers(function(prev) { return prev.map(function(s) { return s.id === genId ? fresh[0] : s }) })
-        } else if (fresh && fresh[0] && fresh[0].status === 'failed') { clearInterval(poll); setGenLoading(false) }
-      })
-    }, 2000)
+    if (!feedbackInput.trim() || genLoading || !genResult) return
+    setGenLoading(true); setGenError('')
+    callAI(genInput.trim(), genResult, feedbackInput.trim()).then(function(shapes) {
+      setGenResult(shapes); setGenLoading(false); setFeedbackInput('')
+    }).catch(function(e) {
+      setGenError(String(e.message || e)); setGenLoading(false)
+    })
   }
 
   if (!open) return null
@@ -500,6 +574,15 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
     var _im = new Image()
     _im.onload = function() { _x.clearRect(0,0,_s,_s); _x.drawImage(_im, 2, 2, _s-4, _s-4) }
     _im.src = dragging.photoUrl
+  } else if (dragging && dragCanvasRef.current && dragging.aiRecipe) {
+    var _ac = dragCanvasRef.current
+    var _ad = Math.min(window.devicePixelRatio || 1, 3)
+    var _as = 60
+    _ac.width = _as * _ad; _ac.height = _as * _ad
+    _ac.style.width = _as + 'px'; _ac.style.height = _as + 'px'
+    var _ax = _ac.getContext('2d'); _ax.setTransform(_ad, 0, 0, _ad, 0, 0)
+    _ax.clearRect(0, 0, _as, _as)
+    drawAiShapes(rough.canvas(_ac), _ax, dragging.aiRecipe, _as/2, _as/2, _as/40, stickerColor)
   } else if (dragging && dragCanvasRef.current && dragging.recipeFn) {
     var _cvs = dragCanvasRef.current
     var _dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -515,6 +598,9 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   var currentItems = []
   var cat = stickerCategories[stickerTab]
   if (cat) currentItems = cat.items.map(function(item) { return { type: item.type, label: item.label, recipeFn: stickerRecipes[item.type] } })
+  aiStickers.filter(function(a) { return a.category === stickerTab }).forEach(function(a) {
+    currentItems.push({ type: 'ai_' + a.id, label: a.name, aiRecipe: a.recipe })
+  })
   var customForTab = customStickers.filter(function(s) { return s.category === stickerTab && s.recipe })
   customForTab.forEach(function(s) { currentItems.push({ type: 'custom_' + s.id, label: s.name, shapes: s.recipe }) })
   var catEntries = Object.entries(stickerCategories)
@@ -597,7 +683,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                       onTouchStart={function(e) { startDrag(e, item) }}
                       onMouseDown={function(e) { startDrag(e, item) }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none', outline: selSticker === item.type ? '2px solid #2E94B9' : 'none', borderRadius: 6 }}>
-                      {item.photoUrl ? <PhotoThumb dataUrl={item.photoUrl} /> : <StickerThumb recipeFn={item.recipeFn} color={stickerColor} />}
+                      {item.aiRecipe ? <AiThumb shapes={item.aiRecipe} color={stickerColor} /> : <StickerThumb recipeFn={item.recipeFn} color={stickerColor} />}
                       <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3, textAlign: 'center' }}>{item.label}</span>
                     </div>
                   )
@@ -661,15 +747,21 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                   var active = selSticker === 'photo_' + ps.id
                   return (
                     <div key={ps.id}
-                      onTouchStart={function(e) { startDrag(e, { type: 'photo_' + ps.id, label: 'photo', photoUrl: ps.dataUrl }) }}
-                      style={{ padding: 3, cursor: 'grab', outline: active ? '2px solid #2E94B9' : 'none', borderRadius: 5, userSelect: 'none', WebkitUserSelect: 'none' }}>
+                      onClick={photoDeleteMode ? function() {
+                        setPhotoStickers(function(prev) { return prev.filter(function(x) { return x.id !== ps.id }) })
+                      } : undefined}
+                      onTouchStart={photoDeleteMode ? undefined : function(e) { startDrag(e, { type: 'photo_' + ps.id, label: 'photo', photoUrl: ps.dataUrl }) }}
+                      style={{ padding: 3, position: 'relative', cursor: photoDeleteMode ? 'pointer' : 'grab', outline: active ? '2px solid #2E94B9' : 'none', borderRadius: 5, userSelect: 'none', WebkitUserSelect: 'none', opacity: photoDeleteMode ? 0.6 : 1 }}>
                       <PhotoThumb dataUrl={ps.dataUrl} size={84} />
+                      {photoDeleteMode && <div style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, borderRadius: 10, background: '#C48A7A', color: '#fff', fontSize: 13, lineHeight: '20px', textAlign: 'center' }}>x</div>}
                     </div>
                   )
                 })}
-                <div onClick={function() { fileRef.current && fileRef.current.click() }}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 58, cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 58 }}>
                   <RoughPlusCircle size={36} onClick={function() { fileRef.current && fileRef.current.click() }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 84, height: 58 }}>
+                  <RoughTrashSmall size={36} active={photoDeleteMode} onClick={function() { setPhotoDeleteMode(!photoDeleteMode) }} />
                 </div>
               </div>
               <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
@@ -688,13 +780,23 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
                 <RoughBtn width={200} label={genLoading ? 'generating...' : 'Generate'} disabled={genLoading || !genInput.trim()} onClick={handleGenerate} />
               </div>
+              {genError && <div style={{ fontSize: 11, color: '#C48A7A', textAlign: 'center', marginTop: 8 }}>{genError}</div>}
             </>
           ) : (
             <>
               <RoughInput value={feedbackInput} onChange={function(e) { setFeedbackInput(e.target.value) }} placeholder="feedback: bigger petals, add leaves..." />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 10 }}>
                 <RoughBtn width={140} label={genLoading ? 'generating...' : 'Iterate'} disabled={genLoading || !feedbackInput.trim()} onClick={handleIterate} />
-                <RoughBtn width={100} label="Done" color="#4AAF5C" onClick={function() { setGenOpen(false); setGenResult(null); setGenId(null); setGenInput(''); setFeedbackInput('') }} />
+                <RoughBtn width={100} label="Done" color="#4AAF5C" onClick={function() {
+                  if (genResult) {
+                    var saved = []
+                    try { saved = JSON.parse(localStorage.getItem('hopscotch_ai_stickers') || '[]') } catch(e) {}
+                    saved.push({ id: 'ai_' + Date.now(), name: genInput.trim().slice(0, 20), recipe: genResult, category: stickerTab })
+                    localStorage.setItem('hopscotch_ai_stickers', JSON.stringify(saved))
+                    setAiStickers(saved)
+                  }
+                  setGenOpen(false); setGenResult(null); setGenId(null); setGenInput(''); setFeedbackInput('')
+                }} />
               </div>
             </>
           )}
