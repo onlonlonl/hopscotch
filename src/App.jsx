@@ -1104,15 +1104,31 @@ export default function App() {
 
       {draggingStamp && dimIndex === 0 && (
         <div style={{
-          position: 'fixed', left: '50%', bottom: 14, transform: 'translateX(-50%)',
-          width: 168, height: 68, zIndex: 130, pointerEvents: 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '1.5px dashed ' + (overTrash ? '#C86A5A' : '#C0B8AC'),
-          background: overTrash ? 'rgba(200,106,90,0.12)' : 'rgba(250,246,240,0.9)',
-          borderRadius: 8, transition: 'all 0.15s ease',
-          fontSize: 11, letterSpacing: 1, color: overTrash ? '#C86A5A' : '#A09888',
-          fontFamily: "-apple-system, 'PingFang SC', sans-serif",
-        }}>drop here to remove</div>
+          position: 'fixed', left: '50%', bottom: 26, transform: 'translateX(-50%)',
+          zIndex: 130, pointerEvents: 'none',
+          transition: 'transform 0.15s ease',
+        }}>
+          <canvas key={overTrash ? 'on' : 'off'} ref={el => {
+            if (!el) return
+            var sz = overTrash ? 62 : 52
+            var dpr = Math.min(window.devicePixelRatio || 1, 3)
+            el.width = sz * dpr; el.height = sz * dpr
+            el.style.width = sz + 'px'; el.style.height = sz + 'px'
+            var ctx = el.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+            ctx.clearRect(0, 0, sz, sz)
+            var rc = rough.canvas(el)
+            var col = overTrash ? '#C48A7A' : '#B0A898'
+            rc.circle(sz/2, sz/2, sz-3, {
+              stroke: col, fill: overTrash ? '#FFF0EC' : 'rgba(250,246,240,0.92)',
+              fillStyle: 'solid', strokeWidth: 1.2, roughness: 0.5,
+              disableMultiStroke: true, seed: 30
+            })
+            var k = sz / 36, o = { stroke: col, strokeWidth: 1.4, roughness: 0.5, disableMultiStroke: true }
+            function L(x1,y1,x2,y2,s){ rc.line(x1*k,y1*k,x2*k,y2*k,{ ...o, seed: s }) }
+            L(10,12,26,12,31); L(15,12,15,9,32); L(15,9,21,9,33); L(21,9,21,12,34)
+            L(12,12,13,27,35); L(24,12,23,27,36); L(13,27,23,27,37)
+          }} style={{ display: 'block' }} />
+        </div>
       )}
 
       <MapStampsPanel open={panelOpen} onClose={() => setPanelOpen(false)}

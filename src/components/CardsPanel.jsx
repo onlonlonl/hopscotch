@@ -313,9 +313,9 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     {isEditing && (
                       <div style={{ padding: '4px 10px 8px', background: '#FAFCFE' }}>
                         <div style={{ marginBottom: 5 }}>
-                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Compass</div>
+                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Place</div>
                           <input value={editFields.label} onChange={function (e) { setEditFields(function (p) { return { ...p, label: e.target.value } }) }}
-                            placeholder="short alias" style={inputS} />
+                            placeholder="short place name" style={inputS} />
                         </div>
         <div style={{ marginBottom: 5 }}>
                           <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>My name</div>
