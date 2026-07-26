@@ -94,7 +94,7 @@ export default function CompassView({ locations, center }) {
 
     geoLocs.forEach(function(loc, i) {
       var icon = prerenderIcon(loc, i)
-      var label = loc.ink_name || loc.label || loc.id
+      var label = loc.ink_name_iris || loc.label || loc.id
 
       var marker = L.marker([loc.lat, loc.lng], {
         icon: L.divIcon({

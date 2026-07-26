@@ -130,7 +130,7 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
       ctx.fillStyle = loc.color
       ctx.font = (9 * s) + "px '-apple-system', 'PingFang SC', sans-serif"
       ctx.textAlign = 'center'
-      ctx.fillText(loc.ink_name || loc.label, pos[0], pos[1] + 18 * s)
+      ctx.fillText(loc.ink_name_lux || loc.ink_name_iris || loc.label, pos[0], pos[1] + 18 * s)
 
 
     }

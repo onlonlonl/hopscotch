@@ -55,7 +55,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
   /* --- edit state --- */
   var [editId, setEditId] = useState(null)
-  var [editFields, setEditFields] = useState({ ink_name: '', label: '' })
+  var [editFields, setEditFields] = useState({ ink_name_iris: '', label: '' })
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -134,8 +134,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
           } else {
             setEditId(ref.id)
             setEditFields({
-              ink_name: loc.ink_name || '',
-              
+              ink_name_iris: loc.ink_name_iris || '',
               label: loc.label || '',
             })
             cardRefs.current = {}
@@ -163,8 +162,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
   async function handleSaveEdit(locId) {
     var patch = {
-      ink_name: editFields.ink_name || null,
-      
+      ink_name_iris: editFields.ink_name_iris || null,
       label: editFields.label,
     }
     if (isConnected()) {
@@ -231,7 +229,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   label: poi.name, name: poi.name, city: poi.cityname || cityName || '',
                   address: poi.address || '', lng: loc[0], lat: loc[1],
                   category: poi.type ? poi.type.split(';')[0] : '',
-                  ink_name: null, story: null,
+                  ink_name_iris: null, ink_name_lux: null, story: null,
                   color: '#E8A87C', weather: 'clear', icon_type: 'house',
                   lux_x: 50, lux_y: 50, inf_t: 0.5, inf_w: 0.5,
                 }
@@ -278,10 +276,10 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', height: CARD_H, boxSizing: 'border-box' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: loc.color, fontFamily: FONT, lineHeight: 1.3 }}>
-                          {loc.ink_name || <span style={{ color: '#C8D0D8', fontStyle: 'italic', fontWeight: 400 }}>{loc.label}</span>}
+                          {loc.ink_name_iris || <span style={{ color: '#C8D0D8', fontStyle: 'italic', fontWeight: 400 }}>{loc.label}</span>}
                         </div>
                         <div style={{ fontSize: 10, color: '#9AAAB8', fontFamily: FONT, lineHeight: 1.3 }}>
-                          {loc.ink_name && loc.ink_name !== loc.label ? loc.label : ""}
+                          {loc.ink_name_lux ? loc.ink_name_lux : (loc.ink_name_iris && loc.ink_name_iris !== loc.label ? loc.label : '')}
                         </div>
                         {loc.errands > 0 && <div style={{ fontSize: 9, color: '#B0BAC4', fontFamily: FONT }}>{loc.errands} errands</div>}
                       </div>
@@ -299,9 +297,9 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                             placeholder="short alias" style={inputS} />
                         </div>
         <div style={{ marginBottom: 5 }}>
-                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Ink</div>
-                          <input value={editFields.ink_name} onChange={function (e) { setEditFields(function (p) { return { ...p, ink_name: e.target.value } }) }}
-                            placeholder="lux name" style={inputS} />
+                          <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>My name</div>
+                          <input value={editFields.ink_name_iris} onChange={function (e) { setEditFields(function (p) { return { ...p, ink_name_iris: e.target.value } }) }}
+                            placeholder="my name for it" style={inputS} />
                         </div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                           <div onClick={function () { setEditId(null); cardRefs.current = {} }}

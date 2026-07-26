@@ -206,7 +206,8 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
 
   if (!location || !position) return null
   var loc = location
-  var inkName = loc.ink_name || loc.label || ''
+  var irisName = loc.ink_name_iris || loc.label || ''
+  var luxName = loc.ink_name_lux || null
   
   var story = loc.story || ''
   var hasInf = loc.inf_t != null && loc.inf_w != null
@@ -217,7 +218,33 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
       <div style={{position:'relative',zIndex:1,padding:'14px 14px 12px',height:'100%',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexShrink:0}}>
           <div style={{flex:1,minWidth:0,paddingRight:4}}>
-            <div style={{fontSize:15,fontWeight:700,color:'#5A5048',lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{inkName}</div>
+            <div style={{display:'flex',alignItems:'center',gap:7,lineHeight:1.3,minWidth:0}}>
+              <span style={{fontSize:15,fontWeight:700,color:'#5A5048',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',flexShrink:1,minWidth:0}}>{irisName}</span>
+              <canvas ref={function(el){
+                if(!el||el._nd)return; el._nd=true
+                var W=2,H=17,dpr=Math.min(window.devicePixelRatio||1,3)
+                el.width=W*dpr; el.height=H*dpr
+                el.style.width=W+'px'; el.style.height=H+'px'
+                var cx=el.getContext('2d'); cx.setTransform(dpr,0,0,dpr,0,0)
+                rough.canvas(el).line(1,1,1,H-1,{stroke:'#C8C0B4',strokeWidth:1,roughness:1.1,bowing:2,disableMultiStroke:true,seed:606})
+              }} style={{flexShrink:0,opacity:0.85}} />
+              {luxName
+                ? <span style={{fontSize:15,fontWeight:700,color:'#8A7A68',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',flexShrink:1,minWidth:0}}>{luxName}</span>
+                : <canvas ref={function(el){
+                    if(!el||el._qd)return; el._qd=true
+                    var S=17,dpr=Math.min(window.devicePixelRatio||1,3)
+                    el.width=S*dpr; el.height=S*dpr
+                    el.style.width=S+'px'; el.style.height=S+'px'
+                    var cx=el.getContext('2d'); cx.setTransform(dpr,0,0,dpr,0,0)
+                    var rc=rough.canvas(el), qc='#C0B8AC', s=0.72, qx=S/2, qy=S/2-1, pts=[]
+                    for(var i=0;i<=12;i++){var p=i/12,ang=Math.PI+p*Math.PI*1.3;pts.push([qx+Math.cos(ang)*5*s,(qy-4*s)+Math.sin(ang)*5*s])}
+                    pts.push([qx+1*s,qy]); pts.push([qx,qy+2*s])
+                    var d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)
+                    for(var j=1;j<pts.length;j++)d+=' L '+pts[j][0].toFixed(1)+' '+pts[j][1].toFixed(1)
+                    rc.path(d,{stroke:qc,strokeWidth:1.2,roughness:0.5,disableMultiStroke:true,seed:770})
+                    rc.circle(qx,qy+6*s,2*s,{stroke:qc,strokeWidth:0.8,roughness:0.4,fill:qc,fillStyle:'solid',disableMultiStroke:true,seed:771})
+                  }} style={{flexShrink:0}} />}
+            </div>
             <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
               <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{loc.label}</span>
               {hasInf && (
