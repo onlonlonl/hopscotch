@@ -328,11 +328,21 @@ export default function App() {
   }, [])
   // --- init supabase ---
   useEffect(function () { initSupabase() }, [])
-  // load garden
+  // load garden + trip/place counts
   useEffect(function () {
     if (!isConnected()) return
-    supaGet('hopscotch_garden', 'order=id.desc&limit=1').then(function(r) {
-      if (r && r[0]) setGarden(r[0])
+    supaGet('hopscotch_garden', 'order=id.desc&limit=1').then(function(rows) {
+      if (!rows || !rows[0]) return
+      var g = rows[0]
+      var planted = g.planted_at
+      Promise.all([
+        supaGet('service_requests', 'select=id&status=eq.done&created_at=gte.' + planted),
+        supaGet('locations', 'select=id&created_at=gte.' + planted),
+      ]).then(function(res) {
+        g._trips_new = res[0] ? res[0].length : 0
+        g._places_new = res[1] ? res[1].length : 0
+        setGarden(g)
+      })
     })
   }, [])
 

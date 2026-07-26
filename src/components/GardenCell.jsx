@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import rough from 'roughjs'
 
 var PAPER = '#F8F8F6'
-var STAGES = ['Seed','Sprout','Seedling','Growth','Bloom','Full']
+var STAGES = ['Seed','Sprout','Leaf','Bud','Bloom','Glory']
 var THRESHOLDS = [0, 5, 12, 22, 33, 45]
 
 /* draw a rough flower pot */
@@ -84,6 +84,28 @@ function drawSprout(rc, ctx, cx, potTopY, stage, s) {
       stroke: flowerColor, strokeWidth: 0.8, fill: flowerColor, fillStyle: 'solid',
       roughness: 0.4, disableMultiStroke: true, seed: 326
     })
+  }
+}
+
+
+/* render shapes from stamps JSON */
+function drawFromJSON(rc, ctx, shapes, cx, cy, s) {
+  if (!shapes || !shapes.length) return
+  for (var i = 0; i < shapes.length; i++) {
+    var sh = shapes[i]
+    var opts = { roughness: 0.6, disableMultiStroke: true, seed: 450 + i * 3 }
+    if (sh.fill) { opts.fill = sh.fill; opts.fillStyle = 'solid' }
+    if (sh.stroke) opts.stroke = sh.stroke
+    opts.strokeWidth = sh.sw || 1.2
+    if (sh.t === 'circle') {
+      rc.circle(cx + sh.x * s, cy + sh.y * s, (sh.r || 3) * 2 * s, opts)
+    } else if (sh.t === 'ellipse') {
+      rc.ellipse(cx + sh.x * s, cy + sh.y * s, (sh.w || 6) * s, (sh.h || 3) * s, opts)
+    } else if (sh.t === 'line') {
+      rc.line(cx + sh.x1 * s, cy + sh.y1 * s, cx + sh.x2 * s, cy + sh.y2 * s, opts)
+    } else if (sh.t === 'rect') {
+      rc.rectangle(cx + sh.x * s, cy + sh.y * s, (sh.w || 4) * s, (sh.h || 4) * s, opts)
+    }
   }
 }
 
