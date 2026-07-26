@@ -594,7 +594,7 @@ export default function App() {
   const [connections, setConnections] = useState([])
   useEffect(function () {
     if (!isConnected()) return
-    supaGet('locations', 'select=id,label,icon_type,color,lux_x,lux_y,scale,ink_name,lat,lng,inf_t,inf_w,story,weather&icon_type=not.eq.dot&order=created_at')
+    supaGet('locations', 'select=id,label,icon_type,color,lux_x,lux_y,scale,ink_name,lat,lng,inf_t,inf_w,story,weather&order=created_at')
       .then(function(rows) {
         if (!rows || rows.length === 0) return
         var locs = rows.map(function(r) {
