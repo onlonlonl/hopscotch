@@ -136,13 +136,20 @@ function renderCell(cvs, garden, w, h) {
   var stage = 0
   if (garden) {
     var days = Math.floor((Date.now() - new Date(garden.planted_at).getTime()) / 86400000)
-    var score = days
+    var trips = garden._trips_new || 0
+    var places = garden._places_new || 0
+    var total = days + trips * 3 + places * 5
     for (var i = THRESHOLDS.length - 1; i >= 0; i--) {
-      if (score >= THRESHOLDS[i]) { stage = i; break }
+      if (total >= THRESHOLDS[i]) { stage = i; break }
     }
   }
   var potTopY = bottomY - 14 * s - 3 * s
-  drawSprout(rc, ctx, cx, potTopY, stage, s)
+
+  if (garden && garden.stamps && garden.stamps[stage] && garden.stamps[stage].length > 0) {
+    drawFromJSON(rc, ctx, garden.stamps[stage], cx, potTopY - 4 * s, s * 1.2)
+  } else {
+    drawSprout(rc, ctx, cx, potTopY, stage, s)
+  }
 
   /* stage label */
   if (garden) {
