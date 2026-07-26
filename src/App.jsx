@@ -480,8 +480,8 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
   var ref = useRef(null)
   var longRef = useRef(null)
   var isPhoto = !!el.photoUrl
-  var cw = isPhoto ? Math.round(size * 1.45) : size
-  var ch = isPhoto ? Math.round(size * 0.97) : size
+  var cw = isPhoto ? Math.round(size * 1.7) : size
+  var ch = isPhoto ? Math.round(size * 1.13) : size
   useEffect(function() {
     if (!ref.current) return
     var cvs = ref.current
@@ -865,8 +865,8 @@ export default function App() {
           var W = window.innerWidth, H = window.innerHeight
           var sz = 54
           var isP = !!el.photoUrl
-          var px = el.offset_x * W - (isP ? Math.round(sz * 1.45) : sz) / 2
-          var py = el.offset_y * H - (isP ? Math.round(sz * 0.97) : sz) / 2
+          var px = el.offset_x * W - (isP ? Math.round(sz * 1.7) : sz) / 2
+          var py = el.offset_y * H - (isP ? Math.round(sz * 1.13) : sz) / 2
           return <PlacedSticker key={el.id} el={el} x={px} y={py} size={sz} onDragStart={handlePlacedDragStart} />
         })}
         {movingEl && movePos && (
