@@ -373,6 +373,10 @@ export default function App() {
   const [expanding, setExpanding] = useState(false)
   const [collapsing, setCollapsing] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [roofPattern, setRoofPattern] = useState(function() {
+    try { return JSON.parse(localStorage.getItem('hopscotch_roof_pattern') || 'null') } catch(e) { return null }
+  })
+
   const [placedStickers, setPlacedStickers] = useState(function() {
     try { return JSON.parse(localStorage.getItem('hopscotch_stickers') || '[]') } catch(e) { return [] }
   })
@@ -629,7 +633,7 @@ export default function App() {
         {notesCellRect && <NotesCell cellRect={notesCellRect} onTap={() => setNotesView(true)} />}
         {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} weatherColor={weatherColor} />}
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
-        <RoofCell tri={roofTri} />
+        <RoofCell tri={roofTri} pattern={roofPattern} />
         {placedStickers.map(function(el) {
           if (movingEl && movingEl.id === el.id) return null
           var W = window.innerWidth, H = window.innerHeight
@@ -666,7 +670,22 @@ export default function App() {
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         {notesView && <NotesView onExit={() => setNotesView(false)} />}
         {gardenView && <GardenView onExit={() => setGardenView(false)} />}
-        <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onStickerPlace={handleStickerPlace} onPatternPlace={(pid, cid) => console.log("pattern:", pid, cid)} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
+        <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onStickerPlace={handleStickerPlace} onPatternPlace={function(pid, cid, cx, cy) {
+          // check if drop is on roof
+          if (roofTri && roofTri.length === 3) {
+            var p = roofTri
+            // simple bounding box check for triangle
+            var minY = Math.min(p[0].y, p[1].y, p[2].y)
+            var maxY = Math.max(p[0].y, p[1].y, p[2].y)
+            var minX = Math.min(p[0].x, p[1].x, p[2].x)
+            var maxX = Math.max(p[0].x, p[1].x, p[2].x)
+            if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
+              var rp = { patternId: pid, colorId: cid }
+              setRoofPattern(rp)
+              localStorage.setItem('hopscotch_roof_pattern', JSON.stringify(rp))
+            }
+          }
+        }} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />

@@ -315,7 +315,15 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   if (!open) return null
 
   // draw drag ghost
-  if (dragging && dragCanvasRef.current && dragging.recipeFn) {
+  if (dragging && dragCanvasRef.current && dragging.type === '__pattern__') {
+    var _cvs = dragCanvasRef.current
+    var _dpr = Math.min(window.devicePixelRatio || 1, 3)
+    var _sz = 60
+    _cvs.width = _sz * _dpr; _cvs.height = _sz * _dpr
+    _cvs.style.width = _sz + 'px'; _cvs.style.height = _sz + 'px'
+    var _ctx = _cvs.getContext('2d'); _ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0)
+    renderPattern(_cvs, dragging.patternId, dragging.colorId, 2)
+  } else if (dragging && dragCanvasRef.current && dragging.recipeFn) {
     var _cvs = dragCanvasRef.current
     var _dpr = Math.min(window.devicePixelRatio || 1, 3)
     var _sz = 60
@@ -430,8 +438,23 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                 {patternTypes.map(function(pt) {
                   var active = selPattern === pt.id
                   return (
-                    <div key={pt.id} onClick={function() { setSelPattern(pt.id); onPatternPlace && onPatternPlace(pt.id, selColor) }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 4, cursor: 'pointer', outline: active ? '2px solid #2E94B9' : 'none', borderRadius: 6 }}>
+                    <div key={pt.id}
+                      onTouchStart={function(e) {
+                        e.preventDefault()
+                        var touch = e.touches[0]
+                        setDragging({ type: '__pattern__', patternId: pt.id, colorId: selColor })
+                        setDragPos({ x: touch.clientX - 30, y: touch.clientY - 30 })
+                        function onMove(ev) { ev.preventDefault(); var t = ev.touches[0]; setDragPos({ x: t.clientX - 30, y: t.clientY - 30 }) }
+                        function onEnd(ev) {
+                          var t = ev.changedTouches[0]
+                          var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
+                          if (t.clientY < panelTop && onPatternPlace) onPatternPlace(pt.id, selColor, t.clientX, t.clientY)
+                          setDragging(null); setDragPos(null)
+                          window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd)
+                        }
+                        window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onEnd)
+                      }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 4, cursor: 'grab', outline: active ? '2px solid #2E94B9' : 'none', borderRadius: 6 }}>
                       <PatternThumb patternId={pt.id} colorId={selColor} />
                       <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3 }}>{pt.label}</span>
                     </div>

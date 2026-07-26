@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import rough from 'roughjs'
 import { supaGet, supaPatch, isConnected } from '../lib/supabase'
 import { grid, HOPSCOTCH_BG } from '../lib/tokens'
+import { renderPattern } from './PatternLib'
 
 /* real triangle proportions from grid */
 var TRI_W = grid.d_right - grid.d_left   /* 64 */
@@ -25,7 +26,7 @@ function triPts(w, h) {
   ]
 }
 
-export default function RoofCell({ tri }) {
+export default function RoofCell({ tri, pattern }) {
   var canvasRef = useRef(null)
   var inputRef = useRef(null)
   var [photo, setPhoto] = useState(null)
@@ -76,6 +77,19 @@ export default function RoofCell({ tri }) {
         drawBorder(cvs, lp)
       }
       img.src = photo
+    } else if (pattern && pattern.patternId) {
+      // render pattern clipped to triangle
+      ctx.save()
+      ctx.beginPath()
+      ctx.moveTo(ip[0].x, ip[0].y); ctx.lineTo(ip[1].x, ip[1].y); ctx.lineTo(ip[2].x, ip[2].y)
+      ctx.closePath(); ctx.clip()
+      // draw pattern on an offscreen canvas then paste
+      var pCvs = document.createElement('canvas')
+      pCvs.width = w; pCvs.height = h
+      renderPattern(pCvs, pattern.patternId, pattern.colorId, Math.ceil(Math.max(w, h) / 32))
+      ctx.drawImage(pCvs, 0, 0, w, h, 0, 0, w, h)
+      ctx.restore()
+      drawBorder(cvs, lp)
     } else {
       drawBorder(cvs, lp)
       ctx.fillStyle = 'rgba(255,255,255,0.3)'
@@ -83,7 +97,7 @@ export default function RoofCell({ tri }) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText('+', cx, cy + 2)
     }
-  }, [tri, photo])
+  }, [tri, photo, pattern])
 
   useEffect(function () { paint() }, [paint])
 
