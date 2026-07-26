@@ -703,16 +703,16 @@ export default function GardenView({ onExit }) {
           ) : (
             <div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center'}}>
               {shelf.map(function(p,i) {
-                return <div key={p.id||i} style={{textAlign:'center',width:86}}>
+                return <div key={p.id||i} style={{textAlign:'center',width:104}}>
                   <canvas ref={function(el) {
                     if (!el || el._d) return
-                    var cw=82,ch=102,dpr=Math.min(window.devicePixelRatio||1,3)
+                    var cw=96,ch=118,dpr=Math.min(window.devicePixelRatio||1,3)
                     el.width=cw*dpr; el.height=ch*dpr
                     el.style.width=cw+'px'; el.style.height=ch+'px'
                     var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
                     var rc3=rough.canvas(el)
                     /* stamp frame */
-                    rc3.rectangle(3,3,cw-6,cw-6,{
+                    rc3.rectangle(4,4,cw-8,cw-8,{
                       stroke:'#D8D0C8',strokeWidth:1.2,roughness:0.5,
                       fill:'#FDFCFA',fillStyle:'solid',
                       disableMultiStroke:true,seed:900+i
@@ -726,7 +726,7 @@ export default function GardenView({ onExit }) {
                         if(sh.fill){opts.fill=sh.fill;opts.fillStyle='solid'}
                         if(sh.stroke)opts.stroke=sh.stroke
                         opts.strokeWidth=sh.sw||1
-                        var ss=1.5,cx2=cw/2,cy2=cw/2-2
+                        var ss=1.8,cx2=cw/2,cy2=cw/2-2
                         if(sh.t==='circle')rc3.circle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.r||3)*2*ss,opts)
                         else if(sh.t==='ellipse')rc3.ellipse(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||6)*ss,(sh.h||3)*ss,opts)
                         else if(sh.t==='line')rc3.line(cx2+sh.x1*ss,cy2+sh.y1*ss,cx2+sh.x2*ss,cy2+sh.y2*ss,opts)
@@ -734,10 +734,10 @@ export default function GardenView({ onExit }) {
                       }
                     }
                     /* name tag below stamp */
-                    var ty=cw-1, tw=cw-10, th2=18
-                    rc3.rectangle(5,ty,tw,th2,{
+                    var ty=cw-3, tw=cw-12, th2=20
+                    rc3.rectangle(6,ty,tw,th2,{
                       stroke:'#D0C8C0',strokeWidth:0.8,roughness:0.5,
-                      fill:'#F4F0EA',fillStyle:'solid',
+                      fill:'#FDFCFA',fillStyle:'solid',
                       disableMultiStroke:true,seed:980+i
                     })
                     ctx.fillStyle='#7A6A5A'
