@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import rough from 'roughjs'
 import { supaGet, supaPatch, isConnected } from '../lib/supabase'
 import { grid, HOPSCOTCH_BG } from '../lib/tokens'
-import { renderPattern } from './PatternLib'
+import { renderPatternFill } from './PatternLib'
 
 /* real triangle proportions from grid */
 var TRI_W = grid.d_right - grid.d_left   /* 64 */
@@ -85,9 +85,8 @@ export default function RoofCell({ tri, pattern }) {
       ctx.closePath(); ctx.clip()
       // draw pattern on an offscreen canvas then paste
       var pCvs = document.createElement('canvas')
-      pCvs.width = w; pCvs.height = h
-      renderPattern(pCvs, pattern.patternId, pattern.colorId, Math.ceil(Math.max(w, h) / 32))
-      ctx.drawImage(pCvs, 0, 0, w, h, 0, 0, w, h)
+      renderPatternFill(pCvs, pattern.patternId, pattern.colorId, Math.round(w), Math.round(h))
+      ctx.drawImage(pCvs, 0, 0)
       ctx.restore()
       drawBorder(cvs, lp)
     } else {

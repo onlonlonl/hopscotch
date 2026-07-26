@@ -5,6 +5,7 @@ import HopscotchCanvas from './components/HopscotchCanvas'
 import HandDrawnMap from './components/HandDrawnMap'
 import StampsPanel from "./components/StampsPanel"
 import { stickerRecipes } from './components/StickerRecipes'
+import { renderPatternFill } from './components/PatternLib'
 import MapStampsPanel from "./components/MapStampsPanel"
 import { recipes } from './components/IconGallery'
 import ThreadView from './components/ThreadView'
@@ -377,9 +378,17 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('hopscotch_roof_pattern') || 'null') } catch(e) { return null }
   })
 
+  const [placedPatterns, setPlacedPatterns] = useState(function() {
+    try { return JSON.parse(localStorage.getItem('hopscotch_patterns') || '[]') } catch(e) { return [] }
+  })
+
   const [placedStickers, setPlacedStickers] = useState(function() {
     try { return JSON.parse(localStorage.getItem('hopscotch_stickers') || '[]') } catch(e) { return [] }
   })
+
+  useEffect(function() {
+    localStorage.setItem('hopscotch_patterns', JSON.stringify(placedPatterns))
+  }, [placedPatterns])
 
   // persist to localStorage whenever stickers change
   useEffect(function() {
@@ -634,6 +643,13 @@ export default function App() {
         {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} weatherColor={weatherColor} />}
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} pattern={roofPattern} />
+        {placedPatterns.map(function(pp) {
+          var W = window.innerWidth, H = window.innerHeight
+          var sz = 64
+          return <canvas key={pp.id} ref={function(cvs) {
+            if (!cvs) return; renderPatternFill(cvs, pp.patternId, pp.colorId, sz, sz)
+          }} style={{ position: 'absolute', left: pp.offset_x * W - sz/2, top: pp.offset_y * H - sz/2, pointerEvents: 'none', borderRadius: 6, zIndex: 5 }} />
+        })}
         {placedStickers.map(function(el) {
           if (movingEl && movingEl.id === el.id) return null
           var W = window.innerWidth, H = window.innerHeight
@@ -671,20 +687,23 @@ export default function App() {
         {notesView && <NotesView onExit={() => setNotesView(false)} />}
         {gardenView && <GardenView onExit={() => setGardenView(false)} />}
         <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onStickerPlace={handleStickerPlace} onPatternPlace={function(pid, cid, cx, cy) {
-          // check if drop is on roof
           if (roofTri && roofTri.length === 3) {
             var p = roofTri
-            // simple bounding box check for triangle
-            var minY = Math.min(p[0].y, p[1].y, p[2].y)
-            var maxY = Math.max(p[0].y, p[1].y, p[2].y)
-            var minX = Math.min(p[0].x, p[1].x, p[2].x)
-            var maxX = Math.max(p[0].x, p[1].x, p[2].x)
+            var minY = Math.min(p[0].y, p[1].y, p[2].y), maxY = Math.max(p[0].y, p[1].y, p[2].y)
+            var minX = Math.min(p[0].x, p[1].x, p[2].x), maxX = Math.max(p[0].x, p[1].x, p[2].x)
             if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
               var rp = { patternId: pid, colorId: cid }
-              setRoofPattern(rp)
-              localStorage.setItem('hopscotch_roof_pattern', JSON.stringify(rp))
+              setRoofPattern(rp); localStorage.setItem('hopscotch_roof_pattern', JSON.stringify(rp)); return
             }
           }
+          var inCell = false
+          for (var zi = 0; zi < zoneNames.length; zi++) {
+            var zr = zoneRects[zoneNames[zi]]
+            if (zr && cx >= zr.x && cx <= zr.x + zr.w && cy >= zr.y && cy <= zr.y + zr.h) { inCell = true; break }
+          }
+          if (inCell) return
+          var W = window.innerWidth, H = window.innerHeight
+          setPlacedPatterns(function(prev) { return prev.concat([{ id: 'p_' + Date.now(), patternId: pid, colorId: cid, offset_x: cx / W, offset_y: cy / H }]) })
         }} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
