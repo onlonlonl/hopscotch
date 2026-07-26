@@ -622,7 +622,7 @@ export default function App() {
       )}
 
       <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)}
-        onSelect={t => console.log(t)} onDragToMap={handleDragToMap} recipes={recipes} />
+        onStickerPlace={(shapes, label) => console.log("sticker:", label, shapes)} onPatternPlace={(pid, cid) => console.log("pattern:", pid, cid)} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
 
       <style>{`
         @keyframes cardIn {

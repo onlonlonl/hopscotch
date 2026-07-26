@@ -1,31 +1,11 @@
-
-// StampsPanel v4 — Rough.js styled editor UI, cleaner layout
+// StampsPanel v5 — Stickers + Patterns, Rough.js UI throughout
 import { useState, useRef, useEffect, useCallback } from 'react'
 import rough from 'roughjs'
-
-var defaultCategories = {
-  rhythm: { label: 'Rhythm', items: [
-    { type: 'house', label: '家' }, { type: 'building', label: '公司' },
-    { type: 'train', label: '地鐵' }, { type: 'plane', label: '機場' },
-    { type: 'shop', label: '商店' }, { type: 'school', label: '學校' },
-    { type: 'hospital', label: '醫院' },
-  ]},
-  melody: { label: 'Melody', items: [
-    { type: 'cafe', label: '咖啡' }, { type: 'restaurant', label: '餐廳' },
-    { type: 'bar', label: '酒吧' }, { type: 'park', label: '公園' },
-    { type: 'mountain', label: '山' }, { type: 'beach', label: '海灘' },
-    { type: 'hotel', label: '酒店' }, { type: 'cinema', label: '電影院' },
-  ]},
-  echo: { label: 'Echo', items: [
-    { type: 'torii', label: '鳥居' }, { type: 'temple', label: '寺廟' },
-    { type: 'church', label: '教堂' }, { type: 'flag', label: '旗子' },
-    { type: 'heart', label: '心' },
-  ]},
-}
+import { stickerCategories, stickerRecipes } from './StickerRecipes'
+import { patternTypes, colorPresets, renderPattern } from './PatternLib'
 
 var RO = { roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
-
-/* === Rough.js UI components === */
+var FONT = "'-apple-system', 'PingFang SC', sans-serif"
 
 function RoughHandle({ width }) {
   var ref = useRef(null)
@@ -37,7 +17,7 @@ function RoughHandle({ width }) {
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.line(4, 3, w-4, 3, { stroke: '#C0B8A8', strokeWidth: 1.5, roughness: 0.8, bowing: 0.6, disableMultiStroke: true, seed: 11 })
+    rc.line(4, 3, w - 4, 3, { stroke: '#C0B8A8', strokeWidth: 1.5, roughness: 0.8, bowing: 0.6, disableMultiStroke: true, seed: 11 })
   }, [width])
   return <canvas ref={ref} style={{ display: 'block' }} />
 }
@@ -52,13 +32,13 @@ function RoughClose({ size, onClick }) {
     cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.line(10, 10, sz-10, sz-10, { stroke: '#B0A898', strokeWidth: 1.3, ...RO, seed: 20 })
-    rc.line(sz-10, 10, 10, sz-10, { stroke: '#B0A898', strokeWidth: 1.3, ...RO, seed: 21 })
+    rc.line(10, 10, sz - 10, sz - 10, { stroke: '#B0A898', strokeWidth: 1.3, ...RO, seed: 20 })
+    rc.line(sz - 10, 10, 10, sz - 10, { stroke: '#B0A898', strokeWidth: 1.3, ...RO, seed: 21 })
   }, [sz])
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
-function RoughTabUnderline({ width, active }) {
+function RoughTabLine({ width, active }) {
   var ref = useRef(null)
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
@@ -69,16 +49,15 @@ function RoughTabUnderline({ width, active }) {
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     if (active) {
       var rc = rough.canvas(cvs)
-      rc.line(4, 2, w-4, 2, { stroke: '#5A4A38', strokeWidth: 1.5, roughness: 0.7, bowing: 0.5, disableMultiStroke: true, seed: 33 })
+      rc.line(4, 2, w - 4, 2, { stroke: '#5A4A38', strokeWidth: 1.5, roughness: 0.7, bowing: 0.5, disableMultiStroke: true, seed: 33 })
     }
   }, [width, active])
   return <canvas ref={ref} style={{ display: 'block' }} />
 }
 
-/* Rough.js add-category button — bigger touch target */
-function RoughPlusTab({ onClick }) {
+function RoughPlusCircle({ size, onClick }) {
   var ref = useRef(null)
-  var sz = 36
+  var sz = size || 36
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -86,18 +65,17 @@ function RoughPlusTab({ onClick }) {
     cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    var cx = sz/2, cy = sz/2
-    rc.circle(cx, cy, sz-8, { stroke: '#C0B8A8', strokeWidth: 0.8, roughness: 0.5, disableMultiStroke: true, seed: 44 })
-    rc.line(cx, cy-6, cx, cy+6, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 45 })
-    rc.line(cx-6, cy, cx+6, cy, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 46 })
+    var cx = sz / 2, cy = sz / 2
+    rc.circle(cx, cy, sz - 8, { stroke: '#C0B8A8', strokeWidth: 0.8, roughness: 0.5, disableMultiStroke: true, seed: 44 })
+    rc.line(cx, cy - 6, cx, cy + 6, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 45 })
+    rc.line(cx - 6, cy, cx + 6, cy, { stroke: '#B0A898', strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 46 })
   }, [])
   return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
 }
 
-/* Rough.js generate stamp button in grid — bigger */
-function RoughAddStamp({ onClick }) {
+function RoughBtn({ width, label, color, disabled, onClick }) {
   var ref = useRef(null)
-  var w = 56, h = 72
+  var w = width || 120, h = 38
   useEffect(function() {
     var cvs = ref.current; if (!cvs) return
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -105,83 +83,14 @@ function RoughAddStamp({ onClick }) {
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.rectangle(6, 6, w-12, w-12, { stroke: '#C0B8A8', strokeWidth: 1, roughness: 0.6, bowing: 0.5, disableMultiStroke: true, seed: 40, strokeLineDash: [4, 3] })
-    var cx = w/2, cy = (w-12)/2 + 6
-    rc.line(cx, cy-8, cx, cy+8, { stroke: '#B0A898', strokeWidth: 1.4, roughness: 0.4, disableMultiStroke: true, seed: 41 })
-    rc.line(cx-8, cy, cx+8, cy, { stroke: '#B0A898', strokeWidth: 1.4, roughness: 0.4, disableMultiStroke: true, seed: 42 })
-    ctx.fillStyle = '#B0A898'
-    ctx.font = "9px '-apple-system', 'PingFang SC', sans-serif"
-    ctx.textAlign = 'center'
-    ctx.fillText('generate', w/2, w + 2)
-  }, [])
-  return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
-}
-
-function RoughGenButton({ width, disabled, loading, onClick }) {
-  var ref = useRef(null)
-  var w = width || 200, h = 40
-  useEffect(function() {
-    var cvs = ref.current; if (!cvs) return
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = w * dpr; cvs.height = h * dpr
-    cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
-    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    var rc = rough.canvas(cvs)
-    var c = disabled ? '#D0C8C0' : '#2E94B9'
-    rc.rectangle(3, 3, w-6, h-6, {
-      stroke: c, strokeWidth: 1.2, roughness: 0.5, bowing: 0.6,
-      disableMultiStroke: true, seed: 60,
-      fill: c, fillStyle: 'solid',
-    })
+    var c = disabled ? '#D0C8C0' : (color || '#2E94B9')
+    rc.rectangle(3, 3, w - 6, h - 6, { stroke: c, strokeWidth: 1.2, ...RO, seed: 60, fill: c, fillStyle: 'solid' })
     ctx.fillStyle = '#fff'
-    ctx.font = "600 13px '-apple-system', 'PingFang SC', sans-serif"
+    ctx.font = "600 12px " + FONT
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText(loading ? 'generating...' : 'Generate', w/2, h/2)
-  }, [w, disabled, loading])
+    ctx.fillText(label || 'Generate', w / 2, h / 2)
+  }, [w, label, color, disabled])
   return <canvas ref={ref} onClick={disabled ? undefined : onClick} style={{ display: 'block', cursor: disabled ? 'default' : 'pointer' }} />
-}
-
-function RoughBackButton({ onClick }) {
-  var ref = useRef(null)
-  useEffect(function() {
-    var cvs = ref.current; if (!cvs) return
-    var w = 44, h = 24
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = w * dpr; cvs.height = h * dpr
-    cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
-    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    var rc = rough.canvas(cvs)
-    rc.line(4, h/2, 13, h/2-5, { stroke: '#B0A898', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 70 })
-    rc.line(4, h/2, 13, h/2+5, { stroke: '#B0A898', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 71 })
-    ctx.fillStyle = '#B0A898'
-    ctx.font = "13px '-apple-system', 'PingFang SC', sans-serif"
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-    ctx.fillText('back', 15, h/2 + 1)
-  }, [])
-  return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
-}
-
-function RoughPreviewBox({ size }) {
-  var ref = useRef(null)
-  var sz = size || 120
-  useEffect(function() {
-    var cvs = ref.current; if (!cvs) return
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = sz * dpr; cvs.height = sz * dpr
-    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
-    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    var rc = rough.canvas(cvs)
-    rc.rectangle(4, 4, sz-8, sz-8, {
-      stroke: '#D0C8C0', strokeWidth: 1, roughness: 0.6, bowing: 0.5,
-      disableMultiStroke: true, seed: 80,
-      fill: '#F0ECE6', fillStyle: 'solid',
-    })
-    ctx.fillStyle = '#C0B8A8'
-    ctx.font = "11px '-apple-system', 'PingFang SC', sans-serif"
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText('preview', sz/2, sz/2)
-  }, [sz])
-  return <canvas ref={ref} style={{ display: 'block', margin: '0 auto 16px' }} />
 }
 
 function RoughInput({ value, onChange, placeholder }) {
@@ -195,253 +104,323 @@ function RoughInput({ value, onChange, placeholder }) {
     cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    rc.rectangle(3, 3, w-6, h-6, {
-      stroke: '#D0C8C0', strokeWidth: 1.2, roughness: 0.6, bowing: 0.5,
-      disableMultiStroke: true, seed: 90,
-      fill: '#FAFAF6', fillStyle: 'solid',
-    })
+    rc.rectangle(3, 3, w - 6, h - 6, { stroke: '#D0C8C0', strokeWidth: 1.2, ...RO, seed: 90, fill: '#FAFAF6', fillStyle: 'solid' })
   }, [])
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', width: '100%' }} />
       <input type="text" value={value} onChange={onChange} placeholder={placeholder}
-        style={{
-          position: 'relative', width: '100%', padding: '10px 14px',
-          border: 'none', background: 'transparent', fontSize: 13,
-          fontFamily: 'inherit', color: '#5A4A38', outline: 'none',
-          boxSizing: 'border-box', height: 42,
-        }} />
+        style={{ position: 'relative', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'inherit', color: '#5A4A38', outline: 'none', boxSizing: 'border-box', height: 42 }} />
     </div>
   )
 }
 
+function RoughFrame({ size }) {
+  var ref = useRef(null)
+  var sz = size || 100
+  useEffect(function() {
+    var cvs = ref.current; if (!cvs) return
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    rc.rectangle(4, 4, sz - 8, sz - 8, { stroke: '#D0C8C0', strokeWidth: 1, ...RO, seed: 80, fill: '#F5F2EC', fillStyle: 'solid' })
+    ctx.fillStyle = '#C0B8A8'
+    ctx.font = '11px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText('preview', sz / 2, sz / 2)
+  }, [sz])
+  return <canvas ref={ref} style={{ display: 'block', margin: '0 auto 12px' }} />
+}
 
-export default function StampsPanel({ open, onClose, onSelect, onDragToMap, recipes }) {
-  var tabState = useState('rhythm')
-  var activeTab = tabState[0], setActiveTab = tabState[1]
-  var genState = useState(false)
-  var generatorOpen = genState[0], setGeneratorOpen = genState[1]
-  var inputState = useState('')
-  var genInput = inputState[0], setGenInput = inputState[1]
-  var loadState = useState(false)
-  var genLoading = loadState[0], setGenLoading = loadState[1]
-  var catState = useState(defaultCategories)
-  var categories = catState[0]
-  var dragState = useState(null)
-  var dragging = dragState[0], setDragging = dragState[1]
-  var posState = useState(null)
-  var dragPos = posState[0], setDragPos = posState[1]
+function RoughBack({ onClick }) {
+  var ref = useRef(null)
+  useEffect(function() {
+    var cvs = ref.current; if (!cvs) return
+    var w = 44, h = 24
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = w * dpr; cvs.height = h * dpr
+    cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    rc.line(4, h / 2, 13, h / 2 - 5, { stroke: '#B0A898', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 70 })
+    rc.line(4, h / 2, 13, h / 2 + 5, { stroke: '#B0A898', strokeWidth: 1, roughness: 0.5, disableMultiStroke: true, seed: 71 })
+    ctx.fillStyle = '#B0A898'; ctx.font = '13px ' + FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+    ctx.fillText('back', 15, h / 2 + 1)
+  }, [])
+  return <canvas ref={ref} onClick={onClick} style={{ display: 'block', cursor: 'pointer' }} />
+}
+
+/* drawFromJSON for sticker shapes */
+function drawFromJSON(rc, ctx, shapes, cx, cy, s) {
+  if (!shapes || !shapes.length) return
+  for (var i = 0; i < shapes.length; i++) {
+    var sh = shapes[i]
+    var opts = { roughness: 0.6, disableMultiStroke: true, seed: 650 + i * 3 }
+    if (sh.fill) { opts.fill = sh.fill; opts.fillStyle = 'solid' }
+    if (sh.stroke) opts.stroke = sh.stroke
+    opts.strokeWidth = (sh.sw || 1.2) * s
+    if (sh.t === 'circle') rc.circle(cx + sh.x * s, cy + sh.y * s, (sh.r || 3) * 2 * s, opts)
+    else if (sh.t === 'ellipse') rc.ellipse(cx + sh.x * s, cy + sh.y * s, (sh.w || 6) * s, (sh.h || 3) * s, opts)
+    else if (sh.t === 'line') rc.line(cx + sh.x1 * s, cy + sh.y1 * s, cx + sh.x2 * s, cy + sh.y2 * s, opts)
+    else if (sh.t === 'rect') rc.rectangle(cx + sh.x * s, cy + sh.y * s, (sh.w || 4) * s, (sh.h || 4) * s, opts)
+  }
+}
+
+function StickerThumb({ shapes, size }) {
+  var ref = useRef(null)
+  var sz = size || 52
+  useEffect(function() {
+    if (!ref.current || !shapes) return
+    var cvs = ref.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, sz, sz)
+    var rc = rough.canvas(cvs)
+    drawFromJSON(rc, ctx, shapes, sz / 2, sz / 2, sz / 32)
+  }, [shapes, sz])
+  return <canvas ref={ref} style={{ display: 'block' }} />
+}
+
+function PatternThumb({ patternId, colorId }) {
+  var ref = useRef(null)
+  useEffect(function() { renderPattern(ref.current, patternId, colorId, 2) }, [patternId, colorId])
+  return <canvas ref={ref} style={{ display: 'block', borderRadius: 4 }} />
+}
+
+function GenPreview({ shapes, size }) {
+  var ref = useRef(null)
+  var sz = size || 100
+  useEffect(function() {
+    if (!ref.current || !shapes) return
+    var cvs = ref.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, sz, sz)
+    var rc2 = rough.canvas(cvs)
+    rc2.rectangle(4, 4, sz - 8, sz - 8, { stroke: '#D0C8C0', strokeWidth: 1, ...RO, seed: 80, fill: '#F5F2EC', fillStyle: 'solid' })
+    drawFromJSON(rc2, ctx, shapes, sz / 2, sz / 2, sz / 32)
+  }, [shapes, sz])
+  return <canvas ref={ref} style={{ display: 'block', margin: '0 auto 12px' }} />
+}
+
+
+export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPlace, supaGet, supaPost, supaPatch }) {
+  var [topTab, setTopTab] = useState('stickers')
+  var [stickerTab, setStickerTab] = useState('flora')
+  var [selPattern, setSelPattern] = useState('polka')
+  var [selColor, setSelColor] = useState('cream')
+  var [genOpen, setGenOpen] = useState(false)
+  var [genInput, setGenInput] = useState('')
+  var [genLoading, setGenLoading] = useState(false)
+  var [genResult, setGenResult] = useState(null)
+  var [genId, setGenId] = useState(null)
+  var [feedbackInput, setFeedbackInput] = useState('')
+  var [customStickers, setCustomStickers] = useState([])
+  var [customLoaded, setCustomLoaded] = useState(false)
   var panelRef = useRef(null)
-  var dragCanvasRef = useRef(null)
-  var panelWidthState = useState(300)
-  var panelWidth = panelWidthState[0], setPanelWidth = panelWidthState[1]
-
-  var cats = Object.entries(categories)
-  var currentItems = categories[activeTab] ? categories[activeTab].items : []
 
   useEffect(function() {
-    if (open && panelRef.current) {
-      setPanelWidth(panelRef.current.clientWidth)
-    }
-  }, [open])
+    if (!open || customLoaded || !supaGet) return
+    supaGet('hopscotch_stickers', 'status=eq.done&order=created_at.desc').then(function(rows) {
+      if (rows) setCustomStickers(rows); setCustomLoaded(true)
+    }).catch(function() { setCustomLoaded(true) })
+  }, [open, customLoaded, supaGet])
 
-  /* Draw stamp thumbnail — EXISTING STAMPS UNTOUCHED */
-  var drawStamp = useCallback(function(canvas, type, color) {
-    if (!canvas || !recipes || !recipes[type]) return
-    var ctx = canvas.getContext('2d')
-    var rc = rough.canvas(canvas)
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    var size = 52
-    canvas.width = size * dpr
-    canvas.height = size * dpr
-    canvas.style.width = size + 'px'
-    canvas.style.height = size + 'px'
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, size, size)
-    recipes[type](rc, ctx, size/2, size/2, size/80, color || '#A09080')
-  }, [recipes])
-
-  /* Draw floating drag ghost */
-  useEffect(function() {
-    if (!dragging || !dragCanvasRef.current || !recipes) return
-    var canvas = dragCanvasRef.current
-    var ctx = canvas.getContext('2d')
-    var rc = rough.canvas(canvas)
-    var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    var size = 60
-    canvas.width = size * dpr
-    canvas.height = size * dpr
-    canvas.style.width = size + 'px'
-    canvas.style.height = size + 'px'
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, size, size)
-    if (recipes[dragging]) {
-      recipes[dragging](rc, ctx, size/2, size/2, size/70, '#7A9080')
-    }
-  }, [dragging, recipes])
-
-  /* Close on click outside */
   useEffect(function() {
     if (!open) return
-    function handleClick(e) {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        onClose()
-      }
-    }
+    function handleClick(e) { if (panelRef.current && !panelRef.current.contains(e.target)) onClose() }
     var timer = setTimeout(function() { document.addEventListener('click', handleClick) }, 100)
     return function() { clearTimeout(timer); document.removeEventListener('click', handleClick) }
   }, [open, onClose])
 
-  /* Drag handlers */
-  function startDrag(e, type) {
-    e.preventDefault()
-    var touch = e.touches ? e.touches[0] : e
-    setDragging(type)
-    setDragPos({ x: touch.clientX - 30, y: touch.clientY - 30 })
-    function onMove(ev) {
-      var t = ev.touches ? ev.touches[0] : ev
-      setDragPos({ x: t.clientX - 30, y: t.clientY - 30 })
-    }
-    function onEnd(ev) {
-      var t = ev.changedTouches ? ev.changedTouches[0] : ev
-      var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
-      if (t.clientY < panelTop && onDragToMap) {
-        onDragToMap(type, t.clientX, t.clientY)
-      }
-      setDragging(null)
-      setDragPos(null)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onEnd)
-      window.removeEventListener('touchmove', onMove)
-      window.removeEventListener('touchend', onEnd)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onEnd)
-    window.addEventListener('touchmove', onMove, { passive: false })
-    window.addEventListener('touchend', onEnd)
+  function handleGenerate() {
+    if (!genInput.trim() || genLoading || !supaPost) return
+    setGenLoading(true); setGenResult(null)
+    var name = genInput.trim().substring(0, 40)
+    supaPost('hopscotch_stickers', { name: name, description: name, category: stickerTab, status: 'pending' }).then(function(rows) {
+      if (!rows || !rows[0]) { setGenLoading(false); return }
+      var id = rows[0].id; setGenId(id)
+      var safeName = name.replace(/[^a-zA-Z0-9\u4e00-\u9fff\s\-.,!?]/g, '')
+      supaPost('commands', { cmd: 'nohup python3 ~/lucid/gen_sticker.py "' + safeName + '" ' + id + ' > /dev/null 2>&1 &', status: 'pending' })
+      var attempts = 0
+      var poll = setInterval(function() {
+        attempts++
+        if (attempts > 20) { clearInterval(poll); setGenLoading(false); return }
+        supaGet('hopscotch_stickers', 'id=eq.' + id).then(function(fresh) {
+          if (fresh && fresh[0] && fresh[0].status === 'done' && fresh[0].recipe) {
+            clearInterval(poll); setGenResult(fresh[0].recipe); setGenLoading(false)
+            setCustomStickers(function(prev) { return [fresh[0]].concat(prev) })
+          } else if (fresh && fresh[0] && fresh[0].status === 'failed') {
+            clearInterval(poll); setGenLoading(false)
+          }
+        })
+      }, 2000)
+    }).catch(function() { setGenLoading(false) })
+  }
+
+  function handleIterate() {
+    if (!feedbackInput.trim() || !genId || genLoading || !supaPost) return
+    setGenLoading(true)
+    var fb = feedbackInput.trim().replace(/[^a-zA-Z0-9\u4e00-\u9fff\s\-.,!?]/g, '').substring(0, 80)
+    var safeName = genInput.trim().replace(/[^a-zA-Z0-9\u4e00-\u9fff\s\-.,!?]/g, '').substring(0, 40)
+    if (supaPatch) supaPatch('hopscotch_stickers', 'id=eq.' + genId, { status: 'pending' })
+    supaPost('commands', { cmd: 'nohup python3 ~/lucid/gen_sticker.py "' + safeName + '" ' + genId + ' "' + fb + '" > /dev/null 2>&1 &', status: 'pending' })
+    setFeedbackInput('')
+    var attempts = 0
+    var poll = setInterval(function() {
+      attempts++
+      if (attempts > 20) { clearInterval(poll); setGenLoading(false); return }
+      supaGet('hopscotch_stickers', 'id=eq.' + genId).then(function(fresh) {
+        if (fresh && fresh[0] && fresh[0].status === 'done' && fresh[0].recipe) {
+          clearInterval(poll); setGenResult(fresh[0].recipe); setGenLoading(false)
+          setCustomStickers(function(prev) { return prev.map(function(s) { return s.id === genId ? fresh[0] : s }) })
+        } else if (fresh && fresh[0] && fresh[0].status === 'failed') { clearInterval(poll); setGenLoading(false) }
+      })
+    }, 2000)
   }
 
   if (!open) return null
 
+  var currentItems = []
+  var cat = stickerCategories[stickerTab]
+  if (cat) currentItems = cat.items.map(function(item) { return { type: item.type, label: item.label, shapes: stickerRecipes[item.type] } })
+  var customForTab = customStickers.filter(function(s) { return s.category === stickerTab && s.recipe })
+  customForTab.forEach(function(s) { currentItems.push({ type: 'custom_' + s.id, label: s.name, shapes: s.recipe }) })
+  var catEntries = Object.entries(stickerCategories)
+
   return (
-    <>
-      {dragging && dragPos && (
-        <canvas ref={dragCanvasRef} style={{
-          position: 'fixed', left: dragPos.x, top: dragPos.y,
-          pointerEvents: 'none', zIndex: 200, opacity: 0.8,
-        }} />
-      )}
+    <div ref={panelRef} style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FAF6F0',
+      borderRadius: '16px 16px 0 0', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+      zIndex: 100, height: genOpen ? '85vh' : '42vh', transition: 'height 0.3s ease',
+      display: 'flex', flexDirection: 'column', fontFamily: FONT, overflow: 'hidden',
+    }} onClick={function(e) { e.stopPropagation() }}>
 
-      <div ref={panelRef} style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: '#FAF6F0',
-        borderRadius: '16px 16px 0 0',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-        zIndex: 100,
-        height: generatorOpen ? '85vh' : '42vh',
-        transition: 'height 0.3s ease',
-        display: 'flex', flexDirection: 'column',
-        fontFamily: "'-apple-system', 'PingFang SC', sans-serif",
-        overflow: 'hidden',
-      }} onClick={function(e) { e.stopPropagation() }}>
-
-        {/* Header: rough drag handle + rough close */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px 6px', justifyContent: 'center', position: 'relative' }}>
-          <RoughHandle width={40} />
-          <div style={{ position: 'absolute', right: 10, top: 8 }}>
-            <RoughClose size={32} onClick={generatorOpen ? function() { setGeneratorOpen(false) } : onClose} />
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px 4px', justifyContent: 'center', position: 'relative' }}>
+        <RoughHandle width={40} />
+        <div style={{ position: 'absolute', right: 10, top: 8 }}>
+          <RoughClose size={32} onClick={genOpen ? function() { setGenOpen(false); setGenResult(null); setGenId(null); setGenInput('') } : onClose} />
         </div>
-
-        {!generatorOpen ? (
-          <>
-            {/* Tabs — rough underlines, no extra borders/lines */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '0 8px 4px' }}>
-              {cats.map(function(entry) {
-                var key = entry[0], cat = entry[1]
-                return (
-                  <div key={key} onClick={function() { setActiveTab(key) }} style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    padding: '6px 16px 0', cursor: 'pointer',
-                  }}>
-                    <span style={{
-                      fontSize: 12, letterSpacing: 1,
-                      color: activeTab === key ? '#5A4A38' : '#B0A898',
-                      fontWeight: activeTab === key ? 600 : 400,
-                      fontFamily: 'inherit',
-                    }}>{cat.label}</span>
-                    <RoughTabUnderline width={50} active={activeTab === key} />
-                  </div>
-                )
-              })}
-              {/* Bigger + button for adding category */}
-              <div style={{ padding: '0 4px', display: 'flex', alignItems: 'center' }}>
-                <RoughPlusTab onClick={function() {/* TODO */}} />
-              </div>
-            </div>
-
-            {/* Grid — no divider lines, just spacing */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 4, padding: '8px 16px',
-              flex: 1, overflowY: 'auto', alignContent: 'start',
-            }}>
-              {currentItems.map(function(item) {
-                return (
-                  <div key={item.type}
-                    onMouseDown={function(e) { startDrag(e, item.type) }}
-                    onTouchStart={function(e) { startDrag(e, item.type) }}
-                    onClick={function() { onSelect && onSelect(item.type) }}
-                    style={{
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', padding: '8px 4px',
-                      borderRadius: 8, cursor: 'grab',
-                      userSelect: 'none', WebkitUserSelect: 'none',
-                    }}>
-                    <StampThumb type={item.type} recipes={recipes} drawStamp={drawStamp} />
-                    <span style={{ fontSize: 10, color: '#8A7A68', marginTop: 4 }}>{item.label}</span>
-                  </div>
-                )
-              })}
-              {/* Rough.js generate button — bigger */}
-              <div style={{
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                padding: '4px', cursor: 'pointer', minHeight: 72,
-              }}>
-                <RoughAddStamp onClick={function() { setGeneratorOpen(true) }} />
-              </div>
-            </div>
-          </>
-        ) : (
-          <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ marginBottom: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#5A4A38' }}>Generate Stamp</span>
-            </div>
-            <RoughPreviewBox size={120} />
-            <RoughInput
-              value={genInput}
-              onChange={function(e) { setGenInput(e.target.value) }}
-              placeholder="describe: McDonald's, ramen shop..."
-            />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'center' }}>
-              <RoughGenButton
-                width={Math.min(panelWidth - 32, 300)}
-                disabled={genLoading || !genInput.trim()}
-                loading={genLoading}
-              />
-            </div>
-          </div>
-        )}
       </div>
-    </>
-  )
-}
 
-function StampThumb({ type, recipes, drawStamp }) {
-  var ref = useRef(null)
-  useEffect(function() {
-    if (ref.current) drawStamp(ref.current, type, '#A09080')
-  }, [type, drawStamp])
-  return <canvas ref={ref} style={{ display: 'block' }} />
+      {!genOpen ? (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 0, padding: '0 0 2px' }}>
+            {[{ k: 'stickers', l: 'Stickers' }, { k: 'patterns', l: 'Patterns' }].map(function(t) {
+              return (
+                <div key={t.k} onClick={function() { setTopTab(t.k) }} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 24px 0', cursor: 'pointer',
+                }}>
+                  <span style={{ fontSize: 13, letterSpacing: 1.5, color: topTab === t.k ? '#5A4A38' : '#B0A898', fontWeight: topTab === t.k ? 700 : 400 }}>{t.l}</span>
+                  <RoughTabLine width={60} active={topTab === t.k} />
+                </div>
+              )
+            })}
+          </div>
+
+          {topTab === 'stickers' ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '2px 8px 4px' }}>
+                {catEntries.map(function(entry) {
+                  var key = entry[0], c = entry[1]
+                  return (
+                    <div key={key} onClick={function() { setStickerTab(key) }} style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 14px 0', cursor: 'pointer',
+                    }}>
+                      <span style={{ fontSize: 11, letterSpacing: 0.5, color: stickerTab === key ? '#5A4A38' : '#B0A898', fontWeight: stickerTab === key ? 600 : 400 }}>{c.label}</span>
+                      <RoughTabLine width={44} active={stickerTab === key} />
+                    </div>
+                  )
+                })}
+                <div style={{ padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+                  <RoughPlusCircle size={32} onClick={function() { setGenOpen(true) }} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, padding: '6px 16px', flex: 1, overflowY: 'auto', alignContent: 'start' }}>
+                {currentItems.map(function(item) {
+                  return (
+                    <div key={item.type} onClick={function() { onStickerPlace && onStickerPlace(item.shapes, item.label) }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                      <StickerThumb shapes={item.shapes} />
+                      <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3, textAlign: 'center' }}>{item.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px' }}>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', padding: '4px 0 10px', flexWrap: 'wrap' }}>
+                {colorPresets.map(function(cp) {
+                  var active = selColor === cp.id
+                  return (
+                    <div key={cp.id} onClick={function() { setSelColor(cp.id) }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 12, background: cp.fg, border: active ? '2px solid #5A4A38' : '2px solid transparent' }} />
+                      <span style={{ fontSize: 8, color: active ? '#5A4A38' : '#B0A898', marginTop: 2 }}>{cp.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, alignContent: 'start' }}>
+                {patternTypes.map(function(pt) {
+                  var active = selPattern === pt.id
+                  return (
+                    <div key={pt.id} onClick={function() { setSelPattern(pt.id); onPatternPlace && onPatternPlace(pt.id, selColor) }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 4, cursor: 'pointer', outline: active ? '2px solid #2E94B9' : 'none', borderRadius: 6 }}>
+                      <PatternThumb patternId={pt.id} colorId={selColor} />
+                      <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3 }}>{pt.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ padding: '8px 16px', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <RoughBack onClick={function() { setGenOpen(false); setGenResult(null); setGenId(null); setGenInput('') }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#5A4A38' }}>Generate Sticker</span>
+          </div>
+          {genResult ? <GenPreview shapes={genResult} size={100} /> : <RoughFrame size={100} />}
+          {!genResult ? (
+            <>
+              <RoughInput value={genInput} onChange={function(e) { setGenInput(e.target.value) }} placeholder="describe: cherry blossom, wax seal..." />
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                <RoughBtn width={200} label={genLoading ? 'generating...' : 'Generate'} disabled={genLoading || !genInput.trim()} onClick={handleGenerate} />
+              </div>
+            </>
+          ) : (
+            <>
+              <RoughInput value={feedbackInput} onChange={function(e) { setFeedbackInput(e.target.value) }} placeholder="feedback: bigger petals, add leaves..." />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 10 }}>
+                <RoughBtn width={140} label={genLoading ? 'generating...' : 'Iterate'} disabled={genLoading || !feedbackInput.trim()} onClick={handleIterate} />
+                <RoughBtn width={100} label="Done" color="#4AAF5C" onClick={function() { setGenOpen(false); setGenResult(null); setGenId(null); setGenInput(''); setFeedbackInput('') }} />
+              </div>
+            </>
+          )}
+          {genResult && (
+            <div style={{ marginTop: 14, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 10, color: '#B0A898', width: '100%', textAlign: 'center', marginBottom: 2 }}>save to:</span>
+              {catEntries.map(function(entry) {
+                var key = entry[0], c = entry[1]
+                return (
+                  <div key={key} onClick={function() {
+                    if (genId && supaPatch) supaPatch('hopscotch_stickers', 'id=eq.' + genId, { category: key })
+                    setCustomStickers(function(prev) { return prev.map(function(s) { return s.id === genId ? Object.assign({}, s, { category: key }) : s }) })
+                    setStickerTab(key)
+                  }} style={{ padding: '4px 12px', fontSize: 11, cursor: 'pointer', color: '#5A4A38', background: '#F0ECE6', borderRadius: 10 }}>{c.label}</div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
