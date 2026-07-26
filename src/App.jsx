@@ -300,33 +300,40 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
 }
 /* Ink view: blue filled brush button */
 
-// Rough.js trash can — appears at bottom during placed-sticker drag
+// Rough.js trash — appears at bottom during placed-sticker drag
 function RoughTrash({ visible }) {
   var ref = useRef(null)
   useEffect(function() {
-    if (!ref.current) return
-    var sz = 44
+    if (!ref.current || !visible) return
+    var w = 80, h = 60
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    ref.current.width = sz * dpr; ref.current.height = sz * dpr
-    ref.current.style.width = sz + 'px'; ref.current.style.height = sz + 'px'
+    ref.current.width = w * dpr; ref.current.height = h * dpr
+    ref.current.style.width = w + 'px'; ref.current.style.height = h + 'px'
     var ctx = ref.current.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(ref.current)
+    // bg circle
+    rc.circle(w/2, 24, 40, { stroke: '#C48A7A', fill: '#FFF5F0', fillStyle: 'solid', strokeWidth: 1.2, roughness: 0.5, disableMultiStroke: true, seed: 1 })
     var o = { stroke: '#C48A7A', strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true }
     // lid
-    rc.line(10, 10, 34, 10, { ...o, seed: 1 })
-    rc.line(17, 10, 17, 6, { ...o, seed: 2 })
-    rc.line(17, 6, 27, 6, { ...o, seed: 3 })
-    rc.line(27, 6, 27, 10, { ...o, seed: 4 })
+    rc.line(27, 14, 53, 14, { ...o, seed: 2 })
+    rc.line(34, 14, 34, 11, { ...o, seed: 3 })
+    rc.line(34, 11, 46, 11, { ...o, seed: 4 })
+    rc.line(46, 11, 46, 14, { ...o, seed: 5 })
     // body
-    rc.line(12, 10, 14, 38, { ...o, seed: 5 })
-    rc.line(32, 10, 30, 38, { ...o, seed: 6 })
-    rc.line(14, 38, 30, 38, { ...o, seed: 7 })
-    // lines inside
-    rc.line(19, 14, 19, 34, { ...o, strokeWidth: 0.8, seed: 8 })
-    rc.line(25, 14, 25, 34, { ...o, strokeWidth: 0.8, seed: 9 })
-  }, [])
+    rc.line(29, 14, 30, 36, { ...o, seed: 6 })
+    rc.line(51, 14, 50, 36, { ...o, seed: 7 })
+    rc.line(30, 36, 50, 36, { ...o, seed: 8 })
+    // lines
+    rc.line(36, 17, 36, 33, { ...o, strokeWidth: 0.8, seed: 9 })
+    rc.line(44, 17, 44, 33, { ...o, strokeWidth: 0.8, seed: 10 })
+    // label
+    ctx.fillStyle = '#C48A7A'
+    ctx.font = "10px '-apple-system', sans-serif"
+    ctx.textAlign = 'center'
+    ctx.fillText('drop to delete', w/2, 54)
+  }, [visible])
   if (!visible) return null
-  return <canvas ref={ref} style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 150, opacity: 0.9 }} />
+  return <canvas ref={ref} style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 150 }} />
 }
 
 // Render a placed sticker — supports long-press drag
@@ -366,15 +373,14 @@ export default function App() {
   const [expanding, setExpanding] = useState(false)
   const [collapsing, setCollapsing] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
-  const [placedStickers, setPlacedStickers] = useState([])
+  const [placedStickers, setPlacedStickers] = useState(function() {
+    try { return JSON.parse(localStorage.getItem('hopscotch_stickers') || '[]') } catch(e) { return [] }
+  })
 
-  // load placed stickers from DB
+  // persist to localStorage whenever stickers change
   useEffect(function() {
-    if (!isConnected()) return
-    supaGet('hopscotch_elements', 'order=created_at.asc').then(function(rows) {
-      if (rows) setPlacedStickers(rows)
-    })
-  }, [])
+    localStorage.setItem('hopscotch_stickers', JSON.stringify(placedStickers))
+  }, [placedStickers])
   const [locations, setLocations] = useState(INITIAL)
   const [card, setCard] = useState(null)
   const [dimIndex, setDimIndex] = useState(0)
@@ -531,19 +537,14 @@ export default function App() {
 
   function handleStickerPlace(type, label, color, cx, cy) {
     var W = window.innerWidth, H = window.innerHeight
-    var el = { id: 'tmp_' + Date.now(), zone: 'free', sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H, scale: 1 }
+    var el = { id: 's_' + Date.now(), sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H }
     setPlacedStickers(function(prev) { return prev.concat([el]) })
-    if (isConnected()) {
-      supaPost('hopscotch_elements', { zone: 'free', sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H }).then(function(rows) {
-        if (rows && rows[0]) setPlacedStickers(function(prev) { return prev.map(function(s) { return s.id === el.id ? rows[0] : s }) })
-      })
-    }
   }
 
   function handlePlacedDragStart(el) {
     setMovingEl(el)
     var W = window.innerWidth, H = window.innerHeight
-    setMovePos({ x: el.offset_x * W - 25, y: el.offset_y * H - 25 })
+    setMovePos({ x: el.offset_x * W - 30, y: el.offset_y * H - 30 })
     function onMove(ev) {
       ev.preventDefault()
       var t = ev.touches ? ev.touches[0] : ev
@@ -551,17 +552,14 @@ export default function App() {
     }
     function onEnd(ev) {
       var t = ev.changedTouches ? ev.changedTouches[0] : ev
-      var W = window.innerWidth, H = window.innerHeight
-      // check if dropped on trash (bottom center area)
-      if (t.clientY > H - 100 && Math.abs(t.clientX - W / 2) < 60) {
-        // delete
+      var W2 = window.innerWidth, H2 = window.innerHeight
+      // check if dropped on trash (bottom center)
+      if (t.clientY > H2 - 100 && Math.abs(t.clientX - W2 / 2) < 60) {
         setPlacedStickers(function(prev) { return prev.filter(function(s) { return s.id !== el.id }) })
-        if (isConnected()) supaDelete('hopscotch_elements', 'id=eq.' + el.id)
       } else {
-        // move to new position
-        var nx = t.clientX / W, ny = t.clientY / H
-        setPlacedStickers(function(prev) { return prev.map(function(s) { return s.id === el.id ? Object.assign({}, s, { offset_x: nx, offset_y: ny }) : s }) })
-        if (isConnected()) supaPatch('hopscotch_elements', 'id=eq.' + el.id, { offset_x: nx, offset_y: ny })
+        setPlacedStickers(function(prev) { return prev.map(function(s) {
+          return s.id === el.id ? Object.assign({}, s, { offset_x: t.clientX / W2, offset_y: t.clientY / H2 }) : s
+        }) })
       }
       setMovingEl(null); setMovePos(null)
       window.removeEventListener('touchmove', onMove)
