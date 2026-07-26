@@ -303,11 +303,12 @@ export var stickerRecipes = {
 }
 
 export var stickerColors = [
-  { id: 'rose', c: '#C48A7A', label: 'rose' },
-  { id: 'pink', c: '#D0A0A0', label: 'pink' },
-  { id: 'sky', c: '#7BA7BC', label: 'sky' },
-  { id: 'sage', c: '#9BB89C', label: 'sage' },
-  { id: 'lavender', c: '#C4A6D0', label: 'lavender' },
-  { id: 'sand', c: '#D4B896', label: 'sand' },
-  { id: 'grey', c: '#A09080', label: 'grey' },
+  { id: 'pink', c: '#D0A0A0' },
+  { id: 'rose', c: '#C48A7A' },
+  { id: 'orange', c: '#D89A6C' },
+  { id: 'yellow', c: '#D4B878' },
+  { id: 'sage', c: '#9BB89C' },
+  { id: 'sky', c: '#7BA7BC' },
+  { id: 'lavender', c: '#C4A6D0' },
+  { id: 'grey', c: '#A09080' },
 ]

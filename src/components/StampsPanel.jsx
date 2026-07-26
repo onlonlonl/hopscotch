@@ -210,7 +210,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   var [stickerTab, setStickerTab] = useState('flora')
   var [stickerColor, setStickerColor] = useState("#D0A0A0")
   var [selPattern, setSelPattern] = useState('polka')
-  var [selColor, setSelColor] = useState('cream')
+  var [selColor, setSelColor] = useState('rose')
   var [genOpen, setGenOpen] = useState(false)
   var [genInput, setGenInput] = useState('')
   var [genLoading, setGenLoading] = useState(false)
@@ -402,12 +402,12 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                   var active = stickerColor === sc.c
                   return (
                     <div key={sc.id} onClick={function() { setStickerColor(sc.c) }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 10, background: sc.c, border: active ? '2px solid #5A4A38' : '2px solid transparent' }} />
+                      <div style={{ width: 22, height: 22, borderRadius: 11, background: sc.c, border: active ? '2px solid #5A4A38' : '2px solid transparent' }} />
                     </div>
                   )
                 })}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, padding: '6px 16px', flex: 1, overflowY: 'auto', alignContent: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, padding: '6px 16px', flex: 1, overflowY: 'auto', alignContent: 'start', justifyItems: 'center' }}>
                 {currentItems.map(function(item) {
                   return (
                     <div key={item.type}
@@ -428,8 +428,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                   var active = selColor === cp.id
                   return (
                     <div key={cp.id} onClick={function() { setSelColor(cp.id) }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 12, background: cp.fg, border: active ? '2px solid #5A4A38' : '2px solid transparent' }} />
-                      <span style={{ fontSize: 8, color: active ? '#5A4A38' : '#B0A898', marginTop: 2 }}>{cp.label}</span>
+                      <div style={{ width: 22, height: 22, borderRadius: 11, background: cp.fg, border: active ? '2px solid #5A4A38' : '2px solid transparent' }} />
                     </div>
                   )
                 })}
@@ -444,7 +443,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                         var sx = touch.clientX, sy = touch.clientY, started = false
                         function onMove(ev) {
                           var t = ev.touches[0]
-                          var dy = t.clientY - sy; if (!started && dy < -10 && selPattern === pt.id) {
+                          var dy = t.clientY - sy; if (!started && dy < -25 && selPattern === pt.id) {
                             started = true
                             setDragging({ type: '__pattern__', patternId: pt.id, colorId: selColor })
                           }

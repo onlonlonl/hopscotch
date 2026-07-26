@@ -18,12 +18,14 @@ export var patternTypes = [
 ]
 
 export var colorPresets = [
-  { id: 'cream', fg: '#D4C4B0', bg: '#FAF6F0', label: 'cream' },
-  { id: 'rose', fg: '#D0A0A0', bg: '#F8EEEE', label: 'rose' },
-  { id: 'sky', fg: '#7BA7BC', bg: '#EEF4F8', label: 'sky' },
-  { id: 'sage', fg: '#9BB89C', bg: '#F0F5F0', label: 'sage' },
-  { id: 'lavender', fg: '#C4A6D0', bg: '#F4EFF8', label: 'lavender' },
-  { id: 'sand', fg: '#D4B896', bg: '#FAF4EC', label: 'sand' },
+  { id: 'rose', fg: '#D0A0A0', bg: '#F8EEEE' },
+  { id: 'clay', fg: '#C48A7A', bg: '#FAF0EC' },
+  { id: 'orange', fg: '#D89A6C', bg: '#FAF2EA' },
+  { id: 'yellow', fg: '#D4B878', bg: '#FAF6EA' },
+  { id: 'sage', fg: '#9BB89C', bg: '#F0F5F0' },
+  { id: 'sky', fg: '#7BA7BC', bg: '#EEF4F8' },
+  { id: 'lavender', fg: '#C4A6D0', bg: '#F4EFF8' },
+  { id: 'cream', fg: '#D4C4B0', bg: '#FAF6F0' },
 ]
 
 export var patternDrawers = {
