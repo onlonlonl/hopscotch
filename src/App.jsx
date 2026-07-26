@@ -300,9 +300,39 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
 }
 /* Ink view: blue filled brush button */
 
-// Render a placed sticker on the homepage
-function PlacedSticker({ el, x, y, size }) {
+// Rough.js trash can — appears at bottom during placed-sticker drag
+function RoughTrash({ visible }) {
   var ref = useRef(null)
+  useEffect(function() {
+    if (!ref.current) return
+    var sz = 44
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    ref.current.width = sz * dpr; ref.current.height = sz * dpr
+    ref.current.style.width = sz + 'px'; ref.current.style.height = sz + 'px'
+    var ctx = ref.current.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(ref.current)
+    var o = { stroke: '#C48A7A', strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true }
+    // lid
+    rc.line(10, 10, 34, 10, { ...o, seed: 1 })
+    rc.line(17, 10, 17, 6, { ...o, seed: 2 })
+    rc.line(17, 6, 27, 6, { ...o, seed: 3 })
+    rc.line(27, 6, 27, 10, { ...o, seed: 4 })
+    // body
+    rc.line(12, 10, 14, 38, { ...o, seed: 5 })
+    rc.line(32, 10, 30, 38, { ...o, seed: 6 })
+    rc.line(14, 38, 30, 38, { ...o, seed: 7 })
+    // lines inside
+    rc.line(19, 14, 19, 34, { ...o, strokeWidth: 0.8, seed: 8 })
+    rc.line(25, 14, 25, 34, { ...o, strokeWidth: 0.8, seed: 9 })
+  }, [])
+  if (!visible) return null
+  return <canvas ref={ref} style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 150, opacity: 0.9 }} />
+}
+
+// Render a placed sticker — supports long-press drag
+function PlacedSticker({ el, x, y, size, onDragStart }) {
+  var ref = useRef(null)
+  var longRef = useRef(null)
   useEffect(function() {
     if (!ref.current) return
     var recipe = stickerRecipes[el.sticker_type]
@@ -316,7 +346,19 @@ function PlacedSticker({ el, x, y, size }) {
     var rc = rough.canvas(cvs)
     recipe(rc, ctx, size / 2, size / 2, size / 56, el.color || '#D0A0A0')
   }, [el, size])
-  return <canvas ref={ref} style={{ position: 'absolute', left: x, top: y, pointerEvents: 'none' }} />
+  function handleTouchStart(e) {
+    e.stopPropagation()
+    var startEvt = e
+    longRef.current = setTimeout(function() {
+      try { startEvt.preventDefault() } catch(ex) {}
+      if (onDragStart) onDragStart(el)
+    }, 400)
+  }
+  function handleTouchEnd() { clearTimeout(longRef.current) }
+  function handleTouchMove() { clearTimeout(longRef.current) }
+  return <canvas ref={ref}
+    onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchMove={handleTouchMove}
+    style={{ position: 'absolute', left: x, top: y, pointerEvents: 'auto', touchAction: 'none' }} />
 }
 
 export default function App() {
@@ -482,43 +524,49 @@ export default function App() {
 
 
   // place sticker on homepage zone
+  // placed sticker drag state
+  var [movingEl, setMovingEl] = useState(null)
+  var [movePos, setMovePos] = useState(null)
+  var moveGhostRef = useRef(null)
+
   function handleStickerPlace(type, label, color, cx, cy) {
-    // find which zone the drop landed on
-    var zone = null
-    for (var i = 0; i < zoneNames.length; i++) {
-      var r = zoneRects[zoneNames[i]]
-      if (r && cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) {
-        zone = zoneNames[i]; break
-      }
-    }
-    // check roof triangle
-    if (!zone && roofTri && roofTri.length === 3) {
-      var p = roofTri
-      var d1 = (cx-p[1].x)*(p[0].y-p[1].y) - (p[0].x-p[1].x)*(cy-p[1].y)
-      var d2 = (cx-p[2].x)*(p[1].y-p[2].y) - (p[1].x-p[2].x)*(cy-p[2].y)
-      var d3 = (cx-p[0].x)*(p[2].y-p[2].y) - (p[2].x-p[0].x)*(cy-p[0].y)
-      var neg = (d1<0)||(d2<0)||(d3<0)
-      var pos = (d1>0)||(d2>0)||(d3>0)
-      if (!(neg && pos)) zone = 'roof'
-    }
-    if (!zone) return
-    // calculate offset within zone (0-1)
-    var ox = 0.5, oy = 0.5
-    var r = zoneRects[zone]
-    if (r) {
-      ox = Math.max(0.05, Math.min(0.95, (cx - r.x) / r.w))
-      oy = Math.max(0.05, Math.min(0.95, (cy - r.y) / r.h))
-    }
-    var el = { id: 'tmp_' + Date.now(), zone: zone, sticker_type: type, color: color, offset_x: ox, offset_y: oy, scale: 1 }
+    var W = window.innerWidth, H = window.innerHeight
+    var el = { id: 'tmp_' + Date.now(), zone: 'free', sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H, scale: 1 }
     setPlacedStickers(function(prev) { return prev.concat([el]) })
-    // save to DB
     if (isConnected()) {
-      supaPost('hopscotch_elements', { zone: zone, sticker_type: type, color: color, offset_x: ox, offset_y: oy }).then(function(rows) {
-        if (rows && rows[0]) {
-          setPlacedStickers(function(prev) { return prev.map(function(s) { return s.id === el.id ? rows[0] : s }) })
-        }
+      supaPost('hopscotch_elements', { zone: 'free', sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H }).then(function(rows) {
+        if (rows && rows[0]) setPlacedStickers(function(prev) { return prev.map(function(s) { return s.id === el.id ? rows[0] : s }) })
       })
     }
+  }
+
+  function handlePlacedDragStart(el) {
+    setMovingEl(el)
+    function onMove(ev) {
+      ev.preventDefault()
+      var t = ev.touches ? ev.touches[0] : ev
+      setMovePos({ x: t.clientX - 20, y: t.clientY - 20 })
+    }
+    function onEnd(ev) {
+      var t = ev.changedTouches ? ev.changedTouches[0] : ev
+      var W = window.innerWidth, H = window.innerHeight
+      // check if dropped on trash (bottom center area)
+      if (t.clientY > H - 80 && Math.abs(t.clientX - W / 2) < 50) {
+        // delete
+        setPlacedStickers(function(prev) { return prev.filter(function(s) { return s.id !== el.id }) })
+        if (isConnected()) supaDelete('hopscotch_elements', 'id=eq.' + el.id)
+      } else {
+        // move to new position
+        var nx = t.clientX / W, ny = t.clientY / H
+        setPlacedStickers(function(prev) { return prev.map(function(s) { return s.id === el.id ? Object.assign({}, s, { offset_x: nx, offset_y: ny }) : s }) })
+        if (isConnected()) supaPatch('hopscotch_elements', 'id=eq.' + el.id, { offset_x: nx, offset_y: ny })
+      }
+      setMovingEl(null); setMovePos(null)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onEnd)
+    }
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
   }
 
   const handleZoneTap = useCallback((zone) => {
@@ -583,21 +631,27 @@ export default function App() {
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} />
         {placedStickers.map(function(el) {
-          var r = el.zone === 'roof' ? null : zoneRects[el.zone]
-          if (!r && el.zone !== 'roof') return null
+          if (movingEl && movingEl.id === el.id) return null
+          var W = window.innerWidth, H = window.innerHeight
           var sz = 40
-          var px, py
-          if (r) {
-            px = r.x + el.offset_x * r.w - sz / 2
-            py = r.y + el.offset_y * r.h - sz / 2
-          } else {
-            // roof — center for now
-            if (!roofTri) return null
-            px = (roofTri[0].x + roofTri[1].x + roofTri[2].x) / 3 - sz / 2
-            py = (roofTri[0].y + roofTri[1].y + roofTri[2].y) / 3 - sz / 2
-          }
-          return <PlacedSticker key={el.id} el={el} x={px} y={py} size={sz} />
+          var px = el.offset_x * W - sz / 2
+          var py = el.offset_y * H - sz / 2
+          return <PlacedSticker key={el.id} el={el} x={px} y={py} size={sz} onDragStart={handlePlacedDragStart} />
         })}
+        {movingEl && movePos && (
+          <canvas ref={moveGhostRef} style={{ position: 'fixed', left: movePos.x, top: movePos.y, pointerEvents: 'none', zIndex: 200, opacity: 0.8 }}
+            ref={function(cvs) {
+              if (!cvs || !stickerRecipes[movingEl.sticker_type]) return
+              var sz = 50, dpr = Math.min(window.devicePixelRatio || 1, 3)
+              cvs.width = sz * dpr; cvs.height = sz * dpr
+              cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+              var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+              ctx.clearRect(0, 0, sz, sz)
+              var rc = rough.canvas(cvs)
+              stickerRecipes[movingEl.sticker_type](rc, ctx, sz/2, sz/2, sz/56, movingEl.color || '#D0A0A0')
+            }} />
+        )}
+        <RoughTrash visible={!!movingEl} />
         {dragFrom && zoneNames.map(function (zn) {
           var r = zoneRects[zn]; if (!r) return null
           return <div key={zn} style={{ position: 'absolute', left: r.x, top: r.y, width: r.w, height: r.h,
