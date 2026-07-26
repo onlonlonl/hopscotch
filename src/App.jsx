@@ -574,6 +574,8 @@ export default function App() {
     const [cityName, setCityName] = useState('?')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
   const [weatherColor, setWeatherColor] = useState(null)
+  const [draggingStamp, setDraggingStamp] = useState(null)
+  const [overTrash, setOverTrash] = useState(false)
 
   // --- init supabase (synchronous, before any effect) ---
   useState(function () { initSupabase(); return true })
@@ -719,6 +721,39 @@ export default function App() {
   const mapRef = useRef(null)
   const tabRef = useRef(null)
   const backRef = useRef(null)
+
+  const TRASH_H = 96
+  const inTrash = useCallback(function(cx, cy) {
+    return cy > window.innerHeight - TRASH_H && Math.abs(cx - window.innerWidth / 2) < 90
+  }, [])
+
+  const handleStampDragStart = useCallback(function(id) {
+    setDraggingStamp(id); setCard(null)
+    if (navigator.vibrate) { try { navigator.vibrate(12) } catch(e) {} }
+  }, [])
+
+  const handleStampDrag = useCallback(function(id, lux_x, lux_y, cx, cy) {
+    setLocations(function(prev) {
+      return prev.map(function(l) { return l.id === id ? { ...l, lux_x: lux_x, lux_y: lux_y } : l })
+    })
+    setOverTrash(inTrash(cx, cy))
+  }, [inTrash])
+
+  const handleStampDragEnd = useCallback(function(id, cx, cy) {
+    setDraggingStamp(null); setOverTrash(false)
+    if (inTrash(cx, cy)) {
+      if (isConnected()) supaDelete('locations', 'id=eq.' + id)
+      setLocations(function(prev) { return prev.filter(function(l) { return l.id !== id }) })
+      return
+    }
+    setLocations(function(prev) {
+      var moved = prev.filter(function(l) { return l.id === id })[0]
+      if (moved && isConnected()) {
+        supaPatch('locations', 'id=eq.' + id, { lux_x: moved.lux_x, lux_y: moved.lux_y })
+      }
+      return prev
+    })
+  }, [inTrash])
 
   const handleLocationSave = useCallback(function(locId, patch) {
     if (isConnected()) supaPatch('locations', 'id=eq.' + locId, patch)
@@ -999,7 +1034,10 @@ export default function App() {
           background: '#FAF6F0', overflow: 'hidden',
         }}>
           <HandDrawnMap ref={mapRef} locations={locations} connections={connections}
-            fullscreen={true} onLocationTap={handleLocationTap} />
+            fullscreen={true} onLocationTap={handleLocationTap}
+            onStampDragStart={handleStampDragStart}
+            onStampDrag={handleStampDrag}
+            onStampDragEnd={handleStampDragEnd} />
         </div>
 
         <div style={{
@@ -1062,6 +1100,19 @@ export default function App() {
             zIndex:101, cursor:'pointer',
             filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.15))',
           }} />
+      )}
+
+      {draggingStamp && dimIndex === 0 && (
+        <div style={{
+          position: 'fixed', left: '50%', bottom: 14, transform: 'translateX(-50%)',
+          width: 168, height: 68, zIndex: 130, pointerEvents: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '1.5px dashed ' + (overTrash ? '#C86A5A' : '#C0B8AC'),
+          background: overTrash ? 'rgba(200,106,90,0.12)' : 'rgba(250,246,240,0.9)',
+          borderRadius: 8, transition: 'all 0.15s ease',
+          fontSize: 11, letterSpacing: 1, color: overTrash ? '#C86A5A' : '#A09888',
+          fontFamily: "-apple-system, 'PingFang SC', sans-serif",
+        }}>drop here to remove</div>
       )}
 
       <MapStampsPanel open={panelOpen} onClose={() => setPanelOpen(false)}

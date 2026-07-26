@@ -343,6 +343,8 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
         display: 'flex', flexDirection: 'column',
         fontFamily: "'-apple-system', 'PingFang SC', sans-serif",
         overflow: 'hidden',
+        opacity: dragging ? 0.3 : 1,
+        transition: 'opacity 0.18s ease',
       }} onClick={function(e) { e.stopPropagation() }}>
 
         {/* Header: rough drag handle + rough close */}

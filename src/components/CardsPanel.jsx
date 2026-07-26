@@ -44,6 +44,27 @@ var FONT = "-apple-system, 'PingFang SC', sans-serif"
 var CARD_H = 56
 var DELETE_W = 64
 
+function freeSpot(locations) {
+  var taken = (locations || []).map(function(l) { return [l.lux_x || 50, l.lux_y || 50] })
+  function occupied(x, y) {
+    for (var i = 0; i < taken.length; i++) {
+      if (Math.hypot(taken[i][0] - x, taken[i][1] - y) < 9) return true
+    }
+    return false
+  }
+  if (!occupied(50, 50)) return { lux_x: 50, lux_y: 50 }
+  for (var ring = 1; ring < 8; ring++) {
+    var r = ring * 11, steps = ring * 6
+    for (var s = 0; s < steps; s++) {
+      var a = (s / steps) * Math.PI * 2 + ring * 0.7
+      var x = 50 + Math.cos(a) * r, y = 50 + Math.sin(a) * r
+      if (x < 6 || x > 94 || y < 6 || y > 94) continue
+      if (!occupied(x, y)) return { lux_x: Math.round(x * 10) / 10, lux_y: Math.round(y * 10) / 10 }
+    }
+  }
+  return { lux_x: 50, lux_y: 50 }
+}
+
 export default function CardsPanel({ open, onClose, locations, onFocus, setLocations, cityName }) {
   var borderRef = useRef(null)
   var cardRefs = useRef({})
@@ -231,7 +252,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   category: poi.type ? poi.type.split(';')[0] : '',
                   ink_name_iris: null, ink_name_lux: null, story: null,
                   color: '#E8A87C', weather: 'clear', icon_type: 'house',
-                  lux_x: 50, lux_y: 50, inf_t: 0.5, inf_w: 0.5,
+                  lux_x: freeSpot(locations).lux_x, lux_y: freeSpot(locations).lux_y, inf_t: null, inf_w: null,
                 }
                 await supaPost('locations', newLoc)
                 setLocations(function (prev) { return [...prev, { ...newLoc, errands: 0, lat: parseFloat(newLoc.lat), lng: parseFloat(newLoc.lng) }] })

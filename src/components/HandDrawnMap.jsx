@@ -32,7 +32,9 @@ function drawEmptyHome(ctx, rc, w, h) {
 var MIN_ZOOM = 0.4
 var MAX_ZOOM = 4.0
 
-function HandDrawnMapInner({ locations = [], connections = [], fullscreen = false, onLocationTap }) {
+function HandDrawnMapInner({ locations = [], connections = [], fullscreen = false, onLocationTap, onStampDragStart, onStampDrag, onStampDragEnd }) {
+  var cbRef = useRef({})
+  cbRef.current = { locations: locations, onStampDragStart: onStampDragStart, onStampDrag: onStampDrag, onStampDragEnd: onStampDragEnd }
   var canvasRef = useRef(null)
   var camRef = useRef({ zoom: 1, panX: 0, panY: 0 })
   var gestRef = useRef({ dragging: false, lastX: 0, lastY: 0, pinchDist: 0, pinchZoom: 1 })
@@ -199,6 +201,38 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
     var canvas = canvasRef.current
     if (!canvas) return
     var gest = gestRef.current
+    function mapMetrics() {
+      var rect = canvas.getBoundingClientRect()
+      return { rect: rect, W: rect.width, H: rect.height, pad: 40 }
+    }
+    function toWorld(cx, cy) {
+      var m = mapMetrics(), cam = camRef.current
+      return {
+        wx: (cx - m.rect.left - m.W/2) / cam.zoom + m.W/2 - cam.panX,
+        wy: (cy - m.rect.top - m.H/2) / cam.zoom + m.H/2 - cam.panY,
+        m: m
+      }
+    }
+    function hitStamp(cx, cy) {
+      var p = toWorld(cx, cy), m = p.m, cam = camRef.current
+      var mapW = m.W - m.pad*2, mapH = m.H - m.pad*2
+      var list = cbRef.current.locations || []
+      for (var i = 0; i < list.length; i++) {
+        var loc = list[i]
+        var lx = m.pad + (loc.lux_x / 100) * mapW
+        var ly = m.pad + (loc.lux_y / 100) * mapH
+        if (Math.hypot(p.wx - lx, p.wy - ly) < 25 / Math.min(cam.zoom, 1.5)) return loc
+      }
+      return null
+    }
+    function toLuxXY(cx, cy) {
+      var p = toWorld(cx, cy), m = p.m
+      var mapW = m.W - m.pad*2, mapH = m.H - m.pad*2
+      return {
+        lux_x: Math.max(4, Math.min(96, (p.wx - m.pad) / mapW * 100)),
+        lux_y: Math.max(4, Math.min(96, (p.wy - m.pad) / mapH * 100))
+      }
+    }
     function pinchDist(e) {
       return Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
     }
@@ -210,7 +244,22 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
         gest.dragging = true
         gest.lastX = e.touches[0].clientX
         gest.lastY = e.touches[0].clientY
+        gest.startX = e.touches[0].clientX
+        gest.startY = e.touches[0].clientY
+        gest.moving = null
+        clearTimeout(gest.lpTimer)
+        var _lx = e.touches[0].clientX, _ly = e.touches[0].clientY
+        gest.lpTimer = setTimeout(function() {
+          var hit = hitStamp(_lx, _ly)
+          if (hit) {
+            gest.moving = hit.id
+            gest.dragging = false
+            if (cbRef.current.onStampDragStart) cbRef.current.onStampDragStart(hit.id)
+          }
+        }, 420)
       } else if (e.touches.length === 2) {
+        clearTimeout(gest.lpTimer)
+        gest.moving = null
         e.preventDefault()
         gest.dragging = false
         gest.pinchDist = pinchDist(e)
@@ -236,7 +285,14 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
         gest.lastX = c.x
         gest.lastY = c.y
         draw()
+      } else if (e.touches.length === 1 && gest.moving) {
+        e.preventDefault()
+        var _t = e.touches[0]
+        gest.lastX = _t.clientX; gest.lastY = _t.clientY
+        var xy = toLuxXY(_t.clientX, _t.clientY)
+        if (cbRef.current.onStampDrag) cbRef.current.onStampDrag(gest.moving, xy.lux_x, xy.lux_y, _t.clientX, _t.clientY)
       } else if (e.touches.length === 1 && gest.dragging) {
+        if (Math.abs(e.touches[0].clientX - gest.startX) > 8 || Math.abs(e.touches[0].clientY - gest.startY) > 8) clearTimeout(gest.lpTimer)
         cam.panX += (e.touches[0].clientX - gest.lastX) / cam.zoom
         cam.panY += (e.touches[0].clientY - gest.lastY) / cam.zoom
         gest.lastX = e.touches[0].clientX
@@ -245,6 +301,14 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
       }
     }
     function onTouchEnd(e) {
+      clearTimeout(gest.lpTimer)
+      if (gest.moving) {
+        var _id = gest.moving
+        gest.moving = null
+        gest.dragging = false
+        if (cbRef.current.onStampDragEnd) cbRef.current.onStampDragEnd(_id, gest.lastX, gest.lastY)
+        return
+      }
       if (e.touches.length < 2) {
         gest.dragging = false
         if (e.touches.length === 1) {
