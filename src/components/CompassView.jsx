@@ -55,7 +55,7 @@ function prerenderIcon(loc, idx) {
 }
 
 /* ── Leaflet-based CompassView ── */
-export default function CompassView({ locations, center }) {
+export default function CompassView({ locations, center, onSave }) {
   var containerRef = useRef(null), mapRef = useRef(null), markersRef = useRef([])
   var ss = useState(null), selected = ss[0], setSelected = ss[1]
   var pp = useState(null), cardPos = pp[0], setCardPos = pp[1]
@@ -135,7 +135,7 @@ export default function CompassView({ locations, center }) {
       {selected && cardPos && (
         <div onClick={function(e) { e.stopPropagation() }} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1000, pointerEvents: 'none' }}>
           <div style={{ pointerEvents: 'auto' }}>
-            <LocationCard location={selected.loc} position={cardPos} onClose={function() { setSelected(null); setCardPos(null) }} weatherDraw={cw.draw} weatherColor={cw.color} weatherType={selected.loc.weather || 'sun'} activeDim={2} />
+            <LocationCard location={selected.loc} position={cardPos} onClose={function() { setSelected(null); setCardPos(null) }} weatherDraw={cw.draw} weatherColor={cw.color} weatherType={selected.loc.weather || 'sun'} activeDim={2} onSave={onSave} />
           </div>
         </div>
       )}

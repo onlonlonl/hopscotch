@@ -90,7 +90,9 @@ function drawBorder(rc, wt, c) {
   }
 }
 
-export default function LocationCard({ location, position, onClose, weatherDraw, weatherColor, weatherType, activeDim }) {
+export default function LocationCard({ location, position, onClose, weatherDraw, weatherColor, weatherType, activeDim, onSave }) {
+  var edState = useState(false), editing = edState[0], setEditing = edState[1]
+  var efState = useState({ label: '', ink_name_iris: '' }), ef = efState[0], setEf = efState[1]
   var borderRef = useRef(null)
   var stampRef = useRef(null)
   var badgesRef = useRef(null)
@@ -204,6 +206,8 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     rc.line(0, dh/2, dw, dh/2, ro({stroke: weatherColor || '#8A7A68', strokeWidth:0.4, roughness:1.5}))
   }, [weatherColor])
 
+  useEffect(function(){ setEditing(false) }, [location && location.id])
+
   if (!location || !position) return null
   var loc = location
   var irisName = loc.ink_name_iris || loc.label || ''
@@ -226,7 +230,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
                 el.width=W*dpr; el.height=H*dpr
                 el.style.width=W+'px'; el.style.height=H+'px'
                 var cx=el.getContext('2d'); cx.setTransform(dpr,0,0,dpr,0,0)
-                rough.canvas(el).line(1,1,1,H-1,{stroke:'#C8C0B4',strokeWidth:1,roughness:1.1,bowing:2,disableMultiStroke:true,seed:606})
+                rough.canvas(el).line(1,1,1,H-1,{stroke:'#C0B8AC',strokeWidth:1.1,roughness:0.35,bowing:0.2,disableMultiStroke:true,seed:41})
               }} style={{flexShrink:0,opacity:0.85}} />
               {luxName
                 ? <span style={{fontSize:15,fontWeight:700,color:'#8A7A68',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',flexShrink:1,minWidth:0}}>{luxName}</span>
@@ -247,7 +251,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             </div>
             <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:3}}>
               <span style={{fontSize:11,color:'#A09888',flexShrink:0}}>{loc.label}</span>
-              {hasInf && (
+              {hasInf && !editing && (
                 <span onClick={function(e){e.stopPropagation();setShowTranslate(!showTranslate)}} style={{fontSize:9,color:'#B8B0A0',cursor:'pointer',whiteSpace:'nowrap',fontFamily:showTranslate?'-apple-system,PingFang SC,sans-serif':'SF Mono,Menlo,monospace',letterSpacing:showTranslate?0:0.5}}>
                   <span style={{marginRight:2}}>∞</span>
                   {showTranslate ? translateT(loc.inf_t)+', '+translateW(loc.inf_w) : 't:'+Number(loc.inf_t).toFixed(3)+' w:'+Number(loc.inf_w).toFixed(2)}
@@ -256,18 +260,54 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
             </div>
             {loc.errands > 0 && <div style={{fontSize:9,color:'#B8B0A0',marginTop:2}}>{loc.errands + ' errands'}</div>}
           </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
-            
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2}}>
             {activeDim !== 2 && <canvas ref={stampRef} style={{width:44,height:44}} />}
+            {onSave && !editing && (
+              <div onClick={function(e){
+                e.stopPropagation()
+                setEf({ label: loc.label || '', ink_name_iris: loc.ink_name_iris || '' })
+                setEditing(true)
+              }} style={{fontSize:13,color:'#A09888',cursor:'pointer',padding:'2px 4px',lineHeight:1}}>&#9998;</div>
+            )}
           </div>
         </div>
         <div style={{flexShrink:0,display:'flex',justifyContent:'center',padding:'2px 0 4px'}}>
           <canvas ref={dividerRef} style={{width:220,height:6}} />
         </div>
-        <div style={{flex:1,overflow:'hidden',overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
-          {story || ''}
-        </div>
-        {hasInf && (
+        {editing ? (
+          <div style={{flex:1,overflowY:'auto',paddingRight:4}}>
+            <div style={{fontSize:9,color:'#A09888',marginBottom:2}}>Place</div>
+            <input value={ef.label}
+              onChange={function(e){var v=e.target.value;setEf(function(p){return Object.assign({},p,{label:v})})}}
+              placeholder="short place name"
+              style={{width:'100%',boxSizing:'border-box',padding:'5px 7px',fontSize:12,marginBottom:8,
+                border:'1.5px solid rgba(160,152,136,0.35)',background:'rgba(250,246,240,0.7)',
+                color:'#5A5048',outline:'none',fontFamily:'inherit'}} />
+            <div style={{fontSize:9,color:'#A09888',marginBottom:2}}>My name</div>
+            <input value={ef.ink_name_iris}
+              onChange={function(e){var v=e.target.value;setEf(function(p){return Object.assign({},p,{ink_name_iris:v})})}}
+              placeholder="what I call it"
+              style={{width:'100%',boxSizing:'border-box',padding:'5px 7px',fontSize:12,
+                border:'1.5px solid rgba(160,152,136,0.35)',background:'rgba(250,246,240,0.7)',
+                color:'#5A5048',outline:'none',fontFamily:'inherit'}} />
+            <div style={{display:'flex',gap:6,marginTop:10}}>
+              <div onClick={function(e){e.stopPropagation();setEditing(false)}}
+                style={{flex:1,textAlign:'center',padding:'5px 0',fontSize:11,color:'#A09888',cursor:'pointer',
+                  border:'1px solid rgba(160,152,136,0.3)',background:'rgba(255,255,255,0.6)'}}>Cancel</div>
+              <div onClick={function(e){
+                e.stopPropagation()
+                onSave(loc.id, { label: ef.label, ink_name_iris: ef.ink_name_iris || null })
+                setEditing(false)
+              }} style={{flex:1,textAlign:'center',padding:'5px 0',fontSize:11,color:'#fff',cursor:'pointer',
+                  background:'#8A7A68',border:'1px solid #8A7A68'}}>Save</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{flex:1,overflow:'hidden',overflowY:'auto',fontSize:11,lineHeight:1.7,color:'#6B5B4E',WebkitOverflowScrolling:'touch',paddingRight:4}}>
+            {story || ''}
+          </div>
+        )}
+        {hasInf && !editing && (
           <div style={{flexShrink:0,paddingTop:4,display:'flex',justifyContent:'center',position:'relative',zIndex:2}}>
             <canvas ref={badgesRef} style={{width:232,height:44}} />
           </div>

@@ -720,6 +720,14 @@ export default function App() {
   const tabRef = useRef(null)
   const backRef = useRef(null)
 
+  const handleLocationSave = useCallback(function(locId, patch) {
+    if (isConnected()) supaPatch('locations', 'id=eq.' + locId, patch)
+    setLocations(function(prev) {
+      return prev.map(function(l) { return l.id === locId ? { ...l, ...patch } : l })
+    })
+    setCard(function(c) { return c && c.id === locId ? { ...c, ...patch } : c })
+  }, [])
+
   const enterInk = useCallback(() => {
     if (locations.length === 0) { setCardsOpen(true); return }
     setExpanding(true)
@@ -1008,7 +1016,7 @@ export default function App() {
           transform: 'rotateY(240deg)',
           overflow: 'hidden',
         }}>
-          {dimIndex === 2 && <CompassView locations={locations} center={cityCenter} />}
+          {dimIndex === 2 && <CompassView locations={locations} center={cityCenter} onSave={handleLocationSave} />}
         </div>
       </div>
       </div>
@@ -1041,6 +1049,7 @@ export default function App() {
             onClose={() => setCard(null)}
             weatherColor={card.color}
             weatherType={card.weather || 'sun'} activeDim={dimIndex}
+            onSave={handleLocationSave}
           />
         </>
       )}
