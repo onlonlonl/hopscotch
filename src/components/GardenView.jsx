@@ -666,6 +666,7 @@ export default function GardenView({ onExit }) {
         position:'fixed', left:0, right:0, bottom:0,
         zIndex:311,
         transform: shelfOpen ? 'translateY(0)' : 'translateY(100%)',
+        visibility: shelfOpen ? 'visible' : 'hidden',
         transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)',
         maxHeight: '65vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',

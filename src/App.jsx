@@ -260,7 +260,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
             <div style={{ display: 'flex', gap: 6 }}>
               <input value={input} onChange={function(e) { setInput(e.target.value) }}
                 placeholder="city name" style={inputS} />
-              <button onClick={doSearch} style={btnS}>{searching ? '...' : 'GO'}</button>
+              <button onClick={doSearch} style={{...btnS, width:48}}>{searching ? '...' : 'GO'}</button>
             </div>
             {results.length > 0 && <div style={{ marginTop: 6 }}>
               {results.map(function(r, i) {
@@ -281,9 +281,9 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
               <button onClick={function() {
                 localStorage.setItem('hopscotch_ai_key', apiKey.trim())
                 setKeySaved(true)
-              }} style={btnS}>{keySaved ? 'OK' : 'SAVE'}</button>
+              }} style={{...btnS, width:48}}>{keySaved ? 'OK' : 'SAVE'}</button>
             </div>
-            <div style={{ ...txt, fontSize: 10, color: '#9AAABB', marginTop: 4 }}>DeepSeek key, stored on this device</div>
+            <div style={{ ...txt, fontSize: 10, color: '#9AAABB', marginTop: 4 }}>AI key, stored on this device</div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -573,7 +573,7 @@ export default function App() {
   const [garden, setGarden] = useState(null)
     const [cityName, setCityName] = useState('Hangzhou')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
-  const [weatherColor, setWeatherColor] = useState('#E8A87C')
+  const [weatherColor, setWeatherColor] = useState(null)
 
   // fetch weather color from weather_cache
   useEffect(function () {
@@ -594,7 +594,7 @@ export default function App() {
   const [connections, setConnections] = useState([])
   useEffect(function () {
     if (!isConnected()) return
-    supaGet('locations', 'select=id,label,icon_type,color,lux_x,lux_y,scale,ink_name,lat,lng,inf_t,inf_w,story,weather&order=created_at')
+    supaGet('locations', 'select=id,label,icon_type,color,lux_x,lux_y,scale,ink_name,lat,lng,inf_t,inf_w,story,weather&icon_type=not.eq.dot&order=created_at')
       .then(function(rows) {
         if (!rows || rows.length === 0) return
         var locs = rows.map(function(r) {

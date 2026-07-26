@@ -81,10 +81,10 @@ function renderCell(cvs, note, cellW, cellH) {
     ctx.textBaseline = 'top'
 
     var textX = pad + 4 * s
-    var textY = pad + 10 * s
+    var textY = pad + 16 * s
     var maxW = pw - 8 * s
     var lineH = fontSize * 1.5
-    var maxLines = Math.floor((ph - 14 * s) / lineH)
+    var maxLines = Math.floor((ph - 20 * s) / lineH)
     if (maxLines < 1) maxLines = 1
 
     var text = note.content || ''
@@ -103,7 +103,7 @@ function renderCell(cvs, note, cellW, cellH) {
         while (ctx.measureText(t + '\u2026').width > maxW && t.length > 1) t = t.slice(0, -1)
         t += '\u2026'
       }
-      ctx.fillText(t, textX, textY + j * lineH)
+      ctx.fillText(t, textX + (j === 0 ? fontSize * 1.5 : 0), textY + j * lineH)
     }
   }
 }
