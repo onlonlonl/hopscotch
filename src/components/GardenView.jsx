@@ -151,6 +151,29 @@ function drawStageIcon(rc, ctx, stage, cx, cy, s, stemC, leafC, flowerC, ro) {
   }
 }
 
+
+/* render shapes from stamps JSON */
+function drawFromJSON(rc, ctx, shapes, cx, cy, s, ro) {
+  if (!shapes || !shapes.length) return
+  for (var i = 0; i < shapes.length; i++) {
+    var sh = shapes[i]
+    var opts = { roughness: 0.6, disableMultiStroke: true, seed: (ro.seed || 650) + i * 3 }
+    if (sh.fill) { opts.fill = sh.fill; opts.fillStyle = 'solid' }
+    if (sh.stroke) opts.stroke = sh.stroke
+    opts.strokeWidth = sh.sw || 1.2
+
+    if (sh.t === 'circle') {
+      rc.circle(cx + sh.x * s, cy + sh.y * s, (sh.r || 3) * 2 * s, opts)
+    } else if (sh.t === 'ellipse') {
+      rc.ellipse(cx + sh.x * s, cy + sh.y * s, (sh.w || 6) * s, (sh.h || 3) * s, opts)
+    } else if (sh.t === 'line') {
+      rc.line(cx + sh.x1 * s, cy + sh.y1 * s, cx + sh.x2 * s, cy + sh.y2 * s, opts)
+    } else if (sh.t === 'rect') {
+      rc.rectangle(cx + sh.x * s, cy + sh.y * s, (sh.w || 4) * s, (sh.h || 4) * s, opts)
+    }
+  }
+}
+
 /* draw the 3x2 grid on a canvas */
 function drawGrid(cvs, garden, score, w, h) {
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -178,15 +201,20 @@ function drawGrid(cvs, garden, score, w, h) {
           disableMultiStroke: true, seed: 600 + idx
         })
 
-        /* stamp visual — Rough.js icons */
+        /* stamp visual */
         var scx = x + cellW / 2, scy = y + cellH / 2 - 4
         var ss = Math.min(cellW, cellH) / 88
-        var active = idx === score.stage
-        var sc1 = active ? '#6AAF5C' : '#9BB89C'
-        var sc2 = active ? '#4AAF5C' : '#A8B89A'
-        var sc3 = active ? '#ECC44E' : '#D4B896'
         var sro = { roughness: 0.6, disableMultiStroke: true, seed: 650 + idx }
-        drawStageIcon(rc, ctx, idx, scx, scy, ss, sc1, sc2, sc3, sro)
+        var stamps = garden && garden.stamps
+        if (stamps && stamps[idx] && stamps[idx].length > 0) {
+          drawFromJSON(rc, ctx, stamps[idx], scx, scy, ss, sro)
+        } else {
+          var active = idx === score.stage
+          var sc1 = active ? '#6AAF5C' : '#9BB89C'
+          var sc2 = active ? '#4AAF5C' : '#A8B89A'
+          var sc3 = active ? '#ECC44E' : '#D4B896'
+          drawStageIcon(rc, ctx, idx, scx, scy, ss, sc1, sc2, sc3, sro)
+        }
       } else {
         /* dashed frame */
         ctx.setLineDash(LOCKED_DASH)
@@ -279,18 +307,51 @@ export default function GardenView({ onExit }) {
     if (score.stage >= 5 && harvestRef.current) drawHarvestBtn(harvestRef.current, W)
   }, [loading, garden, score])
 
-  /* plant a new seed */
+  var [generating, setGenerating] = useState(false)
+
+  /* plant a new seed + generate stamps via VPS */
   async function handlePlant() {
     var name = inputName.trim()
     if (!name || !isConnected()) return
+    setGenerating(true)
+
+    /* create garden row */
     var rows = await supaPost('hopscotch_garden', { plant_name: name })
-    if (rows && rows[0]) {
-      rows[0]._trips = 0
-      rows[0]._places = 0
-      setGarden(rows[0])
-      setScore(calcScore(rows[0]))
-      setPlanting(false)
-    }
+    if (!rows || !rows[0]) { setGenerating(false); return }
+    var g = rows[0]
+    g._trips = 0; g._places = 0
+    setGarden(g)
+    setScore(calcScore(g))
+    setPlanting(false)
+
+    /* generate stamps via VPS */
+    try {
+      var safeName = name.replace(/"/g, '').replace(/'/g, '').substring(0, 40)
+      await supaPost('commands', { cmd: 'cd ~/lucid && python3 gen_stamps.py "' + safeName + '"', status: 'pending' })
+
+      /* poll for result (up to 15s) */
+      var stamps = null
+      for (var attempt = 0; attempt < 10; attempt++) {
+        await new Promise(function(r) { setTimeout(r, 1500) })
+        var cmds = await supaGet('commands', 'order=id.desc&limit=1')
+        if (cmds && cmds[0] && cmds[0].status === 'done' && cmds[0].result) {
+          try {
+            var parsed = JSON.parse(cmds[0].result)
+            if (Array.isArray(parsed) && parsed.length === 6) {
+              stamps = parsed
+              break
+            }
+          } catch(e) {}
+        }
+      }
+
+      if (stamps) {
+        await supaPatch('hopscotch_garden', 'id=eq.' + g.id, { stamps: stamps })
+        g.stamps = stamps
+        setGarden({...g})
+      }
+    } catch(e) { console.error('stamp gen', e) }
+    setGenerating(false)
   }
 
   /* harvest and start new */
@@ -364,7 +425,7 @@ export default function GardenView({ onExit }) {
               ctx.textBaseline = 'middle'
               ctx.fillText('Plant', bw / 2, bh / 2 + 1)
               el._drawn = true
-            }} onClick={handlePlant} style={{ cursor: 'pointer' }} />
+            }} onClick={handlePlant} style={{ cursor: 'pointer', opacity: generating ? 0.5 : 1 }} />
           </div>
         </div>
       ) : (
@@ -376,6 +437,7 @@ export default function GardenView({ onExit }) {
             letterSpacing: 2, marginBottom: 8
           }}>
             {garden.plant_name}
+            {generating && <span style={{ fontSize: 11, color: '#9A8A7A', marginLeft: 8 }}>drawing...</span>}
           </div>
 
           {/* progress label */}
