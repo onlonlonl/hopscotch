@@ -479,26 +479,29 @@ function PlacedPattern({ pp, x, y, w, h, onDragStart }) {
 function PlacedSticker({ el, x, y, size, onDragStart }) {
   var ref = useRef(null)
   var longRef = useRef(null)
+  var isPhoto = !!el.photoUrl
+  var cw = isPhoto ? Math.round(size * 1.45) : size
+  var ch = isPhoto ? Math.round(size * 0.97) : size
   useEffect(function() {
     if (!ref.current) return
     var cvs = ref.current
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
-    cvs.width = size * dpr; cvs.height = size * dpr
-    cvs.style.width = size + 'px'; cvs.style.height = size + 'px'
+    cvs.width = cw * dpr; cvs.height = ch * dpr
+    cvs.style.width = cw + 'px'; cvs.style.height = ch + 'px'
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, size, size)
+    ctx.clearRect(0, 0, cw, ch)
     var rc = rough.canvas(cvs)
     if (el.photoUrl) {
       var im = new Image()
       im.onload = function() {
-        ctx.clearRect(0, 0, size, size)
+        ctx.clearRect(0, 0, cw, ch)
         ctx.save()
         ctx.beginPath()
-        if (ctx.roundRect) ctx.roundRect(3, 3, size-6, size-6, 3); else ctx.rect(3, 3, size-6, size-6)
+        if (ctx.roundRect) ctx.roundRect(3, 3, cw-6, ch-6, 3); else ctx.rect(3, 3, cw-6, ch-6)
         ctx.clip()
-        ctx.drawImage(im, 3, 3, size-6, size-6)
+        ctx.drawImage(im, 3, 3, cw-6, ch-6)
         ctx.restore()
-        rc.rectangle(2, 2, size-4, size-4, { stroke: '#9A8A78', strokeWidth: 1.2, roughness: 0.6, disableMultiStroke: true, seed: 42 })
+        rc.rectangle(2, 2, cw-4, ch-4, { stroke: '#D0C8C0', strokeWidth: 1, roughness: 0.6, disableMultiStroke: true, seed: 42 })
       }
       im.src = el.photoUrl
       return
@@ -522,7 +525,7 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
     var recipe = stickerRecipes[el.sticker_type]
     if (!recipe) return
     recipe(rc, ctx, size / 2, size / 2, size / 56, el.color || '#D0A0A0')
-  }, [el, size])
+  }, [el, size, cw, ch])
   function handleTouchStart(e) {
     e.stopPropagation()
     var startEvt = e
@@ -535,7 +538,7 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
   function handleTouchMove() { clearTimeout(longRef.current) }
   return <canvas ref={ref}
     onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchMove={handleTouchMove}
-    style={{ position: "absolute", left: x - 5, top: y - 5, width: size + 10, height: size + 10, pointerEvents: "auto", touchAction: "none", zIndex: 10 }} />
+    style={{ position: "absolute", left: x - 5, top: y - 5, pointerEvents: "auto", touchAction: "none", zIndex: 10 }} />
 }
 
 export default function App() {
@@ -861,8 +864,9 @@ export default function App() {
           if (movingEl && movingEl.id === el.id) return null
           var W = window.innerWidth, H = window.innerHeight
           var sz = 54
-          var px = el.offset_x * W - sz / 2
-          var py = el.offset_y * H - sz / 2
+          var isP = !!el.photoUrl
+          var px = el.offset_x * W - (isP ? Math.round(sz * 1.45) : sz) / 2
+          var py = el.offset_y * H - (isP ? Math.round(sz * 0.97) : sz) / 2
           return <PlacedSticker key={el.id} el={el} x={px} y={py} size={sz} onDragStart={handlePlacedDragStart} />
         })}
         {movingEl && movePos && (
@@ -876,8 +880,12 @@ export default function App() {
               ctx.clearRect(0, 0, sz, sz)
               var rc = rough.canvas(cvs)
               if (movingEl.photoUrl) {
+                var gw = 84, gh = 56
+                cvs.width = gw * dpr; cvs.height = gh * dpr
+                cvs.style.width = gw + 'px'; cvs.style.height = gh + 'px'
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
                 var im = new Image()
-                im.onload = function() { ctx.clearRect(0,0,sz,sz); ctx.drawImage(im, 2, 2, sz-4, sz-4) }
+                im.onload = function() { ctx.clearRect(0,0,gw,gh); ctx.drawImage(im, 2, 2, gw-4, gh-4) }
                 im.src = movingEl.photoUrl
                 return
               }
