@@ -15,8 +15,8 @@ var FONT = "-apple-system, 'PingFang SC', sans-serif"
 function calcScore(garden) {
   if (!garden) return { days: 0, trips: 0, places: 0, total: 0, stage: 0 }
   var days = Math.max(0, Math.floor((Date.now() - new Date(garden.planted_at).getTime()) / 86400000))
-  var trips = garden._trips || 0
-  var places = garden._places || 0
+  var trips = garden._trips_new || 0
+  var places = garden._places_new || 0
   var total = days + trips * 3 + places * 5
   var stage = 0
   for (var i = THRESHOLDS.length - 1; i >= 0; i--) {
@@ -264,6 +264,44 @@ function drawProgress(cvs, score, w) {
   }
 }
 
+
+/* Rough.js nutrient icons */
+function NutrientIcon({ type, value }) {
+  var ref = useRef(null)
+  useEffect(function () {
+    var cvs = ref.current; if (!cvs) return
+    var S = 16, dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = S * dpr; cvs.height = S * dpr
+    cvs.style.width = S + 'px'; cvs.style.height = S + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var rc = rough.canvas(cvs)
+    var ro = { roughness: 0.5, disableMultiStroke: true }
+    if (type === 'sun') {
+      rc.circle(8, 8, 8, { stroke: '#ECC44E', strokeWidth: 1, fill: '#ECC44E', fillStyle: 'solid', ...ro, seed: 901 })
+      for (var i = 0; i < 6; i++) {
+        var a = (i / 6) * Math.PI * 2
+        rc.line(8 + Math.cos(a) * 5.5, 8 + Math.sin(a) * 5.5, 8 + Math.cos(a) * 7.5, 8 + Math.sin(a) * 7.5,
+          { stroke: '#ECC44E', strokeWidth: 0.8, ...ro, seed: 910 + i })
+      }
+    } else if (type === 'trip') {
+      /* simple car/path */
+      rc.line(3, 12, 13, 12, { stroke: '#7BA7BC', strokeWidth: 1.2, ...ro, seed: 920 })
+      rc.rectangle(4, 7, 8, 4, { stroke: '#7BA7BC', strokeWidth: 1, fill: '#7BA7BC', fillStyle: 'solid', ...ro, seed: 921 })
+      rc.circle(6, 13, 2.5, { stroke: '#8A9AAA', strokeWidth: 0.8, fill: '#8A9AAA', fillStyle: 'solid', ...ro, seed: 922 })
+      rc.circle(10, 13, 2.5, { stroke: '#8A9AAA', strokeWidth: 0.8, fill: '#8A9AAA', fillStyle: 'solid', ...ro, seed: 923 })
+    } else {
+      /* map pin */
+      rc.circle(8, 6, 6, { stroke: '#D0A0A0', strokeWidth: 1.2, fill: '#D0A0A0', fillStyle: 'solid', ...ro, seed: 930 })
+      rc.line(8, 9, 8, 14, { stroke: '#D0A0A0', strokeWidth: 1, ...ro, seed: 931 })
+      rc.circle(8, 5.5, 2, { stroke: '#fff', strokeWidth: 0.6, fill: '#fff', fillStyle: 'solid', ...ro, seed: 932 })
+    }
+  }, [type])
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+    <canvas ref={ref} style={{ verticalAlign: 'middle' }} />
+    <span>{value}</span>
+  </span>
+}
+
 export default function GardenView({ onExit }) {
   var [garden, setGarden] = useState(null)
   var [loading, setLoading] = useState(true)
@@ -279,20 +317,20 @@ export default function GardenView({ onExit }) {
   /* load garden + counts */
   useEffect(function () {
     if (!isConnected()) { setLoading(false); return }
-    Promise.all([
-      supaGet('hopscotch_garden', 'order=id.desc&limit=1'),
-      supaGet('service_requests', 'select=id&status=eq.done'),
-      supaGet('locations', 'select=id'),
-    ]).then(function (res) {
-      var g = res[0] && res[0][0] ? res[0][0] : null
-      if (g) {
-        g._trips = res[1] ? res[1].length : 0
-        g._places = res[2] ? res[2].length : 0
-      }
+    supaGet('hopscotch_garden', 'order=id.desc&limit=1').then(function (gardenRows) {
+      var g = gardenRows && gardenRows[0] ? gardenRows[0] : null
+      if (!g) { setGarden(null); setPlanting(true); setLoading(false); return }
+      var planted = g.planted_at
+      return Promise.all([
+        supaGet('service_requests', 'select=id&status=eq.done&created_at=gte.' + planted),
+        supaGet('locations', 'select=id&created_at=gte.' + planted),
+      ]).then(function (res) {
+        g._trips_new = res[0] ? res[0].length : 0
+        g._places_new = res[1] ? res[1].length : 0
       setGarden(g)
       setScore(calcScore(g))
-      if (!g) setPlanting(true)
       setLoading(false)
+      })
     })
   }, [])
 
@@ -309,7 +347,7 @@ export default function GardenView({ onExit }) {
 
   var [generating, setGenerating] = useState(false)
 
-  /* plant a new seed + generate stamps via VPS */
+  /* plant a new seed + generate stamps via VPS (nohup, writes directly to DB) */
   async function handlePlant() {
     var name = inputName.trim()
     if (!name || !isConnected()) return
@@ -324,31 +362,20 @@ export default function GardenView({ onExit }) {
     setScore(calcScore(g))
     setPlanting(false)
 
-    /* generate stamps via VPS */
+    /* fire stamp generation (nohup, writes to DB directly) */
     try {
-      var safeName = name.replace(/"/g, '').replace(/'/g, '').substring(0, 40)
-      await supaPost('commands', { cmd: 'cd ~/lucid && python3 gen_stamps.py "' + safeName + '"', status: 'pending' })
+      var safeName = name.replace(/[^a-zA-Z0-9\u4e00-\u9fff\s-]/g, '').substring(0, 40)
+      await supaPost('commands', { cmd: 'nohup python3 ~/lucid/gen_stamps.py "' + safeName + '" ' + g.id + ' > /dev/null 2>&1 &', status: 'pending' })
 
-      /* poll for result (up to 15s) */
-      var stamps = null
-      for (var attempt = 0; attempt < 10; attempt++) {
-        await new Promise(function(r) { setTimeout(r, 1500) })
-        var cmds = await supaGet('commands', 'order=id.desc&limit=1')
-        if (cmds && cmds[0] && cmds[0].status === 'done' && cmds[0].result) {
-          try {
-            var parsed = JSON.parse(cmds[0].result)
-            if (Array.isArray(parsed) && parsed.length === 6) {
-              stamps = parsed
-              break
-            }
-          } catch(e) {}
+      /* poll garden row for stamps (up to 45s) */
+      for (var attempt = 0; attempt < 15; attempt++) {
+        await new Promise(function(r) { setTimeout(r, 3000) })
+        var fresh = await supaGet('hopscotch_garden', 'id=eq.' + g.id)
+        if (fresh && fresh[0] && fresh[0].stamps && Array.isArray(fresh[0].stamps) && fresh[0].stamps.length === 6) {
+          g.stamps = fresh[0].stamps
+          setGarden({...g})
+          break
         }
-      }
-
-      if (stamps) {
-        await supaPatch('hopscotch_garden', 'id=eq.' + g.id, { stamps: stamps })
-        g.stamps = stamps
-        setGarden({...g})
       }
     } catch(e) { console.error('stamp gen', e) }
     setGenerating(false)
@@ -376,23 +403,15 @@ export default function GardenView({ onExit }) {
     if (!garden || !isConnected() || generating) return
     setGenerating(true)
     try {
-      var safeName = (garden.plant_name || '').replace(/"/g, '').replace(/'/g, '').substring(0, 40)
-      await supaPost('commands', { cmd: 'cd ~/lucid && python3 gen_stamps.py "' + safeName + '"', status: 'pending' })
-      var stamps = null
-      for (var attempt = 0; attempt < 10; attempt++) {
-        await new Promise(function(r) { setTimeout(r, 1500) })
-        var cmds = await supaGet('commands', 'order=id.desc&limit=1')
-        if (cmds && cmds[0] && cmds[0].status === 'done' && cmds[0].result) {
-          try {
-            var parsed = JSON.parse(cmds[0].result)
-            if (Array.isArray(parsed) && parsed.length === 6) { stamps = parsed; break }
-          } catch(e) {}
+      var safeName = (garden.plant_name || '').replace(/[^a-zA-Z0-9\u4e00-\u9fff\s-]/g, '').substring(0, 40)
+      await supaPost('commands', { cmd: 'nohup python3 ~/lucid/gen_stamps.py "' + safeName + '" ' + garden.id + ' > /dev/null 2>&1 &', status: 'pending' })
+      for (var attempt = 0; attempt < 15; attempt++) {
+        await new Promise(function(r) { setTimeout(r, 3000) })
+        var fresh = await supaGet('hopscotch_garden', 'id=eq.' + garden.id)
+        if (fresh && fresh[0] && fresh[0].stamps && JSON.stringify(fresh[0].stamps) !== JSON.stringify(garden.stamps)) {
+          setGarden({...garden, stamps: fresh[0].stamps})
+          break
         }
-      }
-      if (stamps) {
-        await supaPatch('hopscotch_garden', 'id=eq.' + garden.id, { stamps: stamps })
-        var g2 = {...garden, stamps: stamps}
-        setGarden(g2)
       }
     } catch(e) { console.error('regen', e) }
     setGenerating(false)
@@ -485,12 +504,12 @@ export default function GardenView({ onExit }) {
 
           {/* nutrient indicators */}
           <div style={{
-            display: 'flex', justifyContent: 'center', gap: 20,
+            display: 'flex', justifyContent: 'center', gap: 24,
             fontSize: 11, color: '#9A8A7A', fontFamily: FONT, marginBottom: 16
           }}>
-            <span>{'\u2600\uFE0F'} {score.days}d</span>
-            <span>{'\uD83D\uDE97'} {score.trips}</span>
-            <span>{'\uD83D\uDCCD'} {score.places}</span>
+            <NutrientIcon type="sun" value={score.days + 'd'} />
+            <NutrientIcon type="trip" value={score.trips} />
+            <NutrientIcon type="pin" value={score.places} />
           </div>
 
           {/* regenerate stamps */}
