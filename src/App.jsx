@@ -3,7 +3,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import rough from 'roughjs'
 import HopscotchCanvas from './components/HopscotchCanvas'
 import HandDrawnMap from './components/HandDrawnMap'
-import StampsPanel from './components/StampsPanel'
+import StampsPanel from "./components/StampsPanel"
+import MapStampsPanel from "./components/MapStampsPanel"
 import { recipes } from './components/IconGallery'
 import ThreadView from './components/ThreadView'
 import CompassView from './components/CompassView'
@@ -622,8 +623,8 @@ export default function App() {
           }} />
       )}
 
-      <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)}
-        onStickerPlace={(shapes, label) => console.log("sticker:", label, shapes)} onPatternPlace={(pid, cid) => console.log("pattern:", pid, cid)} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
+      <MapStampsPanel open={panelOpen} onClose={() => setPanelOpen(false)}
+        onSelect={t => console.log(t)} onDragToMap={handleDragToMap} recipes={recipes} />
 
       <style>{`
         @keyframes cardIn {
