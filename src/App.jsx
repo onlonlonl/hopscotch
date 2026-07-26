@@ -305,6 +305,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
 // Roof pattern crop overlay
 function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
   var [off, setOff] = useState({ x: crop.offX || 0, y: crop.offY || 0 })
+  var [tile, setTile] = useState(crop.tile || 18)
   var previewRef = useRef(null)
   var dragRef = useRef(null)
 
@@ -325,14 +326,14 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
     ctx.save()
     ctx.beginPath(); ctx.moveTo(ip[0].x, ip[0].y); ctx.lineTo(ip[1].x, ip[1].y); ctx.lineTo(ip[2].x, ip[2].y); ctx.closePath(); ctx.clip()
     var pCvs = document.createElement("canvas")
-    renderPatternFill(pCvs, crop.patternId, crop.colorId, Math.round(w), Math.round(h), off.x, off.y)
+    renderPatternFill(pCvs, crop.patternId, crop.colorId, Math.round(w), Math.round(h), off.x, off.y, tile)
     ctx.drawImage(pCvs, 0, 0)
     ctx.restore()
     // border
     var rc = rough.canvas(cvs)
     var path = "M " + lp[0].x + " " + lp[0].y + " L " + lp[1].x + " " + lp[1].y + " L " + lp[2].x + " " + lp[2].y + " Z"
     rc.path(path, { stroke: "rgba(255,255,255,0.6)", strokeWidth: 2, roughness: 0.5, disableMultiStroke: true, seed: 42 })
-  }, [tri, crop, off])
+  }, [tri, crop, off, tile])
 
   function handleTouch(e) {
     e.preventDefault()
@@ -354,6 +355,32 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }} />
     <canvas ref={previewRef} onTouchStart={handleTouch}
       style={{ position: "absolute", left: minX, top: minY, zIndex: 51, touchAction: "none" }} />
+    <div style={{ position: "fixed", right: 16, top: "30%", bottom: "30%", zIndex: 52, width: 36, display: "flex", flexDirection: "column", alignItems: "center" }}
+      onTouchStart={function(e) {
+        e.preventDefault()
+        var t0 = e.touches[0], startY = t0.clientY, startTile = tile
+        function onMove(ev) {
+          ev.preventDefault(); var t2 = ev.touches[0]
+          var dy = startY - t2.clientY
+          setTile(Math.max(10, Math.min(40, Math.round(startTile + dy * 0.15))))
+        }
+        function onEnd() { window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd) }
+        window.addEventListener("touchmove", onMove, { passive: false }); window.addEventListener("touchend", onEnd)
+      }}>
+      <canvas ref={function(cvs) {
+        if (!cvs || cvs._d) return; cvs._d = true
+        var sz = 36, dpr = Math.min(window.devicePixelRatio || 1, 3)
+        cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
+        var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
+        var rc2 = rough.canvas(cvs)
+        rc2.line(8, 10, 28, 10, { stroke: "#B0A898", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 20 })
+        rc2.line(18, 4, 18, 16, { stroke: "#B0A898", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 21 })
+        rc2.line(10, 28, 26, 28, { stroke: "#B0A898", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 22 })
+        ctx2.fillStyle = "#B0A898"; ctx2.font = "9px -apple-system, sans-serif"; ctx2.textAlign = "center"
+        ctx2.fillText("zoom", 18, 24)
+      }} style={{ marginBottom: 4 }} />
+      <div style={{ flex: 1, width: 2, background: "rgba(176,168,152,0.4)", borderRadius: 1 }} />
+    </div>
     <div style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 52, display: "flex", gap: 16 }}>
       <canvas ref={function(cvs) {
         if (!cvs || cvs._d) return; cvs._d = true
@@ -364,7 +391,7 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
         rc2.circle(sz/2, sz/2, sz-8, { stroke: "#9BB89C", fill: "#F0F5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 1 })
         rc2.line(14, sz/2, 30, sz/2-8, { stroke: "#9BB89C", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 2 })
         rc2.line(14, sz/2, 30, sz/2+8, { stroke: "#9BB89C", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 3 })
-      }} onClick={function() { onConfirm(off) }} style={{ cursor: "pointer" }} />
+      }} onClick={function() { onConfirm(off, tile) }} style={{ cursor: "pointer" }} />
       <canvas ref={function(cvs) {
         if (!cvs || cvs._d) return; cvs._d = true
         var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -724,14 +751,14 @@ export default function App() {
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} pattern={roofPattern} />
         {roofCrop && <RoofCropOverlay crop={roofCrop} tri={roofTri}
-          onConfirm={function(off) {
-            var rp = { patternId: roofCrop.patternId, colorId: roofCrop.colorId, offX: off.x, offY: off.y }
+          onConfirm={function(off, tileVal) {
+            var rp = { patternId: roofCrop.patternId, colorId: roofCrop.colorId, offX: off.x, offY: off.y, tile: tileVal }
             setRoofPattern(rp); localStorage.setItem('hopscotch_roof_pattern', JSON.stringify(rp)); setRoofCrop(null)
           }}
           onCancel={function() { setRoofCrop(null) }} />}
         {placedPatterns.map(function(pp) {
           var W = window.innerWidth, H = window.innerHeight
-          var pw = 42, ph = 60
+          var pw = 56, ph = 78
           return <canvas key={pp.id} ref={function(cvs) {
             if (!cvs) return; renderPatternFill(cvs, pp.patternId, pp.colorId, pw, ph)
           }} style={{ position: 'absolute', left: pp.offset_x * W - pw/2, top: pp.offset_y * H - ph/2, pointerEvents: 'none', borderRadius: 4, zIndex: 5 }} />

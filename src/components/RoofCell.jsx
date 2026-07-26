@@ -85,7 +85,7 @@ export default function RoofCell({ tri, pattern }) {
       ctx.closePath(); ctx.clip()
       // draw pattern on an offscreen canvas then paste
       var pCvs = document.createElement('canvas')
-      renderPatternFill(pCvs, pattern.patternId, pattern.colorId, Math.round(w), Math.round(h), pattern.offX || 0, pattern.offY || 0)
+      renderPatternFill(pCvs, pattern.patternId, pattern.colorId, Math.round(w), Math.round(h), pattern.offX || 0, pattern.offY || 0, pattern.tile || 18)
       ctx.drawImage(pCvs, 0, 0)
       ctx.restore()
       drawBorder(cvs, lp)

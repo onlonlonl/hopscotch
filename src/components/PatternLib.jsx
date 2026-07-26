@@ -117,12 +117,12 @@ export var patternDrawers = {
 }
 
 // render pattern to fill a specific pixel area with high density
-export function renderPatternFill(canvas, patternId, colorId, pxW, pxH, offX, offY) {
+export function renderPatternFill(canvas, patternId, colorId, pxW, pxH, offX, offY, customTile) {
   if (!canvas) return
   var drawer = patternDrawers[patternId]
   if (!drawer) return
   var preset = colorPresets.find(function(p) { return p.id === colorId }) || colorPresets[0]
-  var tileSize = 18  // dense
+  var tileSize = customTile || 18
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
   canvas.width = pxW * dpr; canvas.height = pxH * dpr
   canvas.style.width = pxW + 'px'; canvas.style.height = pxH + 'px'
