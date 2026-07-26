@@ -645,10 +645,10 @@ export default function App() {
         <RoofCell tri={roofTri} pattern={roofPattern} />
         {placedPatterns.map(function(pp) {
           var W = window.innerWidth, H = window.innerHeight
-          var sz = 64
+          var pw = 42, ph = 60
           return <canvas key={pp.id} ref={function(cvs) {
-            if (!cvs) return; renderPatternFill(cvs, pp.patternId, pp.colorId, sz, sz)
-          }} style={{ position: 'absolute', left: pp.offset_x * W - sz/2, top: pp.offset_y * H - sz/2, pointerEvents: 'none', borderRadius: 6, zIndex: 5 }} />
+            if (!cvs) return; renderPatternFill(cvs, pp.patternId, pp.colorId, pw, ph)
+          }} style={{ position: 'absolute', left: pp.offset_x * W - pw/2, top: pp.offset_y * H - ph/2, pointerEvents: 'none', borderRadius: 4, zIndex: 5 }} />
         })}
         {placedStickers.map(function(el) {
           if (movingEl && movingEl.id === el.id) return null

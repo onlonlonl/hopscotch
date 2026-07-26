@@ -122,7 +122,7 @@ export function renderPatternFill(canvas, patternId, colorId, pxW, pxH) {
   var drawer = patternDrawers[patternId]
   if (!drawer) return
   var preset = colorPresets.find(function(p) { return p.id === colorId }) || colorPresets[0]
-  var tileSize = 16  // small tiles = dense pattern
+  var tileSize = 28  // dense but crisp
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
   canvas.width = pxW * dpr; canvas.height = pxH * dpr
   canvas.style.width = pxW + 'px'; canvas.style.height = pxH + 'px'
