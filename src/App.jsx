@@ -312,8 +312,8 @@ function RoughTrash({ visible }) {
     var ctx = ref.current.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(ref.current)
     // bg circle
-    rc.circle(w/2, 24, 40, { stroke: '#C48A7A', fill: '#FFF5F0', fillStyle: 'solid', strokeWidth: 1.2, roughness: 0.5, disableMultiStroke: true, seed: 1 })
-    var o = { stroke: '#C48A7A', strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true }
+    rc.circle(w/2, 24, 40, { stroke: '#7BA7BC', fill: '#EEF4F8', fillStyle: 'solid', strokeWidth: 1.2, roughness: 0.5, disableMultiStroke: true, seed: 1 })
+    var o = { stroke: '#7BA7BC', strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true }
     // lid
     rc.line(27, 14, 53, 14, { ...o, seed: 2 })
     rc.line(34, 14, 34, 11, { ...o, seed: 3 })
@@ -327,7 +327,7 @@ function RoughTrash({ visible }) {
     rc.line(36, 17, 36, 33, { ...o, strokeWidth: 0.8, seed: 9 })
     rc.line(44, 17, 44, 33, { ...o, strokeWidth: 0.8, seed: 10 })
     // label
-    ctx.fillStyle = '#C48A7A'
+    ctx.fillStyle = '#7BA7BC'
     ctx.font = "10px '-apple-system', sans-serif"
     ctx.textAlign = 'center'
     ctx.fillText('drop to delete', w/2, 54)
