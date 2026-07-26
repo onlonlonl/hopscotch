@@ -173,12 +173,13 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   var borderRef = useRef(null)
   var [apiKey, setApiKey] = useState(function() { return localStorage.getItem('hopscotch_ai_key') || '' })
   var [keySaved, setKeySaved] = useState(false)
+  var [keyMsg, setKeyMsg] = useState(null)
   var [input, setInput] = useState('')
   var [results, setResults] = useState([])
   var [searching, setSearching] = useState(false)
 
   useEffect(function() {
-    if (!open) { setInput(''); setResults([]); setSearching(false) }
+    if (!open) { setInput(''); setResults([]); setSearching(false); setKeyMsg(null); setKeySaved(false) }
   }, [open])
 
   useEffect(function() {
@@ -276,14 +277,21 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
           <div style={{ marginBottom: 16 }}>
             <div style={label}>Sticker AI key</div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <input value={apiKey} onChange={function(e) { setApiKey(e.target.value); setKeySaved(false) }}
+              <input value={apiKey} onChange={function(e) { setApiKey(e.target.value); setKeySaved(false); setKeyMsg(null) }}
                 placeholder="sk-..." type="password" style={inputS} />
               <button onClick={function() {
-                localStorage.setItem('hopscotch_ai_key', apiKey.trim())
+                var k = apiKey.trim()
+                if (!k) { setKeyMsg({ ok: false, text: 'Enter a key first' }); return }
+                localStorage.setItem('hopscotch_ai_key', k)
                 setKeySaved(true)
-              }} style={{...btnS, width:56, flexShrink:0}}>{keySaved ? 'OK' : 'SAVE'}</button>
+                setKeyMsg({ ok: true, text: 'Saved \u2713' })
+                setTimeout(function() { onClose() }, 800)
+              }} style={{...btnS, width:56, flexShrink:0}}>{keySaved ? '\u2713' : 'SAVE'}</button>
             </div>
-            <div style={{ ...txt, fontSize: 10, color: '#9AAABB', marginTop: 4 }}>AI key, stored on this device</div>
+            <div style={{ ...txt, fontSize: 10, marginTop: 4,
+              color: keyMsg ? (keyMsg.ok ? '#4AAF5C' : '#C48A7A') : '#9AAABB' }}>
+              {keyMsg ? keyMsg.text : 'AI key, stored on this device'}
+            </div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
