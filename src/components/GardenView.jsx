@@ -23,15 +23,31 @@ var PLANT_POOL = [
 ]
 
 
-/* draw a hand-drawn ? with Rough.js — one continuous path + dot */
+/* draw a hand-drawn ? — polyline arc + dot */
 function drawQuestion(rc, cx, cy, size, color) {
   var s = size || 1
   var c = color || '#C8C0B8'
-  /* ? as one SVG path: arc over top, curve down to center stem */
-  var d = 'M ' + (cx - 5*s) + ' ' + (cy - 2*s)
-    + ' C ' + (cx - 5*s) + ' ' + (cy - 9*s) + ' ' + (cx + 6*s) + ' ' + (cy - 10*s) + ' ' + (cx + 5*s) + ' ' + (cy - 4*s)
-    + ' C ' + (cx + 4*s) + ' ' + (cy - 1*s) + ' ' + (cx + 1*s) + ' ' + (cy - 1*s) + ' ' + cx + ' ' + (cy + 2*s)
-  rc.path(d, { stroke: c, strokeWidth: 1.2, roughness: 0.7, disableMultiStroke: true, seed: 770 })
+  /* build ? as a series of points tracing an arc then down */
+  var pts = []
+  /* arc: from left, over top, curving right and down */
+  for (var i = 0; i <= 12; i++) {
+    var t = i / 12
+    var angle = Math.PI + t * Math.PI * 1.3
+    var rx = 5 * s, ry = 5 * s
+    var ax = cx + Math.cos(angle) * rx
+    var ay = (cy - 4 * s) + Math.sin(angle) * ry
+    pts.push([ax, ay])
+  }
+  /* stem curves down to center */
+  pts.push([cx + 1 * s, cy + 0 * s])
+  pts.push([cx, cy + 2 * s])
+
+  /* draw as single polyline path */
+  var d = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1)
+  for (var j = 1; j < pts.length; j++) {
+    d += ' L ' + pts[j][0].toFixed(1) + ' ' + pts[j][1].toFixed(1)
+  }
+  rc.path(d, { stroke: c, strokeWidth: 1.3, roughness: 0.5, disableMultiStroke: true, seed: 770 })
   /* dot */
   rc.circle(cx, cy + 6 * s, 2 * s, {
     stroke: c, strokeWidth: 0.8, roughness: 0.4,
@@ -595,15 +611,41 @@ export default function GardenView({ onExit }) {
             <NutrientIcon type="pin" value={score.places} />
           </div>
 
-          {/* shelf button */}
-          <div onClick={function() { setShelfOpen(true) }} style={{
-            fontSize: 11, color: '#9A8A7A', fontFamily: FONT,
-            cursor: 'pointer', marginBottom: 12,
-            textDecoration: 'underline', textUnderlineOffset: 3,
-            opacity: 0.7,
-          }}>
-            {shelf.length > 0 ? 'Shelf (' + shelf.length + ')' : 'Shelf'}
-          </div>
+          {/* shelf tag */}
+          <canvas ref={function(el) {
+            if (!el || el._d) return
+            var tw=100, th=28, dpr=Math.min(window.devicePixelRatio||1,3)
+            el.width=tw*dpr; el.height=th*dpr
+            el.style.width=tw+'px'; el.style.height=th+'px'
+            var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+            var rc2=rough.canvas(el)
+            /* tag shape */
+            rc2.rectangle(3,3,tw-6,th-6,{
+              stroke:'#C8C0B8',strokeWidth:1,roughness:0.6,
+              fill:'#F4F0EA',fillStyle:'solid',
+              disableMultiStroke:true,seed:860
+            })
+            /* small flower on left */
+            var fx=16,fy=th/2
+            for(var p=0;p<5;p++){
+              var a=(p/5)*Math.PI*2-Math.PI/2
+              rc2.circle(fx+Math.cos(a)*3.5,fy+Math.sin(a)*3.5,3,{
+                stroke:'#D0A0A0',strokeWidth:0.5,fill:'#D0A0A0',fillStyle:'solid',
+                roughness:0.3,disableMultiStroke:true,seed:861+p
+              })
+            }
+            rc2.circle(fx,fy,2.5,{
+              stroke:'#D4B878',strokeWidth:0.5,fill:'#D4B878',fillStyle:'solid',
+              roughness:0.3,disableMultiStroke:true,seed:866
+            })
+            /* text */
+            ctx.fillStyle='#8A7A6A'
+            ctx.font="10px "+FONT
+            ctx.textAlign='center'
+            ctx.textBaseline='middle'
+            ctx.fillText('Shelf',tw/2+8,th/2+1)
+            el._d=true
+          }} onClick={function(){setShelfOpen(true)}} style={{cursor:'pointer',marginBottom:12}} />
 
           {/* harvest button */}
           {score.stage >= 5 && (
@@ -652,30 +694,30 @@ export default function GardenView({ onExit }) {
 
         {/* content */}
         <div style={{position:'relative',padding:'28px 20px 24px',overflow:'auto',flex:1}}>
-          <div style={{fontSize:13,color:'#7A6A5A',fontFamily:FONT,letterSpacing:2,textAlign:'center',marginBottom:16}}>
-            Shelf
-          </div>
+
 
           {shelf.length === 0 ? (
             <div style={{fontSize:12,color:'#B8A898',fontFamily:FONT,textAlign:'center',marginTop:20}}>
               Empty. Grow your first plant!
             </div>
           ) : (
-            <div style={{display:'flex',flexWrap:'wrap',gap:14,justifyContent:'center'}}>
+            <div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center'}}>
               {shelf.map(function(p,i) {
-                return <div key={p.id||i} style={{textAlign:'center',width:80}}>
+                return <div key={p.id||i} style={{textAlign:'center',width:86}}>
                   <canvas ref={function(el) {
                     if (!el || el._d) return
-                    var cw=72,ch=72,dpr=Math.min(window.devicePixelRatio||1,3)
+                    var cw=82,ch=102,dpr=Math.min(window.devicePixelRatio||1,3)
                     el.width=cw*dpr; el.height=ch*dpr
                     el.style.width=cw+'px'; el.style.height=ch+'px'
                     var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
-                    var rc=rough.canvas(el)
-                    rc.rectangle(3,3,cw-6,ch-6,{
-                      stroke:'#D8D0C8',strokeWidth:1,roughness:0.5,
+                    var rc3=rough.canvas(el)
+                    /* stamp frame */
+                    rc3.rectangle(3,3,cw-6,cw-6,{
+                      stroke:'#D8D0C8',strokeWidth:1.2,roughness:0.5,
                       fill:'#FDFCFA',fillStyle:'solid',
                       disableMultiStroke:true,seed:900+i
                     })
+                    /* Glory stamp */
                     if (p.stamps && p.stamps[5]) {
                       var shapes=p.stamps[5]
                       for(var j=0;j<shapes.length;j++){
@@ -684,16 +726,27 @@ export default function GardenView({ onExit }) {
                         if(sh.fill){opts.fill=sh.fill;opts.fillStyle='solid'}
                         if(sh.stroke)opts.stroke=sh.stroke
                         opts.strokeWidth=sh.sw||1
-                        var ss=1.6,cx2=cw/2,cy2=ch/2-2
-                        if(sh.t==='circle')rc.circle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.r||3)*2*ss,opts)
-                        else if(sh.t==='ellipse')rc.ellipse(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||6)*ss,(sh.h||3)*ss,opts)
-                        else if(sh.t==='line')rc.line(cx2+sh.x1*ss,cy2+sh.y1*ss,cx2+sh.x2*ss,cy2+sh.y2*ss,opts)
-                        else if(sh.t==='rect')rc.rectangle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||4)*ss,(sh.h||4)*ss,opts)
+                        var ss=1.5,cx2=cw/2,cy2=cw/2-2
+                        if(sh.t==='circle')rc3.circle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.r||3)*2*ss,opts)
+                        else if(sh.t==='ellipse')rc3.ellipse(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||6)*ss,(sh.h||3)*ss,opts)
+                        else if(sh.t==='line')rc3.line(cx2+sh.x1*ss,cy2+sh.y1*ss,cx2+sh.x2*ss,cy2+sh.y2*ss,opts)
+                        else if(sh.t==='rect')rc3.rectangle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||4)*ss,(sh.h||4)*ss,opts)
                       }
                     }
+                    /* name tag below stamp */
+                    var ty=cw-1, tw=cw-10, th2=18
+                    rc3.rectangle(5,ty,tw,th2,{
+                      stroke:'#D0C8C0',strokeWidth:0.8,roughness:0.5,
+                      fill:'#F4F0EA',fillStyle:'solid',
+                      disableMultiStroke:true,seed:980+i
+                    })
+                    ctx.fillStyle='#7A6A5A'
+                    ctx.font="9px "+FONT
+                    ctx.textAlign='center'
+                    ctx.textBaseline='middle'
+                    ctx.fillText(p.plant_name,cw/2,ty+th2/2+1)
                     el._d=true
                   }} />
-                  <div style={{fontSize:9,color:'#8A7A6A',fontFamily:FONT,marginTop:3}}>{p.plant_name}</div>
                 </div>
               })}
             </div>
