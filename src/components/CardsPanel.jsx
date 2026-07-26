@@ -231,7 +231,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   label: poi.name, name: poi.name, city: poi.cityname || cityName || '',
                   address: poi.address || '', lng: loc[0], lat: loc[1],
                   category: poi.type ? poi.type.split(';')[0] : '',
-                  ink_name: null, story: null, lux_note: null,
+                  ink_name: null, story: null,
                   color: '#E8A87C', weather: 'clear', icon_type: 'house',
                   lux_x: 0, lux_y: 0, inf_t: 0, inf_w: 0,
                 }
@@ -317,6 +317,30 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                 </div>
               )
             })}
+            {/* ? placeholder card — add new location */}
+            <div style={{ position: 'relative', marginBottom: 8, height: CARD_H, cursor: 'pointer' }}
+              onClick={function() { setAdding(true) }}>
+              <canvas ref={function(el) {
+                if (!el || el._qDrawn) return; el._qDrawn = true
+                var W = el.parentElement ? el.parentElement.offsetWidth : 200, H = CARD_H
+                var dpr = Math.min(window.devicePixelRatio||1, 3)
+                el.width = W*dpr; el.height = H*dpr
+                el.style.width = W+'px'; el.style.height = H+'px'
+                var ctx = el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+                ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,W,H)
+                var rc = rough.canvas(el)
+                rc.rectangle(3,3,W-6,H-6, { stroke:'#D8D0C8', strokeWidth:1, roughness:0.6, disableMultiStroke:true, seed:400, strokeLineDash:[4,4] })
+                /* draw ? in center */
+                var cx = W/2, cy = H/2, s = 0.8, c = '#C0B8B0'
+                var pts = []
+                for (var i=0;i<=12;i++) { var t=i/12, a=Math.PI+t*Math.PI*1.3, rx=5*s, ry=5*s; pts.push([cx+Math.cos(a)*rx, (cy-4*s)+Math.sin(a)*ry]) }
+                pts.push([cx+1*s, cy+0*s]); pts.push([cx, cy+2*s])
+                var d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)
+                for (var j=1;j<pts.length;j++) d+=' L '+pts[j][0].toFixed(1)+' '+pts[j][1].toFixed(1)
+                rc.path(d, { stroke:c, strokeWidth:1.3, roughness:0.5, disableMultiStroke:true, seed:401 })
+                rc.circle(cx, cy+6*s, 2*s, { stroke:c, strokeWidth:0.8, roughness:0.4, fill:c, fillStyle:'solid', disableMultiStroke:true, seed:402 })
+              }} style={{ position:'absolute', top:0, left:0, width:'100%', height:CARD_H+'px' }} />
+            </div>
           </div>
         </div>
       </div>

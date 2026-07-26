@@ -720,9 +720,10 @@ export default function App() {
   const backRef = useRef(null)
 
   const enterInk = useCallback(() => {
+    if (locations.length === 0) { setCardsOpen(true); return }
     setExpanding(true)
     setTimeout(() => { setView('ink'); setExpanding(false) }, 350)
-  }, [])
+  }, [locations])
 
   const exitInk = useCallback(() => {
     setCollapsing(true)

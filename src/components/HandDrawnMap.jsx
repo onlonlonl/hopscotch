@@ -8,6 +8,27 @@ import { recipes } from './IconGallery'
 
 /* locations and connections from props (loaded from Supabase in App.jsx) */
 
+/* empty state: home icon + ? */
+function drawEmptyHome(ctx, rc, w, h) {
+  var cx = w / 2, cy = h / 2
+  var s = 2.5, c = '#D0C8C0'
+  /* simple house shape */
+  var roofPts = [[cx-12*s, cy], [cx, cy-10*s], [cx+12*s, cy]]
+  rc.linearPath(roofPts, { stroke: c, strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 500 })
+  rc.rectangle(cx-8*s, cy, 16*s, 12*s, { stroke: c, strokeWidth: 1.2, roughness: 0.5, disableMultiStroke: true, seed: 501 })
+  /* door */
+  rc.rectangle(cx-3*s, cy+5*s, 6*s, 7*s, { stroke: c, strokeWidth: 0.8, roughness: 0.4, disableMultiStroke: true, seed: 502 })
+  /* ? above house */
+  var qx = cx, qy = cy - 16*s, qs = 1.2, qc = '#B8B0A8'
+  var pts = []
+  for (var i=0;i<=12;i++) { var t=i/12, a=Math.PI+t*Math.PI*1.3, rx=5*qs, ry=5*qs; pts.push([qx+Math.cos(a)*rx, (qy-4*qs)+Math.sin(a)*ry]) }
+  pts.push([qx+1*qs, qy+0*qs]); pts.push([qx, qy+2*qs])
+  var d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1)
+  for (var j=1;j<pts.length;j++) d+=' L '+pts[j][0].toFixed(1)+' '+pts[j][1].toFixed(1)
+  rc.path(d, { stroke:qc, strokeWidth:1.5, roughness:0.5, disableMultiStroke:true, seed:503 })
+  rc.circle(qx, qy+6*qs, 2.5*qs, { stroke:qc, strokeWidth:0.8, roughness:0.4, fill:qc, fillStyle:'solid', disableMultiStroke:true, seed:504 })
+}
+
 var MIN_ZOOM = 0.4
 var MAX_ZOOM = 4.0
 
@@ -63,6 +84,10 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
       ctx.restore()
     }
 
+    if (locations.length === 0) {
+      drawEmptyHome(ctx, rc, canvas.width / (cam.zoom * dpr), canvas.height / (cam.zoom * dpr))
+      return
+    }
     for (var ci = 0; ci < connections.length; ci++) {
       var fromId = connections[ci][0], toId = connections[ci][1]
       var from = null, to = null
