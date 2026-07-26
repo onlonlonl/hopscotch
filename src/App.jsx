@@ -542,16 +542,18 @@ export default function App() {
 
   function handlePlacedDragStart(el) {
     setMovingEl(el)
+    var W = window.innerWidth, H = window.innerHeight
+    setMovePos({ x: el.offset_x * W - 25, y: el.offset_y * H - 25 })
     function onMove(ev) {
       ev.preventDefault()
       var t = ev.touches ? ev.touches[0] : ev
-      setMovePos({ x: t.clientX - 20, y: t.clientY - 20 })
+      setMovePos({ x: t.clientX - 30, y: t.clientY - 30 })
     }
     function onEnd(ev) {
       var t = ev.changedTouches ? ev.changedTouches[0] : ev
       var W = window.innerWidth, H = window.innerHeight
       // check if dropped on trash (bottom center area)
-      if (t.clientY > H - 80 && Math.abs(t.clientX - W / 2) < 50) {
+      if (t.clientY > H - 100 && Math.abs(t.clientX - W / 2) < 60) {
         // delete
         setPlacedStickers(function(prev) { return prev.filter(function(s) { return s.id !== el.id }) })
         if (isConnected()) supaDelete('hopscotch_elements', 'id=eq.' + el.id)
@@ -633,22 +635,22 @@ export default function App() {
         {placedStickers.map(function(el) {
           if (movingEl && movingEl.id === el.id) return null
           var W = window.innerWidth, H = window.innerHeight
-          var sz = 40
+          var sz = 54
           var px = el.offset_x * W - sz / 2
           var py = el.offset_y * H - sz / 2
           return <PlacedSticker key={el.id} el={el} x={px} y={py} size={sz} onDragStart={handlePlacedDragStart} />
         })}
         {movingEl && movePos && (
-          <canvas ref={moveGhostRef} style={{ position: 'fixed', left: movePos.x, top: movePos.y, pointerEvents: 'none', zIndex: 200, opacity: 0.8 }}
+          <canvas style={{ position: 'fixed', left: movePos.x, top: movePos.y, pointerEvents: 'none', zIndex: 200, opacity: 0.8 }}
             ref={function(cvs) {
               if (!cvs || !stickerRecipes[movingEl.sticker_type]) return
-              var sz = 50, dpr = Math.min(window.devicePixelRatio || 1, 3)
+              var sz = 60, dpr = Math.min(window.devicePixelRatio || 1, 3)
               cvs.width = sz * dpr; cvs.height = sz * dpr
               cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
               var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
               ctx.clearRect(0, 0, sz, sz)
               var rc = rough.canvas(cvs)
-              stickerRecipes[movingEl.sticker_type](rc, ctx, sz/2, sz/2, sz/56, movingEl.color || '#D0A0A0')
+              stickerRecipes[movingEl.sticker_type](rc, ctx, sz/2, sz/2, sz/50, movingEl.color || '#D0A0A0')
             }} />
         )}
         <RoughTrash visible={!!movingEl} />
