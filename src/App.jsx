@@ -4,6 +4,7 @@ import rough from 'roughjs'
 import HopscotchCanvas from './components/HopscotchCanvas'
 import HandDrawnMap from './components/HandDrawnMap'
 import StampsPanel from "./components/StampsPanel"
+import { stickerRecipes } from './components/StickerRecipes'
 import MapStampsPanel from "./components/MapStampsPanel"
 import { recipes } from './components/IconGallery'
 import ThreadView from './components/ThreadView'
@@ -298,11 +299,40 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   )
 }
 /* Ink view: blue filled brush button */
+
+// Render a placed sticker on the homepage
+function PlacedSticker({ el, x, y, size }) {
+  var ref = useRef(null)
+  useEffect(function() {
+    if (!ref.current) return
+    var recipe = stickerRecipes[el.sticker_type]
+    if (!recipe) return
+    var cvs = ref.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = size * dpr; cvs.height = size * dpr
+    cvs.style.width = size + 'px'; cvs.style.height = size + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, size, size)
+    var rc = rough.canvas(cvs)
+    recipe(rc, ctx, size / 2, size / 2, size / 56, el.color || '#D0A0A0')
+  }, [el, size])
+  return <canvas ref={ref} style={{ position: 'absolute', left: x, top: y, pointerEvents: 'none' }} />
+}
+
 export default function App() {
   const [view, setView] = useState('home')
   const [expanding, setExpanding] = useState(false)
   const [collapsing, setCollapsing] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [placedStickers, setPlacedStickers] = useState([])
+
+  // load placed stickers from DB
+  useEffect(function() {
+    if (!isConnected()) return
+    supaGet('hopscotch_elements', 'order=created_at.asc').then(function(rows) {
+      if (rows) setPlacedStickers(rows)
+    })
+  }, [])
   const [locations, setLocations] = useState(INITIAL)
   const [card, setCard] = useState(null)
   const [dimIndex, setDimIndex] = useState(0)
@@ -450,6 +480,47 @@ export default function App() {
     setTimeout(() => { setView('home'); setCollapsing(false) }, 350)
   }, [])
 
+
+  // place sticker on homepage zone
+  function handleStickerPlace(type, label, color, cx, cy) {
+    // find which zone the drop landed on
+    var zone = null
+    for (var i = 0; i < zoneNames.length; i++) {
+      var r = zoneRects[zoneNames[i]]
+      if (r && cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) {
+        zone = zoneNames[i]; break
+      }
+    }
+    // check roof triangle
+    if (!zone && roofTri && roofTri.length === 3) {
+      var p = roofTri
+      var d1 = (cx-p[1].x)*(p[0].y-p[1].y) - (p[0].x-p[1].x)*(cy-p[1].y)
+      var d2 = (cx-p[2].x)*(p[1].y-p[2].y) - (p[1].x-p[2].x)*(cy-p[2].y)
+      var d3 = (cx-p[0].x)*(p[2].y-p[2].y) - (p[2].x-p[0].x)*(cy-p[0].y)
+      var neg = (d1<0)||(d2<0)||(d3<0)
+      var pos = (d1>0)||(d2>0)||(d3>0)
+      if (!(neg && pos)) zone = 'roof'
+    }
+    if (!zone) return
+    // calculate offset within zone (0-1)
+    var ox = 0.5, oy = 0.5
+    var r = zoneRects[zone]
+    if (r) {
+      ox = Math.max(0.05, Math.min(0.95, (cx - r.x) / r.w))
+      oy = Math.max(0.05, Math.min(0.95, (cy - r.y) / r.h))
+    }
+    var el = { id: 'tmp_' + Date.now(), zone: zone, sticker_type: type, color: color, offset_x: ox, offset_y: oy, scale: 1 }
+    setPlacedStickers(function(prev) { return prev.concat([el]) })
+    // save to DB
+    if (isConnected()) {
+      supaPost('hopscotch_elements', { zone: zone, sticker_type: type, color: color, offset_x: ox, offset_y: oy }).then(function(rows) {
+        if (rows && rows[0]) {
+          setPlacedStickers(function(prev) { return prev.map(function(s) { return s.id === el.id ? rows[0] : s }) })
+        }
+      })
+    }
+  }
+
   const handleZoneTap = useCallback((zone) => {
     if (dragFrom) return
     if (zoneMap[zone] === 'map') enterInk()
@@ -511,6 +582,22 @@ export default function App() {
         {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} weatherColor={weatherColor} />}
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} />
+        {placedStickers.map(function(el) {
+          var r = el.zone === 'roof' ? null : zoneRects[el.zone]
+          if (!r && el.zone !== 'roof') return null
+          var sz = 40
+          var px, py
+          if (r) {
+            px = r.x + el.offset_x * r.w - sz / 2
+            py = r.y + el.offset_y * r.h - sz / 2
+          } else {
+            // roof — center for now
+            if (!roofTri) return null
+            px = (roofTri[0].x + roofTri[1].x + roofTri[2].x) / 3 - sz / 2
+            py = (roofTri[0].y + roofTri[1].y + roofTri[2].y) / 3 - sz / 2
+          }
+          return <PlacedSticker key={el.id} el={el} x={px} y={py} size={sz} />
+        })}
         {dragFrom && zoneNames.map(function (zn) {
           var r = zoneRects[zn]; if (!r) return null
           return <div key={zn} style={{ position: 'absolute', left: r.x, top: r.y, width: r.w, height: r.h,
@@ -525,7 +612,7 @@ export default function App() {
           onFocus={function(loc) { setCardsOpen(false); setCityCenter([loc.lat, loc.lng]); setDimIndex(2); setView('ink'); setTimeout(function(){ setFlipping(false) }, 10) }} />
         {notesView && <NotesView onExit={() => setNotesView(false)} />}
         {gardenView && <GardenView onExit={() => setGardenView(false)} />}
-        <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onStickerPlace={(shapes, label) => console.log("sticker:", label, shapes)} onPatternPlace={(pid, cid) => console.log("pattern:", pid, cid)} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
+        <StampsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onStickerPlace={handleStickerPlace} onPatternPlace={(pid, cid) => console.log("pattern:", pid, cid)} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
