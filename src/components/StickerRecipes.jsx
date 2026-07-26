@@ -7,7 +7,7 @@ export var stickerCategories = {
     { type: 'rose', label: 'rose' },
     { type: 'sakura', label: 'sakura' },
     { type: 'leaf', label: 'leaf' },
-    { type: 'branch', label: 'branch' },
+    { type: 'wind', label: 'wind' },
     { type: 'mushroom', label: 'mushroom' },
     { type: 'crescent', label: 'moon' },
     { type: 'star5', label: 'star' },
@@ -37,21 +37,36 @@ export var stickerRecipes = {
   // ═══ Flora ═══
 
   rose: function(rc, ctx, x, y, s, color) {
-    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
-    var w = { stroke: BG, strokeWidth: 0.8*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
-    // outer petals — large circles
-    rc.circle(x - 4*s, y - 3*s, 11*s, fo)
-    rc.circle(x + 4*s, y - 3*s, 11*s, fo)
-    rc.circle(x - 3*s, y + 3*s, 10*s, fo)
-    rc.circle(x + 3*s, y + 3*s, 10*s, fo)
-    rc.circle(x, y - 5*s, 10*s, fo)
-    // inner spiral — BG color
-    rc.circle(x, y - 1*s, 6*s, { ...w, fill: BG, fillStyle: 'solid', seed: 50 })
-    rc.circle(x + 1*s, y, 3*s, { stroke: color, fill: color, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 51 })
-    // stem
-    rc.line(x, y + 8*s, x + 1*s, y + 15*s, { stroke: color, strokeWidth: 1*s, roughness: 0.5, disableMultiStroke: true, seed: 52 })
-    // small leaf on stem
-    rc.ellipse(x + 3*s, y + 11*s, 4*s, 6*s, { stroke: color, strokeWidth: 0.6*s, roughness: 0.4, disableMultiStroke: true, seed: 53, fill: color, fillStyle: 'solid' })
+    var fo = { stroke: color, strokeWidth: 0.6*s, roughness: 0.3, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    // big base circle
+    rc.circle(x, y, 22*s, fo)
+    // petal separation arcs — BG color curves at different angles
+    ctx.strokeStyle = BG; ctx.lineWidth = 1.2*s; ctx.lineCap = 'round'
+    // outer ring petals
+    var arcs = [[0.3, 10*s], [1.2, 10*s], [2.1, 10*s], [3.0, 10*s], [3.9, 10*s], [4.8, 10*s]]
+    for (var i = 0; i < arcs.length; i++) {
+      ctx.beginPath(); ctx.arc(x, y, arcs[i][1], arcs[i][0], arcs[i][0] + 1.3); ctx.stroke()
+    }
+    // middle ring
+    ctx.lineWidth = 1*s
+    var mid = [[0.8, 7*s], [2.0, 7*s], [3.2, 7*s], [4.4, 7*s], [5.6, 7*s]]
+    for (var i = 0; i < mid.length; i++) {
+      ctx.beginPath(); ctx.arc(x, y, mid[i][1], mid[i][0], mid[i][0] + 1.0); ctx.stroke()
+    }
+    // inner ring
+    ctx.lineWidth = 0.8*s
+    var inner = [[0.5, 4*s], [1.8, 4*s], [3.1, 4*s], [4.4, 4*s]]
+    for (var i = 0; i < inner.length; i++) {
+      ctx.beginPath(); ctx.arc(x, y, inner[i][1], inner[i][0], inner[i][0] + 0.9); ctx.stroke()
+    }
+    // tight center spiral
+    ctx.beginPath()
+    for (var t = 0; t < 1; t += 0.02) {
+      var a = t * Math.PI * 3, r = t * 2.5*s
+      var px = x + Math.cos(a) * r, py = y + Math.sin(a) * r
+      if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
+    }
+    ctx.stroke()
   },
 
   sakura: function(rc, ctx, x, y, s, color) {
@@ -89,22 +104,25 @@ export var stickerRecipes = {
     rc.line(x, y + 8*s, x, y + 13*s, { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 55 })
   },
 
-  branch: function(rc, ctx, x, y, s, color) {
-    var o = { stroke: color, strokeWidth: 0.8*s, roughness: 0.5, disableMultiStroke: true, seed: 42 }
-    var fo = { stroke: color, strokeWidth: 0.6*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
-    // main branch — gentle curve
-    rc.line(x - 13*s, y + 4*s, x - 2*s, y, o)
-    rc.line(x - 2*s, y, x + 13*s, y - 3*s, o)
-    // small leaves along branch
-    rc.ellipse(x - 9*s, y + 1*s, 3*s, 6*s, fo)
-    rc.ellipse(x - 5*s, y - 1*s, 3*s, 5*s, fo)
-    rc.ellipse(x + 1*s, y - 2*s, 3*s, 6*s, fo)
-    rc.ellipse(x + 5*s, y - 3*s, 2.5*s, 5*s, fo)
-    rc.ellipse(x + 9*s, y - 4*s, 3*s, 5.5*s, fo)
-    // tiny berries
+  wind: function(rc, ctx, x, y, s, color) {
+    var o = { stroke: color, strokeWidth: 1.2*s, roughness: 0.5, disableMultiStroke: true }
+    // main swirl
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2*s; ctx.lineCap = 'round'
+    ctx.beginPath()
+    for (var t = 0; t <= 1; t += 0.02) {
+      var a = t * Math.PI * 2.5 - Math.PI*0.5, r = (1-t) * 9*s + 2*s
+      var px = x + Math.cos(a) * r, py = y + Math.sin(a) * r
+      if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
+    }
+    ctx.stroke()
+    // secondary curves
+    rc.line(x - 12*s, y - 2*s, x + 4*s, y - 6*s, { ...o, strokeWidth: 0.8*s, seed: 50 })
+    rc.line(x - 10*s, y + 5*s, x + 6*s, y + 2*s, { ...o, strokeWidth: 0.8*s, seed: 51 })
+    // small dots being blown
     ctx.fillStyle = color
-    ctx.beginPath(); ctx.arc(x - 11*s, y + 2*s, 1*s, 0, Math.PI*2); ctx.fill()
-    ctx.beginPath(); ctx.arc(x + 11*s, y - 4*s, 0.8*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x - 10*s, y - 5*s, 1*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x - 8*s, y + 7*s, 0.8*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x + 8*s, y - 4*s, 0.7*s, 0, Math.PI*2); ctx.fill()
   },
 
   mushroom: function(rc, ctx, x, y, s, color) {
