@@ -39,17 +39,18 @@ export var patternDrawers = {
   },
   d_stripe: function(ctx, rc, s, fg) {
     var gap = s / 3
-    for (var i = -1; i < 4; i++) {
+    var lo = { stroke: fg, strokeWidth: 1, roughness: 0.3, bowing: 0.2, disableMultiStroke: true }
+    for (var i = -2; i < 5; i++) {
       var off = i * gap
-      rc.line(off, 0, off + s, s, { stroke: fg, strokeWidth: 1, ...RO, seed: 100 + i * 11 })
+      rc.line(off, -2, off + s + 2, s + 2, { ...lo, seed: 100 + i * 11 })
     }
   },
   polka: function(ctx, rc, s, fg) {
-    var r = s * 0.12, gap = s / 3
-    for (var row = 0; row < 3; row++)
-      for (var col = 0; col < 3; col++) {
+    var r = s * 0.1, gap = s / 2
+    for (var row = 0; row < 2; row++)
+      for (var col = 0; col < 2; col++) {
         var ox = (row % 2) * gap * 0.5
-        rc.circle(col * gap + gap / 2 + ox, row * gap + gap / 2, r * 2, {
+        rc.circle(gap * 0.5 + col * gap + ox, gap * 0.5 + row * gap, r * 2, {
           fill: fg, fillStyle: 'solid', stroke: fg, strokeWidth: 0.5, ...RO, seed: 200 + row * 10 + col
         })
       }
