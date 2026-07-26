@@ -3,7 +3,7 @@ import rough from 'roughjs'
 import { HOPSCOTCH_BG } from '../lib/tokens'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from '../lib/supabase'
 
-var STAGES = ['Seed', 'Sprout', 'Seedling', 'Growth', 'Bloom', 'Full']
+var STAGES = ['Seed', 'Sprout', 'Leaf', 'Bud', 'Bloom', 'Glory']
 var THRESHOLDS = [0, 5, 12, 22, 33, 45]
 var PAPER = '#F8F8F6'
 var BORDER = '#D8D0C8'
@@ -234,33 +234,63 @@ function drawGrid(cvs, garden, score, w, h) {
   }
 }
 
-/* draw progress bar */
+/* draw progress line with 6 nodes */
 function drawProgress(cvs, score, w) {
-  var H = 24, dpr = Math.min(window.devicePixelRatio || 1, 3)
+  var H = 32, dpr = Math.min(window.devicePixelRatio || 1, 3)
   cvs.width = w * dpr; cvs.height = H * dpr
   cvs.style.width = w + 'px'; cvs.style.height = H + 'px'
   var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   var rc = rough.canvas(cvs)
 
-  /* track */
-  rc.rectangle(0, 6, w, 12, {
-    stroke: '#E0D8D0', strokeWidth: 0.8, roughness: 0.4,
-    fill: '#F0EDE8', fillStyle: 'solid',
+  var pad = 16, lineY = 10
+  var usable = w - pad * 2
+
+  /* background line */
+  rc.line(pad, lineY, w - pad, lineY, {
+    stroke: '#D8D0C8', strokeWidth: 1.2, roughness: 0.6,
     disableMultiStroke: true, seed: 700
   })
 
-  /* filled portion */
-  var nextThreshold = score.stage < 5 ? THRESHOLDS[score.stage + 1] : THRESHOLDS[5]
-  var prevThreshold = THRESHOLDS[score.stage]
-  var segProgress = score.stage >= 5 ? 1 : (score.total - prevThreshold) / (nextThreshold - prevThreshold)
-  var fillW = Math.max(4, Math.min(w - 2, segProgress * (w - 2)))
-
-  if (fillW > 4) {
-    rc.rectangle(1, 7, fillW, 10, {
-      stroke: '#6AAF5C', strokeWidth: 0.6, roughness: 0.3,
-      fill: '#6AAF5C', fillStyle: 'solid',
+  /* filled line up to current stage */
+  if (score.stage > 0) {
+    var fillX = pad + (score.stage / 5) * usable
+    rc.line(pad, lineY, fillX, lineY, {
+      stroke: '#8BAF7A', strokeWidth: 1.5, roughness: 0.5,
       disableMultiStroke: true, seed: 701
     })
+  }
+
+  /* 6 nodes */
+  for (var i = 0; i < 6; i++) {
+    var nx = pad + (i / 5) * usable
+    var unlocked = score.stage >= i
+    var current = score.stage === i
+
+    if (current) {
+      rc.circle(nx, lineY, 10, {
+        stroke: '#8BAF7A', strokeWidth: 1.5, roughness: 0.5,
+        fill: '#8BAF7A', fillStyle: 'solid',
+        disableMultiStroke: true, seed: 710 + i
+      })
+    } else if (unlocked) {
+      rc.circle(nx, lineY, 8, {
+        stroke: '#8BAF7A', strokeWidth: 1.2, roughness: 0.5,
+        fill: '#A8C49A', fillStyle: 'solid',
+        disableMultiStroke: true, seed: 710 + i
+      })
+    } else {
+      rc.circle(nx, lineY, 7, {
+        stroke: '#D0C8C0', strokeWidth: 1, roughness: 0.5,
+        disableMultiStroke: true, seed: 710 + i
+      })
+    }
+
+    /* stage label below */
+    ctx.fillStyle = unlocked ? '#8A7A6A' : '#B8A898'
+    ctx.font = "9px -apple-system, 'PingFang SC', sans-serif"
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.fillText(STAGES[i], nx, lineY + 9)
   }
 }
 
