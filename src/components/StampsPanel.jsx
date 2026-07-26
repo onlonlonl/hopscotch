@@ -220,6 +220,37 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   var [customStickers, setCustomStickers] = useState([])
   var [customLoaded, setCustomLoaded] = useState(false)
   var panelRef = useRef(null)
+  var dragCanvasRef = useRef(null)
+  var [dragging, setDragging] = useState(null)
+  var [dragPos, setDragPos] = useState(null)
+
+  function startDrag(e, item) {
+    e.preventDefault()
+    var touch = e.touches ? e.touches[0] : e
+    setDragging(item)
+    setDragPos({ x: touch.clientX - 30, y: touch.clientY - 30 })
+    function onMove(ev) {
+      ev.preventDefault()
+      var t = ev.touches ? ev.touches[0] : ev
+      setDragPos({ x: t.clientX - 30, y: t.clientY - 30 })
+    }
+    function onEnd(ev) {
+      var t = ev.changedTouches ? ev.changedTouches[0] : ev
+      var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
+      if (t.clientY < panelTop && onStickerPlace) {
+        onStickerPlace(item.type, item.label, stickerColor, t.clientX, t.clientY)
+      }
+      setDragging(null); setDragPos(null)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onEnd)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onEnd)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onEnd)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
+  }
 
   useEffect(function() {
     if (!open || customLoaded || !supaGet) return
@@ -283,6 +314,19 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
 
   if (!open) return null
 
+  // draw drag ghost
+  if (dragging && dragCanvasRef.current && dragging.recipeFn) {
+    var _cvs = dragCanvasRef.current
+    var _dpr = Math.min(window.devicePixelRatio || 1, 3)
+    var _sz = 60
+    _cvs.width = _sz * _dpr; _cvs.height = _sz * _dpr
+    _cvs.style.width = _sz + 'px'; _cvs.style.height = _sz + 'px'
+    var _ctx = _cvs.getContext('2d'); _ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0)
+    _ctx.clearRect(0, 0, _sz, _sz)
+    var _rc = rough.canvas(_cvs)
+    dragging.recipeFn(_rc, _ctx, _sz/2, _sz/2, _sz/56, stickerColor)
+  }
+
   var currentItems = []
   var cat = stickerCategories[stickerTab]
   if (cat) currentItems = cat.items.map(function(item) { return { type: item.type, label: item.label, recipeFn: stickerRecipes[item.type] } })
@@ -290,9 +334,16 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   customForTab.forEach(function(s) { currentItems.push({ type: 'custom_' + s.id, label: s.name, shapes: s.recipe }) })
   var catEntries = Object.entries(stickerCategories)
 
-  return (
+  return (<>
+    {dragging && dragPos && (
+        <canvas ref={dragCanvasRef} style={{
+          position: 'fixed', left: dragPos.x, top: dragPos.y,
+          pointerEvents: 'none', zIndex: 200, opacity: 0.85,
+        }} />
+      )}
     <div ref={panelRef} style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FAF6F0',
+      opacity: dragging ? 0.3 : 1,
       borderRadius: '16px 16px 0 0', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
       zIndex: 100, height: genOpen ? '85vh' : '42vh', transition: 'height 0.3s ease',
       display: 'flex', flexDirection: 'column', fontFamily: FONT, overflow: 'hidden',
@@ -351,8 +402,10 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, padding: '6px 16px', flex: 1, overflowY: 'auto', alignContent: 'start' }}>
                 {currentItems.map(function(item) {
                   return (
-                    <div key={item.type} onClick={function() { onStickerPlace && onStickerPlace(item.type, item.label, stickerColor) }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                    <div key={item.type}
+                      onTouchStart={function(e) { startDrag(e, item) }}
+                      onMouseDown={function(e) { startDrag(e, item) }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none' }}>
                       <StickerThumb recipeFn={item.recipeFn} color={stickerColor} />
                       <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3, textAlign: 'center' }}>{item.label}</span>
                     </div>
@@ -429,5 +482,5 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
         </div>
       )}
     </div>
-  )
+  </>)
 }
