@@ -208,7 +208,7 @@ function GenPreview({ shapes, size }) {
 export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPlace, supaGet, supaPost, supaPatch }) {
   var [topTab, setTopTab] = useState('stickers')
   var [stickerTab, setStickerTab] = useState('flora')
-  var [stickerColor, setStickerColor] = useState('#A09080')
+  var [stickerColor, setStickerColor] = useState("#D0A0A0")
   var [selPattern, setSelPattern] = useState('polka')
   var [selColor, setSelColor] = useState('cream')
   var [genOpen, setGenOpen] = useState(false)

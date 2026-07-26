@@ -4,8 +4,8 @@ var BG = '#FAF6F0'
 
 export var stickerCategories = {
   flora: { label: 'Flora', items: [
-    { type: 'hibiscus', label: 'hibiscus' },
-    { type: 'daisy', label: 'daisy' },
+    { type: 'rose', label: 'rose' },
+    { type: 'sakura', label: 'sakura' },
     { type: 'leaf', label: 'leaf' },
     { type: 'branch', label: 'branch' },
     { type: 'mushroom', label: 'mushroom' },
@@ -36,36 +36,45 @@ export var stickerRecipes = {
 
   // ═══ Flora ═══
 
-  hibiscus: function(rc, ctx, x, y, s, color) {
-    var fo = { stroke: color, strokeWidth: 1*s, roughness: 0.4, bowing: 0.5, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
-    var w = { stroke: BG, strokeWidth: 1.2*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+  rose: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 0.8*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    // outer petals — large circles
+    rc.circle(x - 4*s, y - 3*s, 11*s, fo)
+    rc.circle(x + 4*s, y - 3*s, 11*s, fo)
+    rc.circle(x - 3*s, y + 3*s, 10*s, fo)
+    rc.circle(x + 3*s, y + 3*s, 10*s, fo)
+    rc.circle(x, y - 5*s, 10*s, fo)
+    // inner spiral — BG color
+    rc.circle(x, y - 1*s, 6*s, { ...w, fill: BG, fillStyle: 'solid', seed: 50 })
+    rc.circle(x + 1*s, y, 3*s, { stroke: color, fill: color, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 51 })
+    // stem
+    rc.line(x, y + 8*s, x + 1*s, y + 15*s, { stroke: color, strokeWidth: 1*s, roughness: 0.5, disableMultiStroke: true, seed: 52 })
+    // small leaf on stem
+    rc.ellipse(x + 3*s, y + 11*s, 4*s, 6*s, { stroke: color, strokeWidth: 0.6*s, roughness: 0.4, disableMultiStroke: true, seed: 53, fill: color, fillStyle: 'solid' })
+  },
+
+  sakura: function(rc, ctx, x, y, s, color) {
+    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    var w = { stroke: BG, strokeWidth: 1*s, roughness: 0.3, disableMultiStroke: true, seed: 42 }
+    // 5 petals
     var angles = [-90, -18, 54, 126, 198]
     for (var i = 0; i < 5; i++) {
       var a = angles[i] * Math.PI / 180
-      rc.ellipse(x + Math.cos(a)*5*s, y + Math.sin(a)*5*s, 13*s, 17*s, fo)
+      rc.ellipse(x + Math.cos(a)*5.5*s, y + Math.sin(a)*5.5*s, 9*s, 12*s, fo)
+      // notch at petal tip — BG line
+      var tx = x + Math.cos(a)*10*s, ty = y + Math.sin(a)*10*s
+      rc.line(tx - Math.cos(a+0.3)*2*s, ty - Math.sin(a+0.3)*2*s, tx + Math.cos(a-0.3)*2*s, ty + Math.sin(a-0.3)*2*s, { ...w, strokeWidth: 1.2*s, seed: 50+i })
     }
-    for (var i = 0; i < 5; i++) {
-      var a = angles[i] * Math.PI / 180
-      rc.line(x + Math.cos(a)*2*s, y + Math.sin(a)*2*s, x + Math.cos(a)*11*s, y + Math.sin(a)*11*s, { ...w, strokeWidth: 1.4*s, seed: 50+i })
-    }
-    rc.circle(x, y, 5*s, { stroke: BG, fill: BG, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 80 })
-    var sx = x - 8*s, sy = y - 13*s
-    rc.line(x - s, y - s, sx, sy, { stroke: color, strokeWidth: 1*s, roughness: 0.4, disableMultiStroke: true, seed: 90 })
+    // center
+    rc.circle(x, y, 4*s, { ...w, fill: BG, fillStyle: 'solid', seed: 60 })
     ctx.fillStyle = color
-    ctx.beginPath(); ctx.arc(sx - s, sy - 1.5*s, 0.9*s, 0, Math.PI*2); ctx.fill()
-    ctx.beginPath(); ctx.arc(sx + 1.5*s, sy - 0.5*s, 0.7*s, 0, Math.PI*2); ctx.fill()
-    ctx.beginPath(); ctx.arc(sx - 1.5*s, sy + s, 0.6*s, 0, Math.PI*2); ctx.fill()
-  },
-
-  daisy: function(rc, ctx, x, y, s, color) {
-    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
-    var w = { stroke: BG, roughness: 0.3, disableMultiStroke: true, seed: 42 }
-    for (var i = 0; i < 8; i++) {
-      var a = i * Math.PI / 4
-      rc.ellipse(x + Math.cos(a)*6*s, y + Math.sin(a)*6*s, 5*s, 10*s, fo)
+    ctx.beginPath(); ctx.arc(x, y, 1.2*s, 0, Math.PI*2); ctx.fill()
+    // stamens
+    for (var i = 0; i < 4; i++) {
+      var sa = (i * 90 + 45) * Math.PI / 180
+      ctx.beginPath(); ctx.arc(x + Math.cos(sa)*2.5*s, y + Math.sin(sa)*2.5*s, 0.5*s, 0, Math.PI*2); ctx.fill()
     }
-    rc.circle(x, y, 5*s, { ...w, fill: BG, fillStyle: 'solid', strokeWidth: 0.5*s, seed: 60 })
-    rc.circle(x, y, 3.5*s, { stroke: color, fill: color, fillStyle: 'solid', strokeWidth: 0.5*s, roughness: 0.3, disableMultiStroke: true, seed: 61 })
   },
 
   leaf: function(rc, ctx, x, y, s, color) {
@@ -81,16 +90,21 @@ export var stickerRecipes = {
   },
 
   branch: function(rc, ctx, x, y, s, color) {
-    var o = { stroke: color, strokeWidth: 1.2*s, roughness: 0.5, disableMultiStroke: true, seed: 42 }
-    var fo = { stroke: color, strokeWidth: 0.8*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
-    rc.line(x - 12*s, y + 5*s, x + 12*s, y - 5*s, o)
-    rc.ellipse(x - 7*s, y + 1*s, 5*s, 8*s, fo)
-    rc.ellipse(x - 2*s, y - s, 4*s, 7*s, fo)
-    rc.ellipse(x + 4*s, y - 3*s, 5*s, 8*s, fo)
-    rc.ellipse(x + 9*s, y - 5*s, 4*s, 6*s, fo)
+    var o = { stroke: color, strokeWidth: 0.8*s, roughness: 0.5, disableMultiStroke: true, seed: 42 }
+    var fo = { stroke: color, strokeWidth: 0.6*s, roughness: 0.4, disableMultiStroke: true, seed: 42, fill: color, fillStyle: 'solid' }
+    // main branch — gentle curve
+    rc.line(x - 13*s, y + 4*s, x - 2*s, y, o)
+    rc.line(x - 2*s, y, x + 13*s, y - 3*s, o)
+    // small leaves along branch
+    rc.ellipse(x - 9*s, y + 1*s, 3*s, 6*s, fo)
+    rc.ellipse(x - 5*s, y - 1*s, 3*s, 5*s, fo)
+    rc.ellipse(x + 1*s, y - 2*s, 3*s, 6*s, fo)
+    rc.ellipse(x + 5*s, y - 3*s, 2.5*s, 5*s, fo)
+    rc.ellipse(x + 9*s, y - 4*s, 3*s, 5.5*s, fo)
+    // tiny berries
     ctx.fillStyle = color
-    ctx.beginPath(); ctx.arc(x - 10*s, y + 3*s, 1.2*s, 0, Math.PI*2); ctx.fill()
-    ctx.beginPath(); ctx.arc(x + 7*s, y - 5*s, 1*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x - 11*s, y + 2*s, 1*s, 0, Math.PI*2); ctx.fill()
+    ctx.beginPath(); ctx.arc(x + 11*s, y - 4*s, 0.8*s, 0, Math.PI*2); ctx.fill()
   },
 
   mushroom: function(rc, ctx, x, y, s, color) {
