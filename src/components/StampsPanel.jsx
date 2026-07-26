@@ -205,6 +205,144 @@ function GenPreview({ shapes, size }) {
 }
 
 
+/* Square photo crop overlay — drag to pan, slider to zoom */
+function PhotoCropOverlay({ src, onConfirm, onCancel }) {
+  var [img, setImg] = useState(null)
+  var [off, setOff] = useState({ x: 0, y: 0 })
+  var [zoom, setZoom] = useState(1)
+  var canvasRef = useRef(null)
+  var BOX = 240
+
+  useEffect(function() {
+    var im = new Image()
+    im.onload = function() { setImg(im) }
+    im.src = src
+  }, [src])
+
+  useEffect(function() {
+    if (!img || !canvasRef.current) return
+    var cvs = canvasRef.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = BOX * dpr; cvs.height = BOX * dpr
+    cvs.style.width = BOX + 'px'; cvs.style.height = BOX + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.fillStyle = '#F0ECE6'; ctx.fillRect(0, 0, BOX, BOX)
+    var base = Math.max(BOX / img.width, BOX / img.height)
+    var sc = base * zoom
+    var dw = img.width * sc, dh = img.height * sc
+    ctx.drawImage(img, (BOX - dw) / 2 + off.x, (BOX - dh) / 2 + off.y, dw, dh)
+    // rough border
+    var rc = rough.canvas(cvs)
+    rc.rectangle(2, 2, BOX - 4, BOX - 4, { stroke: '#fff', strokeWidth: 2, roughness: 0.5, disableMultiStroke: true, seed: 42 })
+  }, [img, off, zoom])
+
+  function handleTouch(e) {
+    e.preventDefault()
+    var t = e.touches[0], sx = t.clientX, sy = t.clientY
+    var startOff = { x: off.x, y: off.y }
+    function onMove(ev) {
+      ev.preventDefault()
+      var t2 = ev.touches[0]
+      setOff({ x: startOff.x + (t2.clientX - sx), y: startOff.y + (t2.clientY - sy) })
+    }
+    function onEnd() { window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd) }
+    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onEnd)
+  }
+
+  function doConfirm() {
+    if (!img) return
+    var OUT = 250
+    var out = document.createElement('canvas')
+    out.width = OUT; out.height = OUT
+    var octx = out.getContext('2d')
+    octx.fillStyle = '#FAF6F0'; octx.fillRect(0, 0, OUT, OUT)
+    var base = Math.max(BOX / img.width, BOX / img.height)
+    var sc = base * zoom * (OUT / BOX)
+    var dw = img.width * sc, dh = img.height * sc
+    octx.drawImage(img, (OUT - dw) / 2 + off.x * (OUT / BOX), (OUT - dh) / 2 + off.y * (OUT / BOX), dw, dh)
+    onConfirm(out.toDataURL('image/jpeg', 0.78))
+  }
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <canvas ref={canvasRef} onTouchStart={handleTouch} style={{ touchAction: 'none', borderRadius: 4 }} />
+      {/* zoom bar */}
+      <canvas ref={function(cvs) {
+        if (!cvs || cvs._d) return; cvs._d = true
+        var w = 200, h = 30, dpr = Math.min(window.devicePixelRatio || 1, 3)
+        cvs.width = w * dpr; cvs.height = h * dpr; cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
+        var c2 = cvs.getContext('2d'); c2.setTransform(dpr, 0, 0, dpr, 0, 0)
+        var rc2 = rough.canvas(cvs)
+        var o = { stroke: '#fff', strokeWidth: 2, roughness: 0.4, disableMultiStroke: true }
+        rc2.line(6, 15, 18, 15, { ...o, seed: 1 })
+        rc2.line(28, 15, w - 28, 15, { ...o, strokeWidth: 2.5, seed: 2 })
+        rc2.line(w - 18, 15, w - 6, 15, { ...o, seed: 3 })
+        rc2.line(w - 12, 9, w - 12, 21, { ...o, seed: 4 })
+      }} onTouchStart={function(e) {
+        e.preventDefault()
+        var t0 = e.touches[0], sx = t0.clientX, sz = zoom
+        function onMove(ev) {
+          ev.preventDefault(); var t2 = ev.touches[0]
+          setZoom(Math.max(1, Math.min(3, sz + (t2.clientX - sx) * 0.01)))
+        }
+        function onEnd() { window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd) }
+        window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onEnd)
+      }} style={{ marginTop: 20, touchAction: 'none' }} />
+      {/* buttons */}
+      <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
+        <canvas ref={function(cvs) {
+          if (!cvs || cvs._d) return; cvs._d = true
+          var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+          cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+          var c2 = cvs.getContext('2d'); c2.setTransform(dpr, 0, 0, dpr, 0, 0)
+          var rc2 = rough.canvas(cvs)
+          rc2.circle(sz/2, sz/2, sz-8, { stroke: '#C48A7A', fill: '#FFF5F0', fillStyle: 'solid', strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 4 })
+          rc2.line(15, 15, 29, 29, { stroke: '#C48A7A', strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 5 })
+          rc2.line(29, 15, 15, 29, { stroke: '#C48A7A', strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 6 })
+        }} onClick={onCancel} style={{ cursor: 'pointer' }} />
+        <canvas ref={function(cvs) {
+          if (!cvs || cvs._d) return; cvs._d = true
+          var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+          cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+          var c2 = cvs.getContext('2d'); c2.setTransform(dpr, 0, 0, dpr, 0, 0)
+          var rc2 = rough.canvas(cvs)
+          rc2.circle(sz/2, sz/2, sz-8, { stroke: '#9BB89C', fill: '#F0F5F0', fillStyle: 'solid', strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 1 })
+          rc2.line(13, 22, 20, 30, { stroke: '#9BB89C', strokeWidth: 2.5, roughness: 0.4, disableMultiStroke: true, seed: 2 })
+          rc2.line(20, 30, 31, 14, { stroke: '#9BB89C', strokeWidth: 2.5, roughness: 0.4, disableMultiStroke: true, seed: 3 })
+        }} onClick={doConfirm} style={{ cursor: 'pointer' }} />
+      </div>
+    </div>
+  )
+}
+
+/* Photo sticker thumbnail */
+function PhotoThumb({ dataUrl, size }) {
+  var ref = useRef(null)
+  var sz = size || 58
+  useEffect(function() {
+    if (!ref.current || !dataUrl) return
+    var cvs = ref.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = sz * dpr; cvs.height = sz * dpr
+    cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var im = new Image()
+    im.onload = function() {
+      ctx.clearRect(0, 0, sz, sz)
+      ctx.save()
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(3, 3, sz-6, sz-6, 3) : ctx.rect(3, 3, sz-6, sz-6)
+      ctx.clip()
+      ctx.drawImage(im, 3, 3, sz-6, sz-6)
+      ctx.restore()
+      var rc = rough.canvas(cvs)
+      rc.rectangle(2, 2, sz-4, sz-4, { stroke: '#9A8A78', strokeWidth: 1.2, roughness: 0.6, disableMultiStroke: true, seed: 42 })
+    }
+    im.src = dataUrl
+  }, [dataUrl, sz])
+  return <canvas ref={ref} style={{ display: 'block' }} />
+}
+
+
 export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPlace, supaGet, supaPost, supaPatch }) {
   var [topTab, setTopTab] = useState('stickers')
   var [stickerTab, setStickerTab] = useState('flora')
@@ -217,6 +355,25 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   var [genResult, setGenResult] = useState(null)
   var [genId, setGenId] = useState(null)
   var [feedbackInput, setFeedbackInput] = useState('')
+  var [photoStickers, setPhotoStickers] = useState(function() {
+    try { return JSON.parse(localStorage.getItem('hopscotch_photo_stickers') || '[]') } catch(e) { return [] }
+  })
+  var [cropSrc, setCropSrc] = useState(null)
+  var fileRef = useRef(null)
+
+  useEffect(function() {
+    localStorage.setItem('hopscotch_photo_stickers', JSON.stringify(photoStickers))
+  }, [photoStickers])
+
+  function handleFileSelect(e) {
+    var f = e.target.files && e.target.files[0]
+    if (!f) return
+    var reader = new FileReader()
+    reader.onload = function() { setCropSrc(reader.result) }
+    reader.readAsDataURL(f)
+    e.target.value = ''
+  }
+
   var [customStickers, setCustomStickers] = useState([])
   var [customLoaded, setCustomLoaded] = useState(false)
   var panelRef = useRef(null)
@@ -238,7 +395,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
       var t = ev.changedTouches ? ev.changedTouches[0] : ev
       var panelTop = panelRef.current ? panelRef.current.getBoundingClientRect().top : window.innerHeight
       if (t.clientY < panelTop && onStickerPlace) {
-        onStickerPlace(item.type, item.label, stickerColor, t.clientX, t.clientY)
+        onStickerPlace(item.type, item.label, stickerColor, t.clientX, t.clientY, item.photoUrl)
       }
       setDragging(null); setDragPos(null)
       window.removeEventListener('mousemove', onMove)
@@ -323,6 +480,16 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
     _cvs.style.width = _sz + 'px'; _cvs.style.height = _sz + 'px'
     var _ctx = _cvs.getContext('2d'); _ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0)
     renderPattern(_cvs, dragging.patternId, dragging.colorId, 2)
+  } else if (dragging && dragCanvasRef.current && dragging.photoUrl) {
+    var _c = dragCanvasRef.current
+    var _d = Math.min(window.devicePixelRatio || 1, 3)
+    var _s = 60
+    _c.width = _s * _d; _c.height = _s * _d
+    _c.style.width = _s + 'px'; _c.style.height = _s + 'px'
+    var _x = _c.getContext('2d'); _x.setTransform(_d, 0, 0, _d, 0, 0)
+    var _im = new Image()
+    _im.onload = function() { _x.clearRect(0,0,_s,_s); _x.drawImage(_im, 2, 2, _s-4, _s-4) }
+    _im.src = dragging.photoUrl
   } else if (dragging && dragCanvasRef.current && dragging.recipeFn) {
     var _cvs = dragCanvasRef.current
     var _dpr = Math.min(window.devicePixelRatio || 1, 3)
@@ -338,6 +505,9 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
   var currentItems = []
   var cat = stickerCategories[stickerTab]
   if (cat) currentItems = cat.items.map(function(item) { return { type: item.type, label: item.label, recipeFn: stickerRecipes[item.type] } })
+  photoStickers.forEach(function(ps) {
+    currentItems.push({ type: 'photo_' + ps.id, label: 'photo', photoUrl: ps.dataUrl })
+  })
   var customForTab = customStickers.filter(function(s) { return s.category === stickerTab && s.recipe })
   customForTab.forEach(function(s) { currentItems.push({ type: 'custom_' + s.id, label: s.name, shapes: s.recipe }) })
   var catEntries = Object.entries(stickerCategories)
@@ -349,6 +519,12 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
           pointerEvents: 'none', zIndex: 200, opacity: 0.85,
         }} />
       )}
+    {cropSrc && <PhotoCropOverlay src={cropSrc}
+      onConfirm={function(dataUrl) {
+        setPhotoStickers(function(prev) { return prev.concat([{ id: 'ph_' + Date.now(), dataUrl: dataUrl }]) })
+        setCropSrc(null); setGenOpen(false)
+      }}
+      onCancel={function() { setCropSrc(null) }} />}
     <div ref={panelRef} style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FAF6F0',
       opacity: dragging ? 0.3 : 1,
@@ -414,7 +590,7 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                       onTouchStart={function(e) { startDrag(e, item) }}
                       onMouseDown={function(e) { startDrag(e, item) }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                      <StickerThumb recipeFn={item.recipeFn} color={stickerColor} />
+                      {item.photoUrl ? <PhotoThumb dataUrl={item.photoUrl} /> : <StickerThumb recipeFn={item.recipeFn} color={stickerColor} />}
                       <span style={{ fontSize: 9, color: '#8A7A68', marginTop: 3, textAlign: 'center' }}>{item.label}</span>
                     </div>
                   )
@@ -476,8 +652,12 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
         <div style={{ padding: '8px 16px', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <RoughBack onClick={function() { setGenOpen(false); setGenResult(null); setGenId(null); setGenInput('') }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#5A4A38' }}>Generate Sticker</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#5A4A38' }}>New Sticker</span>
           </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <RoughBtn width={200} label="Upload Photo" color="#9A8A78" onClick={function() { fileRef.current && fileRef.current.click() }} />
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
           {genResult ? <GenPreview shapes={genResult} size={100} /> : <RoughFrame size={100} />}
           {!genResult ? (
             <>

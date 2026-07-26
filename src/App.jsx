@@ -466,8 +466,6 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
   var longRef = useRef(null)
   useEffect(function() {
     if (!ref.current) return
-    var recipe = stickerRecipes[el.sticker_type]
-    if (!recipe) return
     var cvs = ref.current
     var dpr = Math.min(window.devicePixelRatio || 1, 3)
     cvs.width = size * dpr; cvs.height = size * dpr
@@ -475,6 +473,23 @@ function PlacedSticker({ el, x, y, size, onDragStart }) {
     var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, size, size)
     var rc = rough.canvas(cvs)
+    if (el.photoUrl) {
+      var im = new Image()
+      im.onload = function() {
+        ctx.clearRect(0, 0, size, size)
+        ctx.save()
+        ctx.beginPath()
+        if (ctx.roundRect) ctx.roundRect(3, 3, size-6, size-6, 3); else ctx.rect(3, 3, size-6, size-6)
+        ctx.clip()
+        ctx.drawImage(im, 3, 3, size-6, size-6)
+        ctx.restore()
+        rc.rectangle(2, 2, size-4, size-4, { stroke: '#9A8A78', strokeWidth: 1.2, roughness: 0.6, disableMultiStroke: true, seed: 42 })
+      }
+      im.src = el.photoUrl
+      return
+    }
+    var recipe = stickerRecipes[el.sticker_type]
+    if (!recipe) return
     recipe(rc, ctx, size / 2, size / 2, size / 56, el.color || '#D0A0A0')
   }, [el, size])
   function handleTouchStart(e) {
@@ -702,9 +717,10 @@ export default function App() {
   var [movePos, setMovePos] = useState(null)
   var moveGhostRef = useRef(null)
 
-  function handleStickerPlace(type, label, color, cx, cy) {
+  function handleStickerPlace(type, label, color, cx, cy, photoUrl) {
     var W = window.innerWidth, H = window.innerHeight
     var el = { id: 's_' + Date.now(), sticker_type: type, color: color, offset_x: cx / W, offset_y: cy / H }
+    if (photoUrl) el.photoUrl = photoUrl
     setPlacedStickers(function(prev) { return prev.concat([el]) })
   }
 
@@ -820,13 +836,20 @@ export default function App() {
         {movingEl && movePos && (
           <canvas style={{ position: 'fixed', left: movePos.x, top: movePos.y, pointerEvents: 'none', zIndex: 200, opacity: 0.8 }}
             ref={function(cvs) {
-              if (!cvs || !stickerRecipes[movingEl.sticker_type]) return
+              if (!cvs) return
               var sz = 60, dpr = Math.min(window.devicePixelRatio || 1, 3)
               cvs.width = sz * dpr; cvs.height = sz * dpr
               cvs.style.width = sz + 'px'; cvs.style.height = sz + 'px'
               var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
               ctx.clearRect(0, 0, sz, sz)
               var rc = rough.canvas(cvs)
+              if (movingEl.photoUrl) {
+                var im = new Image()
+                im.onload = function() { ctx.clearRect(0,0,sz,sz); ctx.drawImage(im, 2, 2, sz-4, sz-4) }
+                im.src = movingEl.photoUrl
+                return
+              }
+              if (!stickerRecipes[movingEl.sticker_type]) return
               stickerRecipes[movingEl.sticker_type](rc, ctx, sz/2, sz/2, sz/50, movingEl.color || '#D0A0A0')
             }} />
         )}
