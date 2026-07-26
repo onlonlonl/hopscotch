@@ -388,20 +388,20 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
         cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
         var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
         var rc2 = rough.canvas(cvs)
-        rc2.circle(sz/2, sz/2, sz-8, { stroke: "#9BB89C", fill: "#F0F5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 1 })
-        rc2.line(14, sz/2, 30, sz/2-8, { stroke: "#9BB89C", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 2 })
-        rc2.line(14, sz/2, 30, sz/2+8, { stroke: "#9BB89C", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 3 })
-      }} onClick={function() { onConfirm(off, tile) }} style={{ cursor: "pointer" }} />
+        rc2.circle(sz/2, sz/2, sz-8, { stroke: "#C48A7A", fill: "#FFF5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 4 })
+        rc2.line(15, 15, 29, 29, { stroke: "#C48A7A", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 5 })
+        rc2.line(29, 15, 15, 29, { stroke: "#C48A7A", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 6 })
+      }} onClick={onCancel} style={{ cursor: "pointer" }} />
       <canvas ref={function(cvs) {
         if (!cvs || cvs._d) return; cvs._d = true
         var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
         cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
         var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
         var rc2 = rough.canvas(cvs)
-        rc2.circle(sz/2, sz/2, sz-8, { stroke: "#C48A7A", fill: "#FFF5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 4 })
-        rc2.line(15, 15, 29, 29, { stroke: "#C48A7A", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 5 })
-        rc2.line(29, 15, 15, 29, { stroke: "#C48A7A", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 6 })
-      }} onClick={onCancel} style={{ cursor: "pointer" }} />
+        rc2.circle(sz/2, sz/2, sz-8, { stroke: "#9BB89C", fill: "#F0F5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 1 })
+        rc2.line(13, 22, 20, 30, { stroke: "#9BB89C", strokeWidth: 2.5, roughness: 0.4, disableMultiStroke: true, seed: 2 })
+        rc2.line(20, 30, 31, 14, { stroke: "#9BB89C", strokeWidth: 2.5, roughness: 0.4, disableMultiStroke: true, seed: 3 })
+      }} onClick={function() { onConfirm(off, tile) }} style={{ cursor: "pointer" }} />
     </div>
   </>
 }
@@ -758,7 +758,7 @@ export default function App() {
           onCancel={function() { setRoofCrop(null) }} />}
         {placedPatterns.map(function(pp) {
           var W = window.innerWidth, H = window.innerHeight
-          var pw = 56, ph = 78
+          var pw = 80, ph = 54
           return <canvas key={pp.id} ref={function(cvs) {
             if (!cvs) return; renderPatternFill(cvs, pp.patternId, pp.colorId, pw, ph)
           }} style={{ position: 'absolute', left: pp.offset_x * W - pw/2, top: pp.offset_y * H - ph/2, pointerEvents: 'none', borderRadius: 4, zIndex: 5 }} />
