@@ -606,7 +606,7 @@ export default function App() {
             color: r.color || '#E8A87C', lux_x: r.lux_x || 50, lux_y: r.lux_y || 50,
             scale: r.scale || 1, ink_name: r.ink_name || r.label || r.id,
             lat: parseFloat(r.lat) || 0, lng: parseFloat(r.lng) || 0,
-            inf_t: r.inf_t || Math.random(), inf_w: r.inf_w || 0.5,
+            inf_t: r.inf_t != null ? r.inf_t : null, inf_w: r.inf_w != null ? r.inf_w : null,
             story: r.story || '', weather: r.weather || '',
           }
         })

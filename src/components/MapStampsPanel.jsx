@@ -374,10 +374,6 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
                   </div>
                 )
               })}
-              {/* Bigger + button for adding category */}
-              <div style={{ padding: '0 4px', display: 'flex', alignItems: 'center' }}>
-                <RoughPlusTab onClick={function() {/* TODO */}} />
-              </div>
             </div>
 
             {/* Grid — no divider lines, just spacing */}
@@ -415,9 +411,6 @@ export default function StampsPanel({ open, onClose, onSelect, onDragToMap, reci
           </>
         ) : (
           <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ marginBottom: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#5A4A38' }}>Generate Stamp</span>
-            </div>
             <RoughPreviewBox size={120} />
             <RoughInput
               value={genInput}

@@ -6,7 +6,7 @@ import rough from 'roughjs'
 
 // === Lemniscate math ===
 function lem(t, ox, oy, sc, yOff) {
-  const a = t * Math.PI * 2
+  const a = (t + 0.25) * Math.PI * 2
   const s = Math.sin(a), c = Math.cos(a), d = 1 + s * s
   return [ox + sc * c / d, oy + sc * s * c / d + (yOff || 0)]
 }
@@ -47,11 +47,11 @@ function getTimeBg() {
 // === Drawing ===
 const SAMPLES = 180, SEG = 6
 const LINE_PASSES = [
-  { seed: 1, rough: 1.2, sw: 0.9, yOff: -3, alpha: 0.35 },
-  { seed: 13, rough: 0.8, sw: 1.1, yOff: 0, alpha: 0.45 },
-  { seed: 25, rough: 1.0, sw: 0.85, yOff: 3.5, alpha: 0.3 },
+  { seed: 1, rough: 1.2, sw: 1.1, yOff: -3, alpha: 0.55 },
+  { seed: 13, rough: 0.8, sw: 1.4, yOff: 0, alpha: 0.7 },
+  { seed: 25, rough: 1.0, sw: 1.05, yOff: 3.5, alpha: 0.5 },
 ]
-const BASE_RGB = [205, 195, 182]
+const BASE_RGB = [188, 176, 162]
 
 function drawInfinity(canvas, locs, sc, ox, oy) {
   const ctx = canvas.getContext('2d')
@@ -189,10 +189,14 @@ export default function ThreadView({ locations = [], onNodeTap }) {
   const getSnapX = useCallback(i => { if (!locs[i]) return 0; return trackPad + locs[i].inf_t * trackW - (dims.w || 400) / 2 }, [locs, trackPad, trackW, dims.w])
   const findNearest = useCallback(sx => { let minD = Infinity, minI = 0; locs.forEach((loc, i) => { const d = Math.abs(trackPad + loc.inf_t * trackW - sx - (dims.w || 400) / 2); if (d < minD) { minD = d; minI = i } }); return minI }, [locs, trackPad, trackW, dims.w])
 
-  const selectLocation = useCallback(i => {
-    activeIdxRef.current = i; setActiveIdx(i)
-    scrollRef.current.target = getSnapX(i)
-    if (onNodeTap && locs[i]) onNodeTap(locs[i], (dims.w || 400) / 2, ((dims.h || 700) - PANEL_H) / 2)
+  const selectLocation = useCallback((i, opts) => {
+    var quiet = opts && opts.quiet
+    activeIdxRef.current = i
+    setActiveIdx(i)
+    if (!quiet) {
+      scrollRef.current.target = getSnapX(i)
+      if (onNodeTap && locs[i]) onNodeTap(locs[i], (dims.w || 400) / 2, ((dims.h || 700) - PANEL_H) / 2)
+    }
   }, [locs, getSnapX, onNodeTap, dims])
 
   useEffect(() => { if (locs.length > 0 && dims.w) { const sx = getSnapX(0); scrollRef.current.target = sx; scrollRef.current.x = sx } }, [locs.length, dims.w, getSnapX])
@@ -210,8 +214,8 @@ export default function ThreadView({ locations = [], onNodeTap }) {
 
   useEffect(() => {
     const minS = () => getSnapX(0) - 20, maxS = () => getSnapX(locs.length - 1) + 20
-    const onMove = e => { const s = scrollRef.current; if (!s.dragging) return; const cx = e.touches ? e.touches[0].clientX : e.clientX; s.target = s.startScroll - (cx - s.startX); s.target = Math.max(minS(), Math.min(maxS(), s.target)); const n = findNearest(s.target); if (n !== activeIdxRef.current) selectLocation(n) }
-    const onEnd = () => { const s = scrollRef.current; if (!s.dragging) return; s.dragging = false; s.target = getSnapX(activeIdxRef.current) }
+    const onMove = e => { const s = scrollRef.current; if (!s.dragging) return; const cx = e.touches ? e.touches[0].clientX : e.clientX; s.target = s.startScroll - (cx - s.startX); s.target = Math.max(minS(), Math.min(maxS(), s.target)); const n = findNearest(s.target); if (n !== activeIdxRef.current) selectLocation(n, { quiet: true }) }
+    const onEnd = () => { const s = scrollRef.current; if (!s.dragging) return; s.dragging = false; selectLocation(activeIdxRef.current) }
     window.addEventListener('touchmove', onMove, { passive: true }); window.addEventListener('mousemove', onMove); window.addEventListener('touchend', onEnd); window.addEventListener('mouseup', onEnd)
     return () => { window.removeEventListener('touchmove', onMove); window.removeEventListener('mousemove', onMove); window.removeEventListener('touchend', onEnd); window.removeEventListener('mouseup', onEnd) }
   }, [locs, getSnapX, findNearest, selectLocation])

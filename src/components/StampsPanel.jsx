@@ -662,9 +662,6 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                     </div>
                   )
                 })}
-                <div style={{ padding: '0 4px', display: 'flex', alignItems: 'center' }}>
-                  <RoughPlusCircle size={32} onClick={function() { setGenOpen(true) }} />
-                </div>
               </div>
               <div style={{ display: 'flex', gap: 6, justifyContent: 'center', padding: '2px 0 6px', flexWrap: 'wrap' }}>
                 {stickerColors.map(function(sc) {
@@ -688,6 +685,11 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
                     </div>
                   )
                 })}
+                <div onClick={function() { setGenOpen(true) }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 4px', cursor: 'pointer' }}>
+                  <RoughPlusCircle size={40} onClick={function() { setGenOpen(true) }} />
+                  <span style={{ fontSize: 9, color: '#A89888', marginTop: 3, textAlign: 'center' }}>new</span>
+                </div>
               </div>
             </>
           ) : topTab === 'patterns' ? (
@@ -771,7 +773,6 @@ export default function StampsPanel({ open, onClose, onStickerPlace, onPatternPl
       ) : (
         <div style={{ padding: '8px 16px', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <RoughBack onClick={function() { setGenOpen(false); setGenResult(null); setGenId(null); setGenInput('') }} />
           </div>
           {genResult ? <GenPreview shapes={genResult} size={100} /> : <RoughFrame size={100} />}
           {!genResult ? (
