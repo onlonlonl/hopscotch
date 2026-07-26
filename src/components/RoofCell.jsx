@@ -91,10 +91,6 @@ export default function RoofCell({ tri, pattern }) {
       drawBorder(cvs, lp)
     } else {
       drawBorder(cvs, lp)
-      ctx.fillStyle = 'rgba(255,255,255,0.3)'
-      ctx.font = Math.round(h * 0.35) + "px -apple-system, sans-serif"
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-      ctx.fillText('+', cx, cy + 2)
     }
   }, [tri, photo, pattern])
 
@@ -128,14 +124,8 @@ export default function RoofCell({ tri, pattern }) {
   var minX = Math.min(tri[0].x, tri[1].x, tri[2].x)
   var minY = Math.min(tri[0].y, tri[1].y, tri[2].y)
 
-  return <>
-    <canvas ref={canvasRef}
-      onClick={function () { inputRef.current && inputRef.current.click() }}
-      style={{ position: 'absolute', left: minX, top: minY, cursor: 'pointer', zIndex: 2 }} />
-    <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
-    {cropping && <CropOverlay src={cropping.src} imgW={cropping.imgW} imgH={cropping.imgH}
-      onConfirm={handleCropDone} onCancel={function () { setCropping(null) }} />}
-  </>
+  return <canvas ref={canvasRef}
+    style={{ position: 'absolute', left: minX, top: minY, pointerEvents: 'none', zIndex: 2 }} />
 }
 
 /* ── Crop overlay ── */

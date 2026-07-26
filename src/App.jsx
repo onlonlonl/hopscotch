@@ -134,10 +134,10 @@ function drawBrush(cvs) {
   var c = 'rgba(255,255,255,0.9)'
   /* pencil glyph */
   ctx.fillStyle = "rgba(255,255,255,0.9)"
-  ctx.font = "20px serif"
+  ctx.font = "bold 22px serif"
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
-  ctx.fillText("✎", ICO / 2, ICO / 2 + 1)
+  ctx.fillText("✎", ICO / 2, ICO / 2 + 1); ctx.strokeStyle = "rgba(255,255,255,1)"; ctx.lineWidth = 1.2; ctx.strokeText("✎", ICO / 2, ICO / 2 + 1)
 }
 
 function drawCards(cvs) {
@@ -872,10 +872,10 @@ export default function App() {
         <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
-          <canvas ref={el => { if (el && !el._drawn) { drawBrush(el); el._drawn = true } }}
-            onClick={() => { setPanelOpen(!panelOpen); setSettingsOpen(false); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
           <canvas ref={el => { if (el && !el._drawn) { drawCards(el); el._drawn = true } }}
             onClick={() => { setCardsOpen(!cardsOpen); setSettingsOpen(false) }} style={{ cursor: 'pointer' }} />
+          <canvas ref={el => { if (el && !el._drawn) { drawBrush(el); el._drawn = true } }}
+            onClick={() => { setPanelOpen(!panelOpen); setSettingsOpen(false); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
         </div>
       </div>
     )
@@ -960,7 +960,7 @@ export default function App() {
         <canvas ref={el => { if (el && !el._drawn) { drawInkBrush(el); el._drawn = true } }}
           onClick={() => setPanelOpen(true)}
           style={{
-            position:'fixed', bottom:16, right:16,
+            position:'fixed', top:14, right:14,
             zIndex:101, cursor:'pointer',
             filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.15))',
           }} />
