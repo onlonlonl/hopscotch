@@ -371,6 +371,7 @@ export default function GardenView({ onExit }) {
   /* load garden + counts */
   useEffect(function () {
     if (!isConnected()) { setLoading(false); return }
+    supaGet('hopscotch_shelf', 'order=harvested_at.desc').then(function(s) { setShelf(s || []) })
     supaGet('hopscotch_garden', 'order=id.desc&limit=1').then(function (gardenRows) {
       var g = gardenRows && gardenRows[0] ? gardenRows[0] : null
       if (!g) { setGarden(null); setPlanting(true); setLoading(false); return }
@@ -400,11 +401,13 @@ export default function GardenView({ onExit }) {
   }, [loading, garden, score])
 
   var [generating, setGenerating] = useState(false)
+  var [shelfOpen, setShelfOpen] = useState(false)
+  var [shelf, setShelf] = useState([])
 
   /* plant a new seed + generate stamps via VPS (nohup, writes directly to DB) */
   async function handlePlant() {
     if (!isConnected()) return
-    var name = pickRandomPlant([])
+    var name = pickRandomPlant(shelf)
     setGenerating(true)
 
     /* create garden row */
@@ -450,6 +453,7 @@ export default function GardenView({ onExit }) {
     setGarden(null)
     setScore({ days: 0, trips: 0, places: 0, total: 0, stage: 0 })
     setPlanting(true)
+    supaGet('hopscotch_shelf', 'order=harvested_at.desc').then(function(s) { setShelf(s || []) })
   }
 
   /* regenerate stamps */
@@ -520,13 +524,39 @@ export default function GardenView({ onExit }) {
       ) : (
         /* garden view */
         <div style={{ textAlign: 'center' }}>
-          {/* plant name */}
-          <div style={{
-            fontSize: 16, color: '#6A5A4A', fontFamily: FONT,
-            letterSpacing: 2, marginBottom: 8
-          }}>
-            {garden.plant_name}
-            {generating && <span style={{ fontSize: 11, color: '#9A8A7A', marginLeft: 8 }}>drawing...</span>}
+          {/* plant name — hidden until Glory */}
+          <div style={{ position: 'relative', marginBottom: 8, display: 'inline-block' }}>
+            {score.stage >= 5 ? (
+              <div style={{
+                fontSize: 16, color: '#6A5A4A', fontFamily: FONT,
+                letterSpacing: 2,
+              }}>
+                {garden.plant_name}
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <canvas ref={function(el) {
+                  if (!el || el._d) return
+                  var bw = 140, bh = 28, dpr = Math.min(window.devicePixelRatio||1,3)
+                  el.width=bw*dpr; el.height=bh*dpr
+                  el.style.width=bw+'px'; el.style.height=bh+'px'
+                  var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+                  var rc=rough.canvas(el)
+                  rc.rectangle(2,2,bw-4,bh-4, {
+                    stroke:'#D8D0C8', strokeWidth:1, roughness:0.6,
+                    fill:'#F4F0EA', fillStyle:'solid',
+                    disableMultiStroke:true, seed:888
+                  })
+                  ctx.fillStyle='#B8A898'
+                  ctx.font="13px "+FONT
+                  ctx.textAlign='center'
+                  ctx.textBaseline='middle'
+                  ctx.fillText('? ? ?', bw/2, bh/2+1)
+                  el._d=true
+                }} />
+              </div>
+            )}
+            {generating && <div style={{ fontSize: 10, color: '#B8A898', fontFamily: FONT, marginTop: 4 }}>drawing...</div>}
           </div>
 
           {/* progress label */}
@@ -555,6 +585,18 @@ export default function GardenView({ onExit }) {
             <NutrientIcon type="pin" value={score.places} />
           </div>
 
+          {/* shelf button */}
+          {shelf.length > 0 && (
+            <div onClick={function() { setShelfOpen(true) }} style={{
+              fontSize: 11, color: '#9A8A7A', fontFamily: FONT,
+              cursor: 'pointer', marginBottom: 12,
+              textDecoration: 'underline', textUnderlineOffset: 3,
+              opacity: 0.7,
+            }}>
+              Shelf ({shelf.length})
+            </div>
+          )}
+
           {/* harvest button */}
           {score.stage >= 5 && (
             <canvas ref={harvestRef} onClick={handleHarvest} style={{ cursor: 'pointer' }} />
@@ -562,6 +604,75 @@ export default function GardenView({ onExit }) {
         </div>
       )}
 
+
+      {shelfOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: HOPSCOTCH_BG, zIndex: 310,
+          overflow: 'auto', padding: '60px 20px 40px',
+        }}>
+          <canvas ref={function(el) {
+            if (!el || el._d) return
+            var S=36, dpr=Math.min(window.devicePixelRatio||1,3)
+            el.width=S*dpr; el.height=S*dpr
+            el.style.width=S+'px'; el.style.height=S+'px'
+            var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+            var rc=rough.canvas(el)
+            rc.rectangle(2,2,S-4,S-4,{stroke:'#D0C8C0',strokeWidth:1,roughness:0.5,fill:'rgba(255,255,255,0.85)',fillStyle:'solid',disableMultiStroke:true,seed:77})
+            rc.line(22,12,12,18,{stroke:'#8A7A68',strokeWidth:1.3,roughness:0.4,disableMultiStroke:true,seed:78})
+            rc.line(12,18,22,24,{stroke:'#8A7A68',strokeWidth:1.3,roughness:0.4,disableMultiStroke:true,seed:79})
+            el._d=true
+          }} onClick={function(){setShelfOpen(false)}} style={{
+            position:'fixed',top:14,left:12,cursor:'pointer',zIndex:311
+          }} />
+
+          <div style={{fontSize:14,color:'#7A6A5A',fontFamily:FONT,letterSpacing:2,textAlign:'center',marginBottom:24}}>
+            Shelf
+          </div>
+
+          {shelf.length === 0 ? (
+            <div style={{fontSize:12,color:'#B8A898',fontFamily:FONT,textAlign:'center'}}>No plants yet.</div>
+          ) : (
+            <div style={{display:'flex',flexWrap:'wrap',gap:16,justifyContent:'center'}}>
+              {shelf.map(function(p,i) {
+                return <div key={p.id||i} style={{textAlign:'center',width:90}}>
+                  <canvas ref={function(el) {
+                    if (!el || el._d) return
+                    var cw=80,ch=80,dpr=Math.min(window.devicePixelRatio||1,3)
+                    el.width=cw*dpr; el.height=ch*dpr
+                    el.style.width=cw+'px'; el.style.height=ch+'px'
+                    var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+                    var rc=rough.canvas(el)
+                    rc.rectangle(4,4,cw-8,ch-8,{
+                      stroke:'#D8D0C8',strokeWidth:1,roughness:0.5,
+                      fill:'#FDFCFA',fillStyle:'solid',
+                      disableMultiStroke:true,seed:900+i
+                    })
+                    /* draw Glory stage stamp */
+                    if (p.stamps && p.stamps[5]) {
+                      var shapes = p.stamps[5]
+                      for (var j=0;j<shapes.length;j++) {
+                        var sh=shapes[j]
+                        var opts={roughness:0.6,disableMultiStroke:true,seed:950+i*10+j}
+                        if(sh.fill){opts.fill=sh.fill;opts.fillStyle='solid'}
+                        if(sh.stroke)opts.stroke=sh.stroke
+                        opts.strokeWidth=sh.sw||1
+                        var ss=1.8, cx2=cw/2, cy2=ch/2-4
+                        if(sh.t==='circle')rc.circle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.r||3)*2*ss,opts)
+                        else if(sh.t==='ellipse')rc.ellipse(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||6)*ss,(sh.h||3)*ss,opts)
+                        else if(sh.t==='line')rc.line(cx2+sh.x1*ss,cy2+sh.y1*ss,cx2+sh.x2*ss,cy2+sh.y2*ss,opts)
+                        else if(sh.t==='rect')rc.rectangle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||4)*ss,(sh.h||4)*ss,opts)
+                      }
+                    }
+                    el._d=true
+                  }} />
+                  <div style={{fontSize:10,color:'#8A7A6A',fontFamily:FONT,marginTop:4}}>{p.plant_name}</div>
+                </div>
+              })}
+            </div>
+          )}
+        </div>
+      )}
       <style>{`
         @keyframes gardenFadeIn {
           0% { opacity: 0; transform: scale(0.95); }
