@@ -355,32 +355,27 @@ function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }} />
     <canvas ref={previewRef} onTouchStart={handleTouch}
       style={{ position: "absolute", left: minX, top: minY, zIndex: 51, touchAction: "none" }} />
-    <div style={{ position: "fixed", right: 16, top: "20%", zIndex: 52, width: 40, height: 120, display: "flex", flexDirection: "column", alignItems: "center" }}
-      onTouchStart={function(e) {
+    <canvas ref={function(cvs) {
+        if (!cvs || cvs._d) return; cvs._d = true
+        var w = 34, h = 170, dpr = Math.min(window.devicePixelRatio || 1, 3)
+        cvs.width = w * dpr; cvs.height = h * dpr; cvs.style.width = w + "px"; cvs.style.height = h + "px"
+        var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
+        var rc2 = rough.canvas(cvs)
+        var o = { stroke: "#fff", strokeWidth: 2, roughness: 0.4, bowing: 0.5, disableMultiStroke: true }
+        rc2.line(10, 13, 24, 13, { ...o, seed: 20 })
+        rc2.line(17, 6, 17, 20, { ...o, seed: 21 })
+        rc2.line(17, 28, 17, h - 28, { ...o, strokeWidth: 2.5, seed: 22 })
+        rc2.line(10, h - 13, 24, h - 13, { ...o, seed: 23 })
+      }} onTouchStart={function(e) {
         e.preventDefault()
         var t0 = e.touches[0], startY = t0.clientY, startTile = tile
         function onMove(ev) {
           ev.preventDefault(); var t2 = ev.touches[0]
-          var dy = startY - t2.clientY
-          setTile(Math.max(10, Math.min(40, Math.round(startTile + dy * 0.15))))
+          setTile(Math.max(10, Math.min(40, Math.round(startTile + (startY - t2.clientY) * 0.2))))
         }
         function onEnd() { window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd) }
         window.addEventListener("touchmove", onMove, { passive: false }); window.addEventListener("touchend", onEnd)
-      }}>
-      <canvas ref={function(cvs) {
-        if (!cvs || cvs._d) return; cvs._d = true
-        var sz = 36, dpr = Math.min(window.devicePixelRatio || 1, 3)
-        cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
-        var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
-        var rc2 = rough.canvas(cvs)
-        rc2.line(8, 10, 28, 10, { stroke: "#5A4A38", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 20 })
-        rc2.line(18, 4, 18, 16, { stroke: "#5A4A38", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 21 })
-        rc2.line(10, 28, 26, 28, { stroke: "#5A4A38", strokeWidth: 1.2, roughness: 0.4, disableMultiStroke: true, seed: 22 })
-        ctx2.fillStyle = "#5A4A38"; ctx2.font = "9px -apple-system, sans-serif"; ctx2.textAlign = "center"
-        ctx2.fillText("zoom", 18, 24)
-      }} style={{ marginBottom: 4 }} />
-      <div style={{ flex: 1, width: 4, background: "rgba(255,255,255,0.85)", borderRadius: 2, boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }} />
-    </div>
+      }} style={{ position: "fixed", right: 12, top: "12%", zIndex: 52, touchAction: "none", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.3))" }} />
     <div style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 52, display: "flex", gap: 16 }}>
       <canvas ref={function(cvs) {
         if (!cvs || cvs._d) return; cvs._d = true
@@ -440,6 +435,29 @@ function RoughTrash({ visible }) {
   }, [visible])
   if (!visible) return null
   return <canvas ref={ref} style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 150 }} />
+}
+
+
+// Placed pattern — supports long-press drag
+function PlacedPattern({ pp, x, y, w, h, onDragStart }) {
+  var ref = useRef(null)
+  var longRef = useRef(null)
+  useEffect(function() {
+    if (!ref.current) return
+    renderPatternFill(ref.current, pp.patternId, pp.colorId, w, h, pp.offX || 0, pp.offY || 0, pp.tile || 18)
+  }, [pp, w, h])
+  function handleTouchStart(e) {
+    e.stopPropagation()
+    var startEvt = e
+    longRef.current = setTimeout(function() {
+      try { startEvt.preventDefault() } catch(ex) {}
+      if (onDragStart) onDragStart(pp)
+    }, 400)
+  }
+  function clear() { clearTimeout(longRef.current) }
+  return <canvas ref={ref}
+    onTouchStart={handleTouchStart} onTouchEnd={clear} onTouchMove={clear}
+    style={{ position: 'absolute', left: x, top: y, pointerEvents: 'auto', touchAction: 'none', borderRadius: 4, zIndex: 5 }} />
 }
 
 // Render a placed sticker — supports long-press drag
@@ -651,6 +669,35 @@ export default function App() {
 
   // place sticker on homepage zone
   // placed sticker drag state
+  var [movingPat, setMovingPat] = useState(null)
+  var [movePatPos, setMovePatPos] = useState(null)
+
+  function handlePatternDragStart(pp) {
+    setMovingPat(pp)
+    var W = window.innerWidth, H = window.innerHeight
+    setMovePatPos({ x: pp.offset_x * W - 40, y: pp.offset_y * H - 27 })
+    function onMove(ev) {
+      ev.preventDefault()
+      var t = ev.touches[0]
+      setMovePatPos({ x: t.clientX - 40, y: t.clientY - 27 })
+    }
+    function onEnd(ev) {
+      var t = ev.changedTouches[0]
+      var W2 = window.innerWidth, H2 = window.innerHeight
+      if (t.clientY > H2 - 100 && Math.abs(t.clientX - W2 / 2) < 60) {
+        setPlacedPatterns(function(prev) { return prev.filter(function(s) { return s.id !== pp.id }) })
+      } else {
+        setPlacedPatterns(function(prev) { return prev.map(function(s) {
+          return s.id === pp.id ? Object.assign({}, s, { offset_x: t.clientX / W2, offset_y: t.clientY / H2 }) : s
+        }) })
+      }
+      setMovingPat(null); setMovePatPos(null)
+      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd)
+    }
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
+  }
+
   var [movingEl, setMovingEl] = useState(null)
   var [movePos, setMovePos] = useState(null)
   var moveGhostRef = useRef(null)
@@ -757,11 +804,10 @@ export default function App() {
           }}
           onCancel={function() { setRoofCrop(null) }} />}
         {placedPatterns.map(function(pp) {
+          if (movingPat && movingPat.id === pp.id) return null
           var W = window.innerWidth, H = window.innerHeight
           var pw = 80, ph = 54
-          return <canvas key={pp.id} ref={function(cvs) {
-            if (!cvs) return; renderPatternFill(cvs, pp.patternId, pp.colorId, pw, ph)
-          }} style={{ position: 'absolute', left: pp.offset_x * W - pw/2, top: pp.offset_y * H - ph/2, pointerEvents: 'none', borderRadius: 4, zIndex: 5 }} />
+          return <PlacedPattern key={pp.id} pp={pp} x={pp.offset_x * W - pw/2} y={pp.offset_y * H - ph/2} w={pw} h={ph} onDragStart={handlePatternDragStart} />
         })}
         {placedStickers.map(function(el) {
           if (movingEl && movingEl.id === el.id) return null
@@ -784,7 +830,13 @@ export default function App() {
               stickerRecipes[movingEl.sticker_type](rc, ctx, sz/2, sz/2, sz/50, movingEl.color || '#D0A0A0')
             }} />
         )}
-        <RoughTrash visible={!!movingEl} />
+        {movingPat && movePatPos && (
+          <canvas ref={function(cvs) {
+            if (!cvs) return
+            renderPatternFill(cvs, movingPat.patternId, movingPat.colorId, 80, 54, movingPat.offX || 0, movingPat.offY || 0, movingPat.tile || 18)
+          }} style={{ position: 'fixed', left: movePatPos.x, top: movePatPos.y, pointerEvents: 'none', zIndex: 200, opacity: 0.8, borderRadius: 4 }} />
+        )}
+        <RoughTrash visible={!!movingEl || !!movingPat} />
         {dragFrom && zoneNames.map(function (zn) {
           var r = zoneRects[zn]; if (!r) return null
           return <div key={zn} style={{ position: 'absolute', left: r.x, top: r.y, width: r.w, height: r.h,
