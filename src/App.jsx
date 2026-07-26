@@ -571,7 +571,7 @@ export default function App() {
   const [notesView, setNotesView] = useState(false)
   const [gardenView, setGardenView] = useState(false)
   const [garden, setGarden] = useState(null)
-    const [cityName, setCityName] = useState('Hangzhou')
+    const [cityName, setCityName] = useState('?')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
   const [weatherColor, setWeatherColor] = useState(null)
 

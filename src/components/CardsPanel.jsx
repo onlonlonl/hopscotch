@@ -233,7 +233,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   category: poi.type ? poi.type.split(';')[0] : '',
                   ink_name: null, story: null,
                   color: '#E8A87C', weather: 'clear', icon_type: 'house',
-                  lux_x: 0, lux_y: 0, inf_t: 0, inf_w: 0,
+                  lux_x: 50, lux_y: 50, inf_t: 0.5, inf_w: 0.5,
                 }
                 await supaPost('locations', newLoc)
                 setLocations(function (prev) { return [...prev, { ...newLoc, errands: 0, lat: parseFloat(newLoc.lat), lng: parseFloat(newLoc.lng) }] })

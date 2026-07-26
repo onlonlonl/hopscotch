@@ -80,19 +80,21 @@ function renderCell(cvs, note, cellW, cellH) {
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
 
-    var textX = pad + 4 * s
+    var textX = pad + 3 * s
     var textY = pad + 16 * s
-    var maxW = pw - 8 * s
+    var maxW = pw - 7 * s
     var lineH = fontSize * 1.5
     var maxLines = Math.floor((ph - 20 * s) / lineH)
     if (maxLines < 1) maxLines = 1
 
     var text = note.content || ''
-    var lines = [], line = ''
+    var indent = fontSize * 1.5
+    var lines = [], line = '', isFirst = true
     for (var i = 0; i < text.length; i++) {
       var test = line + text[i]
-      if (ctx.measureText(test).width > maxW && line.length > 0) {
-        lines.push(line); line = text[i]
+      var curMaxW = isFirst ? maxW - indent : maxW
+      if (ctx.measureText(test).width > curMaxW && line.length > 0) {
+        lines.push(line); line = text[i]; isFirst = false
       } else { line = test }
     }
     if (line) lines.push(line)
