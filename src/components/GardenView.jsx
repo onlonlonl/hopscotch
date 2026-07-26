@@ -22,6 +22,24 @@ var PLANT_POOL = [
   'Chrysanthemum','Camellia','Plum Blossom'
 ]
 
+
+/* draw a hand-drawn ? with Rough.js — one continuous path + dot */
+function drawQuestion(rc, cx, cy, size, color) {
+  var s = size || 1
+  var c = color || '#C8C0B8'
+  /* ? as one SVG path: arc over top, curve down to center stem */
+  var d = 'M ' + (cx - 5*s) + ' ' + (cy - 2*s)
+    + ' C ' + (cx - 5*s) + ' ' + (cy - 9*s) + ' ' + (cx + 6*s) + ' ' + (cy - 10*s) + ' ' + (cx + 5*s) + ' ' + (cy - 4*s)
+    + ' C ' + (cx + 4*s) + ' ' + (cy - 1*s) + ' ' + (cx + 1*s) + ' ' + (cy - 1*s) + ' ' + cx + ' ' + (cy + 2*s)
+  rc.path(d, { stroke: c, strokeWidth: 1.2, roughness: 0.7, disableMultiStroke: true, seed: 770 })
+  /* dot */
+  rc.circle(cx, cy + 6 * s, 2 * s, {
+    stroke: c, strokeWidth: 0.8, roughness: 0.4,
+    fill: c, fillStyle: 'solid',
+    disableMultiStroke: true, seed: 771
+  })
+}
+
 function pickRandomPlant(shelf) {
   var used = (shelf || []).map(function(s) { return s.plant_name })
   var available = PLANT_POOL.filter(function(p) { return used.indexOf(p) === -1 })
@@ -240,20 +258,8 @@ function drawGrid(cvs, garden, score, w, h) {
         ctx.lineWidth = 1
         ctx.strokeRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1)
         ctx.setLineDash([])
-        /* mystery ? drawn with Rough.js */
-        var qcx = x + cellW / 2, qcy = y + cellH / 2 - 4
-        var qs = Math.min(cellW, cellH) / 100
-        var qro = { stroke: '#C8C0B8', strokeWidth: 1.2, roughness: 0.7, disableMultiStroke: true, seed: 770 + idx }
-        /* arc top of ? */
-        rc.arc(qcx, qcy - 4 * qs, 14 * qs, 14 * qs, -Math.PI, 0.3, false, qro)
-        /* stem down */
-        rc.line(qcx + 1 * qs, qcy + 1 * qs, qcx, qcy + 6 * qs, qro)
-        /* dot */
-        rc.circle(qcx, qcy + 10 * qs, 2.5 * qs, {
-          stroke: '#C8C0B8', strokeWidth: 1, roughness: 0.4,
-          fill: '#C8C0B8', fillStyle: 'solid',
-          disableMultiStroke: true, seed: 780 + idx
-        })
+        /* mystery ? */
+        drawQuestion(rc, x + cellW / 2, y + cellH / 2 - 2, Math.min(cellW, cellH) / 80, '#C8C0B8')
       }
 
       /* stage label */
@@ -545,21 +551,17 @@ export default function GardenView({ onExit }) {
               <div style={{ position: 'relative' }}>
                 <canvas ref={function(el) {
                   if (!el || el._d) return
-                  var bw = 140, bh = 28, dpr = Math.min(window.devicePixelRatio||1,3)
+                  var bw = 140, bh = 32, dpr = Math.min(window.devicePixelRatio||1,3)
                   el.width=bw*dpr; el.height=bh*dpr
                   el.style.width=bw+'px'; el.style.height=bh+'px'
                   var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
-                  var rc=rough.canvas(el)
-                  rc.rectangle(2,2,bw-4,bh-4, {
+                  var rc2=rough.canvas(el)
+                  rc2.rectangle(2,2,bw-4,bh-4, {
                     stroke:'#D8D0C8', strokeWidth:1, roughness:0.6,
                     fill:'#F4F0EA', fillStyle:'solid',
                     disableMultiStroke:true, seed:888
                   })
-                  ctx.fillStyle='#B8A898'
-                  ctx.font="13px "+FONT
-                  ctx.textAlign='center'
-                  ctx.textBaseline='middle'
-                  ctx.fillText('? ? ?', bw/2, bh/2+1)
+                  drawQuestion(rc2, bw/2, bh/2 - 2, 0.9, '#B8A898')
                   el._d=true
                 }} />
               </div>
@@ -611,59 +613,78 @@ export default function GardenView({ onExit }) {
       )}
 
 
-      {shelfOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: HOPSCOTCH_BG, zIndex: 310,
-          overflow: 'auto', padding: '60px 20px 40px',
-        }}>
-          <canvas ref={function(el) {
-            if (!el || el._d) return
-            var S=36, dpr=Math.min(window.devicePixelRatio||1,3)
-            el.width=S*dpr; el.height=S*dpr
-            el.style.width=S+'px'; el.style.height=S+'px'
-            var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
-            var rc=rough.canvas(el)
-            rc.rectangle(2,2,S-4,S-4,{stroke:'#D0C8C0',strokeWidth:1,roughness:0.5,fill:'rgba(255,255,255,0.85)',fillStyle:'solid',disableMultiStroke:true,seed:77})
-            rc.line(22,12,12,18,{stroke:'#8A7A68',strokeWidth:1.3,roughness:0.4,disableMultiStroke:true,seed:78})
-            rc.line(12,18,22,24,{stroke:'#8A7A68',strokeWidth:1.3,roughness:0.4,disableMultiStroke:true,seed:79})
-            el._d=true
-          }} onClick={function(){setShelfOpen(false)}} style={{
-            position:'fixed',top:14,left:12,cursor:'pointer',zIndex:311
-          }} />
+      {/* shelf backdrop */}
+      {shelfOpen && <div onClick={function(){setShelfOpen(false)}} style={{
+        position:'fixed',top:0,left:0,right:0,bottom:0,
+        background:'rgba(0,0,0,0.15)',zIndex:310
+      }} />}
 
-          <div style={{fontSize:14,color:'#7A6A5A',fontFamily:FONT,letterSpacing:2,textAlign:'center',marginBottom:24}}>
+      {/* shelf bottom sheet */}
+      <div style={{
+        position:'fixed', left:0, right:0, bottom:0,
+        zIndex:311,
+        transform: shelfOpen ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)',
+        maxHeight: '65vh', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Rough.js panel border - drawn once */}
+        <canvas ref={function(el) {
+          if (!el || el._d2) return
+          var pw = Math.min(window.innerWidth, 500), ph = Math.round(window.innerHeight * 0.65)
+          var dpr = Math.min(window.devicePixelRatio||1,3)
+          el.width=pw*dpr; el.height=ph*dpr
+          el.style.width=pw+'px'; el.style.height=ph+'px'
+          var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+          var rc=rough.canvas(el)
+          rc.rectangle(4,4,pw-8,ph-8,{
+            stroke:'#D0C8C0',strokeWidth:1.5,roughness:0.5,
+            fill:HOPSCOTCH_BG,fillStyle:'solid',
+            disableMultiStroke:true,seed:850
+          })
+          /* handle bar */
+          rc.line(pw/2-20,14,pw/2+20,14,{
+            stroke:'#C0B8B0',strokeWidth:2.5,roughness:0.6,
+            disableMultiStroke:true,seed:851
+          })
+          el._d2=true
+        }} style={{position:'absolute',top:0,left:0,pointerEvents:'none'}} />
+
+        {/* content */}
+        <div style={{position:'relative',padding:'28px 20px 24px',overflow:'auto',flex:1}}>
+          <div style={{fontSize:13,color:'#7A6A5A',fontFamily:FONT,letterSpacing:2,textAlign:'center',marginBottom:16}}>
             Shelf
           </div>
 
           {shelf.length === 0 ? (
-            <div style={{fontSize:12,color:'#B8A898',fontFamily:FONT,textAlign:'center'}}>No plants yet.</div>
+            <div style={{fontSize:12,color:'#B8A898',fontFamily:FONT,textAlign:'center',marginTop:20}}>
+              Empty. Grow your first plant!
+            </div>
           ) : (
-            <div style={{display:'flex',flexWrap:'wrap',gap:16,justifyContent:'center'}}>
+            <div style={{display:'flex',flexWrap:'wrap',gap:14,justifyContent:'center'}}>
               {shelf.map(function(p,i) {
-                return <div key={p.id||i} style={{textAlign:'center',width:90}}>
+                return <div key={p.id||i} style={{textAlign:'center',width:80}}>
                   <canvas ref={function(el) {
                     if (!el || el._d) return
-                    var cw=80,ch=80,dpr=Math.min(window.devicePixelRatio||1,3)
+                    var cw=72,ch=72,dpr=Math.min(window.devicePixelRatio||1,3)
                     el.width=cw*dpr; el.height=ch*dpr
                     el.style.width=cw+'px'; el.style.height=ch+'px'
                     var ctx=el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
                     var rc=rough.canvas(el)
-                    rc.rectangle(4,4,cw-8,ch-8,{
+                    rc.rectangle(3,3,cw-6,ch-6,{
                       stroke:'#D8D0C8',strokeWidth:1,roughness:0.5,
                       fill:'#FDFCFA',fillStyle:'solid',
                       disableMultiStroke:true,seed:900+i
                     })
-                    /* draw Glory stage stamp */
                     if (p.stamps && p.stamps[5]) {
-                      var shapes = p.stamps[5]
-                      for (var j=0;j<shapes.length;j++) {
+                      var shapes=p.stamps[5]
+                      for(var j=0;j<shapes.length;j++){
                         var sh=shapes[j]
                         var opts={roughness:0.6,disableMultiStroke:true,seed:950+i*10+j}
                         if(sh.fill){opts.fill=sh.fill;opts.fillStyle='solid'}
                         if(sh.stroke)opts.stroke=sh.stroke
                         opts.strokeWidth=sh.sw||1
-                        var ss=1.8, cx2=cw/2, cy2=ch/2-4
+                        var ss=1.6,cx2=cw/2,cy2=ch/2-2
                         if(sh.t==='circle')rc.circle(cx2+sh.x*ss,cy2+sh.y*ss,(sh.r||3)*2*ss,opts)
                         else if(sh.t==='ellipse')rc.ellipse(cx2+sh.x*ss,cy2+sh.y*ss,(sh.w||6)*ss,(sh.h||3)*ss,opts)
                         else if(sh.t==='line')rc.line(cx2+sh.x1*ss,cy2+sh.y1*ss,cx2+sh.x2*ss,cy2+sh.y2*ss,opts)
@@ -672,13 +693,13 @@ export default function GardenView({ onExit }) {
                     }
                     el._d=true
                   }} />
-                  <div style={{fontSize:10,color:'#8A7A6A',fontFamily:FONT,marginTop:4}}>{p.plant_name}</div>
+                  <div style={{fontSize:9,color:'#8A7A6A',fontFamily:FONT,marginTop:3}}>{p.plant_name}</div>
                 </div>
               })}
             </div>
           )}
         </div>
-      )}
+      </div>
       <style>{`
         @keyframes gardenFadeIn {
           0% { opacity: 0; transform: scale(0.95); }
