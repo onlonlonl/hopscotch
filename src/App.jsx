@@ -301,6 +301,84 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
 }
 /* Ink view: blue filled brush button */
 
+
+// Roof pattern crop overlay
+function RoofCropOverlay({ crop, tri, onConfirm, onCancel }) {
+  var [off, setOff] = useState({ x: crop.offX || 0, y: crop.offY || 0 })
+  var previewRef = useRef(null)
+  var dragRef = useRef(null)
+
+  useEffect(function() {
+    if (!previewRef.current || !tri) return
+    var p = tri
+    var minX = Math.min(p[0].x, p[1].x, p[2].x), minY = Math.min(p[0].y, p[1].y, p[2].y)
+    var maxX = Math.max(p[0].x, p[1].x, p[2].x), maxY = Math.max(p[0].y, p[1].y, p[2].y)
+    var w = maxX - minX, h = maxY - minY
+    var cvs = previewRef.current
+    var dpr = Math.min(window.devicePixelRatio || 1, 3)
+    cvs.width = w * dpr; cvs.height = h * dpr
+    cvs.style.width = w + "px"; cvs.style.height = h + "px"
+    var ctx = cvs.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    var lp = p.map(function(v) { return { x: v.x - minX, y: v.y - minY } })
+    var cx2 = (lp[0].x + lp[1].x + lp[2].x) / 3, cy2 = (lp[0].y + lp[1].y + lp[2].y) / 3
+    var ip = lp.map(function(v) { return { x: cx2 + (v.x - cx2) * 0.88, y: cy2 + (v.y - cy2) * 0.88 } })
+    ctx.save()
+    ctx.beginPath(); ctx.moveTo(ip[0].x, ip[0].y); ctx.lineTo(ip[1].x, ip[1].y); ctx.lineTo(ip[2].x, ip[2].y); ctx.closePath(); ctx.clip()
+    var pCvs = document.createElement("canvas")
+    renderPatternFill(pCvs, crop.patternId, crop.colorId, Math.round(w), Math.round(h), off.x, off.y)
+    ctx.drawImage(pCvs, 0, 0)
+    ctx.restore()
+    // border
+    var rc = rough.canvas(cvs)
+    var path = "M " + lp[0].x + " " + lp[0].y + " L " + lp[1].x + " " + lp[1].y + " L " + lp[2].x + " " + lp[2].y + " Z"
+    rc.path(path, { stroke: "rgba(255,255,255,0.6)", strokeWidth: 2, roughness: 0.5, disableMultiStroke: true, seed: 42 })
+  }, [tri, crop, off])
+
+  function handleTouch(e) {
+    e.preventDefault()
+    var t = e.touches[0], sx = t.clientX, sy = t.clientY, startOff = { x: off.x, y: off.y }
+    function onMove(ev) {
+      ev.preventDefault()
+      var t2 = ev.touches[0]
+      setOff({ x: startOff.x + (t2.clientX - sx), y: startOff.y + (t2.clientY - sy) })
+    }
+    function onEnd() { window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd) }
+    window.addEventListener("touchmove", onMove, { passive: false }); window.addEventListener("touchend", onEnd)
+  }
+
+  if (!tri) return null
+  var p = tri
+  var minX = Math.min(p[0].x, p[1].x, p[2].x), minY = Math.min(p[0].y, p[1].y, p[2].y)
+
+  return <>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }} />
+    <canvas ref={previewRef} onTouchStart={handleTouch}
+      style={{ position: "absolute", left: minX, top: minY, zIndex: 51, touchAction: "none" }} />
+    <div style={{ position: "fixed", bottom: 30, left: "50%", transform: "translateX(-50%)", zIndex: 52, display: "flex", gap: 16 }}>
+      <canvas ref={function(cvs) {
+        if (!cvs || cvs._d) return; cvs._d = true
+        var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+        cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
+        var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
+        var rc2 = rough.canvas(cvs)
+        rc2.circle(sz/2, sz/2, sz-8, { stroke: "#9BB89C", fill: "#F0F5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 1 })
+        rc2.line(14, sz/2, 30, sz/2-8, { stroke: "#9BB89C", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 2 })
+        rc2.line(14, sz/2, 30, sz/2+8, { stroke: "#9BB89C", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 3 })
+      }} onClick={function() { onConfirm(off) }} style={{ cursor: "pointer" }} />
+      <canvas ref={function(cvs) {
+        if (!cvs || cvs._d) return; cvs._d = true
+        var sz = 44, dpr = Math.min(window.devicePixelRatio || 1, 3)
+        cvs.width = sz * dpr; cvs.height = sz * dpr; cvs.style.width = sz + "px"; cvs.style.height = sz + "px"
+        var ctx2 = cvs.getContext("2d"); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0)
+        var rc2 = rough.canvas(cvs)
+        rc2.circle(sz/2, sz/2, sz-8, { stroke: "#C48A7A", fill: "#FFF5F0", fillStyle: "solid", strokeWidth: 1.5, roughness: 0.5, disableMultiStroke: true, seed: 4 })
+        rc2.line(15, 15, 29, 29, { stroke: "#C48A7A", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 5 })
+        rc2.line(29, 15, 15, 29, { stroke: "#C48A7A", strokeWidth: 2, roughness: 0.4, disableMultiStroke: true, seed: 6 })
+      }} onClick={onCancel} style={{ cursor: "pointer" }} />
+    </div>
+  </>
+}
+
 // Rough.js trash — appears at bottom during placed-sticker drag
 function RoughTrash({ visible }) {
   var ref = useRef(null)
@@ -374,6 +452,8 @@ export default function App() {
   const [expanding, setExpanding] = useState(false)
   const [collapsing, setCollapsing] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [roofCrop, setRoofCrop] = useState(null) // { patternId, colorId } while cropping
+
   const [roofPattern, setRoofPattern] = useState(function() {
     try { return JSON.parse(localStorage.getItem('hopscotch_roof_pattern') || 'null') } catch(e) { return null }
   })
@@ -643,6 +723,12 @@ export default function App() {
         {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} weatherColor={weatherColor} />}
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} pattern={roofPattern} />
+        {roofCrop && <RoofCropOverlay crop={roofCrop} tri={roofTri}
+          onConfirm={function(off) {
+            var rp = { patternId: roofCrop.patternId, colorId: roofCrop.colorId, offX: off.x, offY: off.y }
+            setRoofPattern(rp); localStorage.setItem('hopscotch_roof_pattern', JSON.stringify(rp)); setRoofCrop(null)
+          }}
+          onCancel={function() { setRoofCrop(null) }} />}
         {placedPatterns.map(function(pp) {
           var W = window.innerWidth, H = window.innerHeight
           var pw = 42, ph = 60
@@ -692,8 +778,7 @@ export default function App() {
             var minY = Math.min(p[0].y, p[1].y, p[2].y), maxY = Math.max(p[0].y, p[1].y, p[2].y)
             var minX = Math.min(p[0].x, p[1].x, p[2].x), maxX = Math.max(p[0].x, p[1].x, p[2].x)
             if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
-              var rp = { patternId: pid, colorId: cid }
-              setRoofPattern(rp); localStorage.setItem('hopscotch_roof_pattern', JSON.stringify(rp)); return
+              setRoofCrop({ patternId: pid, colorId: cid, offX: 0, offY: 0 }); return
             }
           }
           var inCell = false

@@ -117,12 +117,12 @@ export var patternDrawers = {
 }
 
 // render pattern to fill a specific pixel area with high density
-export function renderPatternFill(canvas, patternId, colorId, pxW, pxH) {
+export function renderPatternFill(canvas, patternId, colorId, pxW, pxH, offX, offY) {
   if (!canvas) return
   var drawer = patternDrawers[patternId]
   if (!drawer) return
   var preset = colorPresets.find(function(p) { return p.id === colorId }) || colorPresets[0]
-  var tileSize = 28  // dense but crisp
+  var tileSize = 18  // dense
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
   canvas.width = pxW * dpr; canvas.height = pxH * dpr
   canvas.style.width = pxW + 'px'; canvas.style.height = pxH + 'px'
@@ -136,9 +136,10 @@ export function renderPatternFill(canvas, patternId, colorId, pxW, pxH) {
   var tCtx = tCvs.getContext('2d'); tCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
   var rc = rough.canvas(tCvs)
   drawer(tCtx, rc, tileSize, preset.fg)
-  for (var ty = 0; ty < rowsN; ty++)
-    for (var tx = 0; tx < colsN; tx++)
-      ctx.drawImage(tCvs, 0, 0, tileSize * dpr, tileSize * dpr, tx * tileSize, ty * tileSize, tileSize, tileSize)
+  var ox = offX || 0, oy = offY || 0
+  for (var ty = -1; ty <= rowsN; ty++)
+    for (var tx = -1; tx <= colsN; tx++)
+      ctx.drawImage(tCvs, 0, 0, tileSize * dpr, tileSize * dpr, tx * tileSize + ox, ty * tileSize + oy, tileSize, tileSize)
 }
 
 export function renderPattern(canvas, patternId, colorId, repeat) {
