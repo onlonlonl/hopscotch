@@ -141,9 +141,9 @@ export default function MapCell({ cellRect, locations, weatherColor }) {
   var base = { position: 'absolute', left: cellRect.x, top: cellRect.y, width: cellRect.w, height: cellRect.h }
 
   return <>
-    <canvas ref={bgRef} style={{ ...base, zIndex: 0 }} />
+    <canvas ref={bgRef} style={{ ...base, zIndex: 0, pointerEvents: "none" }} />
     <canvas ref={frontRef} style={{
-      ...base, zIndex: 1,
+      ...base, zIndex: 1, pointerEvents: "none", pointerEvents: "none",
       opacity: opacity,
       transition: phase === 'show' ? 'none' : 'opacity 0.5s ease',
     }} />
