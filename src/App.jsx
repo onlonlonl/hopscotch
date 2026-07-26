@@ -23,12 +23,6 @@ import { grid } from './lib/tokens'
 import { initSupabase } from './lib/supabase'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
 
-const INITIAL = [
-  { id: 'home', label: '\u5bb6', icon_type: 'house', color: '#E8A87C', lux_x: 50, lux_y: 50, scale: 1.2, errands: 9, lat: 30.33, lng: 120.06, weather: 'warm', ink_name: 'Home', inf_t: 0.127, inf_w: 0.94, story: 'The place where mornings start slow and the light is always golden.' },
-  { id: 'office', label: '\u65b0\u516c\u53f8', icon_type: 'building', color: '#7BA7BC', lux_x: 75, lux_y: 35, scale: 0.9, errands: 5, lat: 30.30, lng: 120.04, weather: 'cloudy', ink_name: 'Office', inf_t: 0.456, inf_w: 0.52, story: 'Busy bees. Coffee machine hums at 2pm.' },
-  { id: 'metro', label: '\u5730\u9435\u7ad9', icon_type: 'train', color: '#9BB89C', lux_x: 35, lux_y: 65, scale: 0.8, errands: 3, lat: 30.28, lng: 120.33, weather: 'drizzle', ink_name: 'Metro', inf_t: 0.831, inf_w: 0.33, story: 'Always raining here somehow.' },
-]
-const CONNS = [['home','office'],['home','metro']]
 const nodeColors = ['#E8A87C','#7BA7BC','#9BB89C','#C4A6D0','#D4B896','#B8C4D0','#D0A0A0','#A8B89A']
 const stampLabels = {
   house:'\u5bb6',building:'\u516c\u53f8',train:'\u5730\u9435',plane:'\u6a5f\u5834',
@@ -568,7 +562,7 @@ export default function App() {
   useEffect(function() {
     localStorage.setItem('hopscotch_stickers', JSON.stringify(placedStickers))
   }, [placedStickers])
-  const [locations, setLocations] = useState(INITIAL)
+  const [locations, setLocations] = useState([])
   const [card, setCard] = useState(null)
   const [dimIndex, setDimIndex] = useState(0)
   const [flipping, setFlipping] = useState(false)
@@ -581,23 +575,45 @@ export default function App() {
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
   const [weatherColor, setWeatherColor] = useState('#E8A87C')
 
-  // fetch weather color
+  // fetch weather color from weather_cache
   useEffect(function () {
     if (!isConnected()) return
-    supaGet('service_requests', 'service=eq.amap&action=eq.weather&status=eq.done&order=id.desc&limit=1')
+    supaGet('weather_cache', 'order=forecast_date.desc&limit=1')
       .then(function(rows) {
-        if (!rows || !rows[0] || !rows[0].result) return
-        try {
-          var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
-          var w = res.casts && res.casts[0] ? res.casts[0].day_weather : ''
-          var wMap = {
-            '晴': '#E8A87C', '多云': '#B8C4D0', '阴': '#9AA0A8',
-            '小雨': '#7BA7BC', '中雨': '#6A8A9A', '大雨': '#5A7A8A',
-            '雷阵雨': '#8A7ABC', '雪': '#C8D0D8', '雾': '#C0C0B8',
-            '阵雨': '#7BA7BC',
+        if (!rows || !rows[0]) return
+        var wMap = {
+          'clear': '#E8A87C', 'cloudy': '#B8C4D0', 'rain': '#7BA7BC',
+          'storm': '#8A7ABC', 'fog': '#C0C0B8', 'wind': '#5898A0',
+          'snow': '#C8D0D8',
+        }
+        setWeatherColor(wMap[rows[0].weather_type] || '#E8A87C')
+      })
+  }, [])
+
+  // load locations from Supabase
+  const [connections, setConnections] = useState([])
+  useEffect(function () {
+    if (!isConnected()) return
+    supaGet('locations', 'select=id,label,icon_type,color,lux_x,lux_y,scale,ink_name,lat,lng,inf_t,inf_w,story,weather&order=created_at')
+      .then(function(rows) {
+        if (!rows || rows.length === 0) return
+        var locs = rows.map(function(r) {
+          return {
+            id: r.id, label: r.label || r.id, icon_type: r.icon_type || 'heart',
+            color: r.color || '#E8A87C', lux_x: r.lux_x || 50, lux_y: r.lux_y || 50,
+            scale: r.scale || 1, ink_name: r.ink_name || r.label || r.id,
+            lat: parseFloat(r.lat) || 0, lng: parseFloat(r.lng) || 0,
+            inf_t: r.inf_t || Math.random(), inf_w: r.inf_w || 0.5,
+            story: r.story || '', weather: r.weather || '',
           }
-          setWeatherColor(wMap[w] || '#E8A87C')
-        } catch(e) {}
+        })
+        setLocations(locs)
+      })
+    supaGet('settings', 'key=eq.hopscotch_connections')
+      .then(function(rows) {
+        if (rows && rows[0]) {
+          try { setConnections(JSON.parse(rows[0].value)) } catch(e) {}
+        }
       })
   }, [])
 
@@ -798,12 +814,20 @@ export default function App() {
     if (!mapRef.current) return
     const { lux_x, lux_y } = mapRef.current.screenToLoc(sx, sy)
     const cLabel = stampLabels[type] || type
-    setLocations(prev => [...prev, {
+    const newLoc = {
       id: 'loc_' + Date.now(), label: cLabel, ink_name: cLabel,
       icon_type: type,
       color: nodeColors[locations.length % nodeColors.length],
-      lux_x, lux_y, scale: 0.85, errands: 0,
-    }])
+      lux_x, lux_y, scale: 0.85,
+    }
+    setLocations(prev => [...prev, newLoc])
+    if (isConnected()) {
+      supaPost('locations', {
+        id: newLoc.id, label: cLabel, name: cLabel, city: '', address: '',
+        lng: '0', lat: '0', icon_type: type, color: newLoc.color,
+        lux_x: lux_x, lux_y: lux_y, scale: 0.85, ink_name: cLabel,
+      })
+    }
   }, [locations])
 
   const handleLocationTap = useCallback((loc, x, y) => {
@@ -964,7 +988,7 @@ export default function App() {
           transform: 'rotateY(0deg)',
           background: '#FAF6F0', overflow: 'hidden',
         }}>
-          <HandDrawnMap ref={mapRef} locations={locations} connections={CONNS}
+          <HandDrawnMap ref={mapRef} locations={locations} connections={connections}
             fullscreen={true} onLocationTap={handleLocationTap} />
         </div>
 
