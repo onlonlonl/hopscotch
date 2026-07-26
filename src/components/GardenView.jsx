@@ -240,12 +240,20 @@ function drawGrid(cvs, garden, score, w, h) {
         ctx.lineWidth = 1
         ctx.strokeRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1)
         ctx.setLineDash([])
-        /* mystery ? */
-        ctx.fillStyle = '#D0C8C0'
-        ctx.font = Math.round(Math.min(cellW, cellH) * 0.25) + "px " + FONT
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText('?', x + cellW / 2, y + cellH / 2 - 4)
+        /* mystery ? drawn with Rough.js */
+        var qcx = x + cellW / 2, qcy = y + cellH / 2 - 4
+        var qs = Math.min(cellW, cellH) / 100
+        var qro = { stroke: '#C8C0B8', strokeWidth: 1.2, roughness: 0.7, disableMultiStroke: true, seed: 770 + idx }
+        /* arc top of ? */
+        rc.arc(qcx, qcy - 4 * qs, 14 * qs, 14 * qs, -Math.PI, 0.3, false, qro)
+        /* stem down */
+        rc.line(qcx + 1 * qs, qcy + 1 * qs, qcx, qcy + 6 * qs, qro)
+        /* dot */
+        rc.circle(qcx, qcy + 10 * qs, 2.5 * qs, {
+          stroke: '#C8C0B8', strokeWidth: 1, roughness: 0.4,
+          fill: '#C8C0B8', fillStyle: 'solid',
+          disableMultiStroke: true, seed: 780 + idx
+        })
       }
 
       /* stage label */
@@ -586,16 +594,14 @@ export default function GardenView({ onExit }) {
           </div>
 
           {/* shelf button */}
-          {shelf.length > 0 && (
-            <div onClick={function() { setShelfOpen(true) }} style={{
-              fontSize: 11, color: '#9A8A7A', fontFamily: FONT,
-              cursor: 'pointer', marginBottom: 12,
-              textDecoration: 'underline', textUnderlineOffset: 3,
-              opacity: 0.7,
-            }}>
-              Shelf ({shelf.length})
-            </div>
-          )}
+          <div onClick={function() { setShelfOpen(true) }} style={{
+            fontSize: 11, color: '#9A8A7A', fontFamily: FONT,
+            cursor: 'pointer', marginBottom: 12,
+            textDecoration: 'underline', textUnderlineOffset: 3,
+            opacity: 0.7,
+          }}>
+            {shelf.length > 0 ? 'Shelf (' + shelf.length + ')' : 'Shelf'}
+          </div>
 
           {/* harvest button */}
           {score.stage >= 5 && (
