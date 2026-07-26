@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import rough from 'roughjs'
+import { locColor } from '../lib/tokens'
 
 var RO = {roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:2}
 function ro(x){var o={roughness:RO.roughness,bowing:RO.bowing,disableMultiStroke:RO.disableMultiStroke,seed:RO.seed};if(x){var ks=Object.keys(x);for(var i=0;i<ks.length;i++)o[ks[i]]=x[ks[i]]};return o}
@@ -146,7 +147,7 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
     var ctx = cvs.getContext('2d')
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     var rc = rough.canvas(cvs)
-    var c = loc.color || '#8A7A68'
+    var c = locColor(loc.weather)
     var unitW = Math.floor(bw / 3) - 4
     var gap = (bw - unitW * 3) / 2
 

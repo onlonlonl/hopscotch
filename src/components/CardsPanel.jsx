@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import rough from 'roughjs'
+import { locColor } from '../lib/tokens'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from '../lib/supabase'
 
 /* === Weather-themed flat border === */
@@ -103,7 +104,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
         cvs.width = W * dpr; cvs.height = H * dpr; cvs.style.width = W + 'px'; cvs.style.height = H + 'px'
         var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H)
-        drawFlatBorder(rough.canvas(cvs), W, H, loc.weather || 'clear', loc.color)
+        drawFlatBorder(rough.canvas(cvs), W, H, loc.weather || 'clear', locColor(loc.weather))
       })
     }, 50)
   }, [open, locations, editId])
@@ -251,7 +252,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   address: poi.address || '', lng: loc[0], lat: loc[1],
                   category: poi.type ? poi.type.split(';')[0] : '',
                   ink_name_iris: null, ink_name_lux: null, story: null,
-                  color: '#E8A87C', weather: 'clear', icon_type: 'house',
+                  weather: null, icon_type: 'house',
                   lux_x: freeSpot(locations).lux_x, lux_y: freeSpot(locations).lux_y, inf_t: null, inf_w: null,
                 }
                 await supaPost('locations', newLoc)
@@ -296,7 +297,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', height: CARD_H, boxSizing: 'border-box' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: loc.color, fontFamily: FONT, lineHeight: 1.3 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: locColor(loc.weather), fontFamily: FONT, lineHeight: 1.3 }}>
                           {loc.ink_name_iris || <span style={{ color: '#C8D0D8', fontStyle: 'italic', fontWeight: 400 }}>{loc.label}</span>}
                         </div>
                         <div style={{ fontSize: 10, color: '#9AAAB8', fontFamily: FONT, lineHeight: 1.3 }}>

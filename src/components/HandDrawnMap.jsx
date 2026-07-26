@@ -4,6 +4,7 @@
 
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
 import rough from 'roughjs'
+import { locColor } from '../lib/tokens'
 import { recipes } from './IconGallery'
 
 /* locations and connections from props (loaded from Supabase in App.jsx) */
@@ -127,9 +128,9 @@ function HandDrawnMapInner({ locations = [], connections = [], fullscreen = fals
       var pos = locToScreen(loc.lux_x, loc.lux_y)
       var s = baseScale * (loc.scale || 1)
       var recipe = recipes[loc.icon_type] || recipes.flag
-      recipe(rc, ctx, pos[0], pos[1], s, loc.color)
+      recipe(rc, ctx, pos[0], pos[1], s, locColor(loc.weather))
 
-      ctx.fillStyle = loc.color
+      ctx.fillStyle = locColor(loc.weather)
       ctx.font = (9 * s) + "px '-apple-system', 'PingFang SC', sans-serif"
       ctx.textAlign = 'center'
       ctx.fillText(loc.ink_name_lux || loc.ink_name_iris || loc.label, pos[0], pos[1] + 18 * s)

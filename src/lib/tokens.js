@@ -75,3 +75,35 @@ export function getTimeTheme() {
   }
   return { key: 'morning', ...timeThemes.morning }
 }
+
+// === Weather -> location colour (single source of truth) ===
+// A place's colour is Lux's weather reading for it, not a separate field.
+export const weatherColors = {
+  sun: '#C8A830',
+  warm: '#C09030',
+  glow: '#B0A070',
+  moon: '#D6C86A',
+  drizzle: '#7098B8',
+  rain: '#33598C',
+  storm: '#7A5A9A',
+  plum: '#4A7A96',
+  cloudy: '#9A9488',
+  overcast: '#888480',
+  fog: '#A09890',
+  wind: '#5898A0',
+  breeze: '#78A880',
+  humid: '#A09070',
+  snow: '#9AB0C8',
+  frost: '#4E9AD0',
+  hail: '#586A88',
+  rainbow: '#C07878',
+  starry: '#A09060',
+  dust: '#B09050',
+  petals: '#C08080',
+}
+
+export const NO_WEATHER = '#B4ACA0'
+
+export function locColor(weather) {
+  return weatherColors[weather] || NO_WEATHER
+}

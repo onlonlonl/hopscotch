@@ -3,6 +3,7 @@ import rough from 'roughjs'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import LocationCard from './LocationCard'
+import { weatherColors } from '../lib/tokens'
 
 /* ── weather icon drawing (same functions, reused) ── */
 var RO={roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:1}
@@ -28,7 +29,7 @@ function drawStarry(rc,cx,cy,c){var pts=[[-8,-7],[4,-9],[10,-2],[-10,3],[-2,2],[
 function drawDust(rc,cx,cy,c){var pts=[[-10,-5],[-4,-9],[3,-7],[9,-4],[-8,1],[1,-1],[7,1],[-6,6],[0,7],[6,6]];for(var i=0;i<pts.length;i++)rc.circle(cx+pts[i][0],cy+pts[i][1],2,ro({stroke:c,strokeWidth:0.7,fill:c,fillStyle:'solid'}))}
 function drawPetals(rc,cx,cy,c){var pts=[[-7,-8],[-1,-3],[6,-6],[-9,3],[3,2],[9,1],[-5,8],[4,9]];for(var i=0;i<pts.length;i++)rc.ellipse(cx+pts[i][0],cy+pts[i][1],6,3,ro({stroke:c,strokeWidth:0.9}))}
 function drawPlum(rc,cx,cy,c){for(var i=-5;i<=5;i++){rc.line(cx+i*3,cy-10,cx+i*3,cy-5,ro({stroke:c,strokeWidth:0.8}));rc.line(cx+i*3-1,cy-2,cx+i*3-1,cy+3,ro({stroke:c,strokeWidth:0.8}))}}
-var WS={sun:{color:"#C8A830",draw:drawSun},warm:{color:"#C09030",draw:drawWarm},glow:{color:"#B0A070",draw:drawGlow},moon:{color:"#7888A8",draw:drawMoon},drizzle:{color:"#6888A8",draw:drawDrizzle},rain:{color:"#4870A0",draw:drawRain},storm:{color:"#5858A0",draw:drawStorm},plum:{color:"#5888A0",draw:drawPlum},cloudy:{color:"#9A9488",draw:drawCloudy},overcast:{color:"#888480",draw:drawOvercast},fog:{color:"#A09890",draw:drawFog},wind:{color:"#5898A0",draw:drawWind},breeze:{color:"#78A880",draw:drawBreeze},humid:{color:"#A09070",draw:drawHumid},snow:{color:"#6880A8",draw:drawSnow},frost:{color:"#5080A8",draw:drawFrost},hail:{color:"#6878A0",draw:drawHail},rainbow:{color:"#C07878",draw:drawRainbow},starry:{color:"#A09060",draw:drawStarry},dust:{color:"#B09050",draw:drawDust},petals:{color:"#C08080",draw:drawPetals}}
+var WS={sun:{color:weatherColors.sun,draw:drawSun},warm:{color:weatherColors.warm,draw:drawWarm},glow:{color:weatherColors.glow,draw:drawGlow},moon:{color:weatherColors.moon,draw:drawMoon},drizzle:{color:weatherColors.drizzle,draw:drawDrizzle},rain:{color:weatherColors.rain,draw:drawRain},storm:{color:weatherColors.storm,draw:drawStorm},plum:{color:weatherColors.plum,draw:drawPlum},cloudy:{color:weatherColors.cloudy,draw:drawCloudy},overcast:{color:weatherColors.overcast,draw:drawOvercast},fog:{color:weatherColors.fog,draw:drawFog},wind:{color:weatherColors.wind,draw:drawWind},breeze:{color:weatherColors.breeze,draw:drawBreeze},humid:{color:weatherColors.humid,draw:drawHumid},snow:{color:weatherColors.snow,draw:drawSnow},frost:{color:weatherColors.frost,draw:drawFrost},hail:{color:weatherColors.hail,draw:drawHail},rainbow:{color:weatherColors.rainbow,draw:drawRainbow},starry:{color:weatherColors.starry,draw:drawStarry},dust:{color:weatherColors.dust,draw:drawDust},petals:{color:weatherColors.petals,draw:drawPetals}}
 
 /* ── solid weather icon → data URL for Leaflet marker ── */
 function prerenderIcon(loc, idx) {

@@ -3,6 +3,7 @@
 // Rough.js hand-drawn lemniscate with color dye, CSS 3D rotation, bottom nav panel
 import { useRef, useEffect, useState, useCallback } from 'react'
 import rough from 'roughjs'
+import { locColor } from '../lib/tokens'
 
 // === Lemniscate math ===
 function lem(t, ox, oy, sc, yOff) {
@@ -22,7 +23,7 @@ function getColor(t, alpha, locations, baseRGB) {
     const sp = 0.005 + (loc.inf_w || 0.5) * 0.012
     if (d < sp) {
       const raw = 1 - d / sp, w = raw * raw * (3 - 2 * raw)
-      const [cr, cg, cb] = parseHex(loc.color || '#C0B0A0')
+      const [cr, cg, cb] = parseHex(locColor(loc.weather))
       r += cr * w; g += cg * w; b += cb * w; tw += w
     }
   }
@@ -102,7 +103,7 @@ function drawHighlight(canvas, locs, idx, sc, ox, oy) {
       const pts = []
       for (let i = s; i <= Math.min(s + SEG, segEnd); i++) pts.push(lem(i / SAMPLES, ox, oy, sc, pass.yOff))
       if (pts.length >= 2)
-        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw + 0.3, stroke: loc.color || '#C0B0A0', disableMultiStroke: true, bowing: 0.8 })
+        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw + 0.3, stroke: locColor(loc.weather), disableMultiStroke: true, bowing: 0.8 })
     }
   }
 }
@@ -244,10 +245,10 @@ export default function ThreadView({ locations = [], onNodeTap }) {
       </div>
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: PANEL_H, background: bgColor, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(122,92,60,0.06)' }}>
         <div style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 104 }}>
-          <div style={{ fontFamily: "-apple-system,'PingFang SC',sans-serif", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: locs[activeIdx] ? locs[activeIdx].color : '#7A5C3C', transition: 'color 0.2s ease', marginBottom: 4 }}>
+          <div style={{ fontFamily: "-apple-system,'PingFang SC',sans-serif", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: locs[activeIdx] ? locColor(locs[activeIdx].weather) : '#7A5C3C', transition: 'color 0.2s ease', marginBottom: 4 }}>
             {locs[activeIdx] ? (locs[activeIdx].ink_name_iris || locs[activeIdx].label || '') : ''}
           </div>
-          <SilkAnchor color={locs[activeIdx] ? locs[activeIdx].color : 'rgba(122,92,60,0.25)'} />
+          <SilkAnchor color={locs[activeIdx] ? locColor(locs[activeIdx].weather) : 'rgba(122,92,60,0.25)'} />
         </div>
         <div onTouchStart={onTrackDown} onMouseDown={onTrackDown} style={{ position: 'absolute', top: 38, left: 0, right: 0, height: 50, overflow: 'hidden', touchAction: 'pan-x' }}>
           <canvas ref={trackRef} style={{ position: 'absolute', top: 0, left: 0, height: 50 }} />
@@ -257,7 +258,7 @@ export default function ThreadView({ locations = [], onNodeTap }) {
                 position: 'absolute', top: 26, transform: 'translateX(-50%)',
                 fontSize: 10, whiteSpace: 'nowrap', cursor: 'pointer', padding: '6px 8px', zIndex: 103,
                 fontFamily: "-apple-system,'PingFang SC',sans-serif",
-                color: i === activeIdx ? (loc.color || '#7A5C3C') : '#A09888',
+                color: i === activeIdx ? locColor(loc.weather) : '#A09888',
                 fontWeight: i === activeIdx ? 600 : 400, transition: 'color 0.2s ease',
               }}>
                 {loc.ink_name_iris || loc.label || loc.id}
