@@ -49,8 +49,8 @@ export var patternDrawers = {
     var r = s * 0.1, gap = s / 2
     for (var row = 0; row < 2; row++)
       for (var col = 0; col < 2; col++) {
-        var ox = (row % 2) * gap * 0.5
-        rc.circle(gap * 0.5 + col * gap + ox, gap * 0.5 + row * gap, r * 2, {
+        // no offset
+        rc.circle(gap * 0.5 + col * gap, gap * 0.5 + row * gap, r * 2, {
           fill: fg, fillStyle: 'solid', stroke: fg, strokeWidth: 0.5, ...RO, seed: 200 + row * 10 + col
         })
       }
