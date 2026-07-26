@@ -11,6 +11,24 @@ var UNLOCKED_BG = '#FDFCFA'
 var LOCKED_STROKE = '#C8C0B8'
 var LOCKED_DASH = [4, 4]
 var FONT = "-apple-system, 'PingFang SC', sans-serif"
+var PLANT_POOL = [
+  'Sunflower','Rose','Cactus','Lavender','Cherry Blossom','Bamboo','Tulip',
+  'Fern','Pine','Lotus','Succulent','Morning Glory','Ginkgo','Maple',
+  'Jasmine','Orchid','Aloe','Clover','Dandelion','Lily of the Valley',
+  'Wisteria','Peony','Daisy','Iris','Poppy','Hydrangea','Magnolia',
+  'Marigold','Basil','Mint','Rosemary','Thyme','Sage','Olive',
+  'Bonsai','Willow','Birch','Palm','Coconut','Moss','Ivy',
+  'Venus Flytrap','Mushroom','Wheat','Cotton','Tea','Carnation',
+  'Chrysanthemum','Camellia','Plum Blossom'
+]
+
+function pickRandomPlant(shelf) {
+  var used = (shelf || []).map(function(s) { return s.plant_name })
+  var available = PLANT_POOL.filter(function(p) { return used.indexOf(p) === -1 })
+  if (available.length === 0) available = PLANT_POOL
+  return available[Math.floor(Math.random() * available.length)]
+}
+
 
 function calcScore(garden) {
   if (!garden) return { days: 0, trips: 0, places: 0, total: 0, stage: 0 }
@@ -216,12 +234,18 @@ function drawGrid(cvs, garden, score, w, h) {
           drawStageIcon(rc, ctx, idx, scx, scy, ss, sc1, sc2, sc3, sro)
         }
       } else {
-        /* dashed frame */
+        /* locked: dashed frame with ? */
         ctx.setLineDash(LOCKED_DASH)
         ctx.strokeStyle = LOCKED_STROKE
         ctx.lineWidth = 1
         ctx.strokeRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1)
         ctx.setLineDash([])
+        /* mystery ? */
+        ctx.fillStyle = '#D0C8C0'
+        ctx.font = Math.round(Math.min(cellW, cellH) * 0.25) + "px " + FONT
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('?', x + cellW / 2, y + cellH / 2 - 4)
       }
 
       /* stage label */
@@ -379,8 +403,8 @@ export default function GardenView({ onExit }) {
 
   /* plant a new seed + generate stamps via VPS (nohup, writes directly to DB) */
   async function handlePlant() {
-    var name = inputName.trim()
-    if (!name || !isConnected()) return
+    if (!isConnected()) return
+    var name = pickRandomPlant([])
     setGenerating(true)
 
     /* create garden row */
@@ -469,19 +493,8 @@ export default function GardenView({ onExit }) {
         /* planting screen */
         <div style={{ textAlign: 'center', padding: 20 }}>
           <div style={{ fontSize: 14, color: '#7A6A5A', fontFamily: FONT, marginBottom: 16, letterSpacing: 1 }}>
-            Plant something
+            Ready to grow?
           </div>
-          <input
-            value={inputName}
-            onChange={function (e) { setInputName(e.target.value) }}
-            placeholder="sunflower, basil, rose..."
-            style={{
-              width: W - 40, padding: '10px 14px', fontSize: 14,
-              border: '1.5px solid #D0C8C0', background: '#FDFCFA',
-              color: '#5A5048', outline: 'none', fontFamily: FONT,
-              textAlign: 'center', marginBottom: 16,
-            }}
-          />
           <div>
             <canvas ref={function (el) {
               if (!el || el._drawn) return
@@ -540,16 +553,6 @@ export default function GardenView({ onExit }) {
             <NutrientIcon type="sun" value={score.days + 'd'} />
             <NutrientIcon type="trip" value={score.trips} />
             <NutrientIcon type="pin" value={score.places} />
-          </div>
-
-          {/* regenerate stamps */}
-          <div onClick={handleRegen} style={{
-            fontSize: 11, color: generating ? '#B8A898' : '#9A8A7A', fontFamily: FONT,
-            cursor: generating ? 'default' : 'pointer', marginBottom: 12,
-            textDecoration: 'underline', textUnderlineOffset: 3,
-            opacity: generating ? 0.5 : 0.7,
-          }}>
-            {generating ? 'drawing...' : 'Redraw stamps'}
           </div>
 
           {/* harvest button */}

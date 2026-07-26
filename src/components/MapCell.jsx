@@ -3,7 +3,7 @@ import rough from 'roughjs'
 
 var PAPER_WHITE = '#F8F8F6'
 
-function drawBadge(cvs, idx, loc, w, h) {
+function drawBadge(cvs, idx, loc, w, h, weatherColor) {
   var dpr = Math.min(window.devicePixelRatio || 1, 3)
   cvs.width = w * dpr; cvs.height = h * dpr
   cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
@@ -18,7 +18,7 @@ function drawBadge(cvs, idx, loc, w, h) {
 
   /* center of paper area */
   var cx = w / 2, cy = pad + 2 * s + ph * 0.45
-  var c = loc ? (loc.color || '#E8A87C') : '#E8A87C'
+  var c = weatherColor || (loc ? (loc.color || '#E8A87C') : '#E8A87C')
   var ro = { roughness: 0.5, bowing: 0.8, disableMultiStroke: true }
 
   /* label position */
@@ -78,7 +78,7 @@ function drawBadge(cvs, idx, loc, w, h) {
   }
 }
 
-export default function MapCell({ cellRect, locations }) {
+export default function MapCell({ cellRect, locations, weatherColor }) {
   var frontRef = useRef(null), backRef = useRef(null)
   var [current, setCurrent] = useState(0)
   var [phase, setPhase] = useState('show') /* show | fadeOut | fadeIn */
@@ -90,7 +90,7 @@ export default function MapCell({ cellRect, locations }) {
   /* paint front canvas with current badge */
   useEffect(function () {
     if (!cellRect || !frontRef.current) return
-    drawBadge(frontRef.current, current, home, cellRect.w, cellRect.h)
+    drawBadge(frontRef.current, current, home, cellRect.w, cellRect.h, weatherColor)
   }, [current, cellRect, home])
 
   /* cycle: show 8s → fadeOut 0.5s → swap + fadeIn 0.5s → show */
@@ -99,7 +99,7 @@ export default function MapCell({ cellRect, locations }) {
       nextRef.current = (nextRef.current) % 3
       /* pre-render next on back canvas */
       if (backRef.current && cellRect) {
-        drawBadge(backRef.current, nextRef.current, home, cellRect.w, cellRect.h)
+        drawBadge(backRef.current, nextRef.current, home, cellRect.w, cellRect.h, weatherColor)
       }
       /* fade out front */
       setPhase('fadeOut')

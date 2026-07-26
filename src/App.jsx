@@ -313,6 +313,27 @@ export default function App() {
   const [garden, setGarden] = useState(null)
     const [cityName, setCityName] = useState('Hangzhou')
   const [cityCenter, setCityCenter] = useState([30.27, 120.15])
+  const [weatherColor, setWeatherColor] = useState('#E8A87C')
+
+  // fetch weather color
+  useEffect(function () {
+    if (!isConnected()) return
+    supaGet('service_requests', 'service=eq.amap&action=eq.weather&status=eq.done&order=id.desc&limit=1')
+      .then(function(rows) {
+        if (!rows || !rows[0] || !rows[0].result) return
+        try {
+          var res = typeof rows[0].result === 'string' ? JSON.parse(rows[0].result) : rows[0].result
+          var w = res.casts && res.casts[0] ? res.casts[0].day_weather : ''
+          var wMap = {
+            '晴': '#E8A87C', '多云': '#B8C4D0', '阴': '#9AA0A8',
+            '小雨': '#7BA7BC', '中雨': '#6A8A9A', '大雨': '#5A7A8A',
+            '雷阵雨': '#8A7ABC', '雪': '#C8D0D8', '雾': '#C0C0B8',
+            '阵雨': '#7BA7BC',
+          }
+          setWeatherColor(wMap[w] || '#E8A87C')
+        } catch(e) {}
+      })
+  }, [])
 
   useEffect(function() {
     if (!isConnected()) return
@@ -486,7 +507,7 @@ export default function App() {
         <HopscotchCanvas onZoneTap={handleZoneTap} />
         {weatherCellRect && <WeatherCell cellRect={weatherCellRect} />}
         {notesCellRect && <NotesCell cellRect={notesCellRect} onTap={() => setNotesView(true)} />}
-        {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} />}
+        {mapCellRect && <MapCell cellRect={mapCellRect} locations={locations} weatherColor={weatherColor} />}
         {gardenCellRect && <GardenCell cellRect={gardenCellRect} garden={garden} onTap={() => setGardenView(true)} />}
         <RoofCell tri={roofTri} />
         {dragFrom && zoneNames.map(function (zn) {
