@@ -24,7 +24,7 @@ AI 生成改为浏览器直连 DeepSeek，key 在设置面板配置（存 localS
 - **AI recipe 格式**：shapes 数组，颜色只能是 `"MAIN"` / `"BG"` 两个字面量，前端替换。线宽 `sw` 限 0.5–1.3。
 - **localStorage keys**：`hopscotch_stickers` / `hopscotch_patterns` / `hopscotch_photo_stickers` / `hopscotch_ai_stickers` / `hopscotch_roof_pattern` / `hopscotch_ai_key`
 - **pattern 渲染**：`renderPatternFill(canvas, patternId, colorId, w, h, offX, offY, tileSize)`，tile 默认 18px。
-- **部署目录**：`~/work/hopscotch/`（不是 hopscotch-map），vite base 为 `/hopscotch/`。
+- **部署**：GitHub Pages，来源为 Actions workflow（`.github/workflows/deploy.yml`），push main 即构建上线，产物 `dist`。vite base 为 `/hopscotch/`。构建用 **pnpm**，不要改回 npm（见坑）。线上 https://onlonlonl.github.io/hopscotch/
 
 ## 坑
 
@@ -35,3 +35,6 @@ AI 生成改为浏览器直连 DeepSeek，key 在设置面板配置（存 localS
 - **放置元素要 z-index**：placed sticker 没有 z-index 会被格子内容盖住，长按无反应。
 - **Rough.js tile 太小会糊**：pattern tile 低于 16px 时笔触没空间渲染，模糊。18px 是密度与清晰度的平衡点。
 - **files 表写 JSX**：dollar quoting 里含 `$` 的 JS 模板字符串会撞 tag，改用 Python 脚本 + str.replace 更稳。
+- **Actions 上 npm 装不了依赖**：runner 上 `npm ci` 会挂在 `Exit handler never called`（npm 自身 bug），**且该步骤在 UI 里显示 success**，但依赖只装一半，下一步 vite 找不到报 exit 127。已改用 pnpm（`pnpm/action-setup@v4` + `pnpm install --frozen-lockfile`），不要改回 npm。lockfile 用 `npx -y pnpm@9 import` 从 package-lock 生成。
+- **push 成功 ≠ 上线**：2026-07-29 白屏 1.5 小时，就是因为 push 后只看 commit 没查 Actions conclusion。构建类改动必须验证线上产物：`curl` 首页拿到 200 后，再取页面里的 `assets/*.js` 确认也是 200。
+- **重复的 style key**：`MapStampsPanel` 里 `transition` 写了两次，后者覆盖前者，面板高度动画静默失效。vite 构建会以 warning 报 Duplicate key，不会中断构建，容易被忽略。
