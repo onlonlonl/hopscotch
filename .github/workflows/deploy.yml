@@ -24,12 +24,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 22
 
-      # npm 11 在 runner 上有 Exit handler never called 的 bug，会静默装一半
-      - run: npm install -g npm@10.9.2
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - run: npm run build
 
       - uses: actions/configure-pages@v5
