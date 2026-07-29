@@ -27,6 +27,8 @@ jobs:
           node-version: 20
           cache: npm
 
+      # npm 11 在 runner 上有 Exit handler never called 的 bug，会静默装一半
+      - run: npm install -g npm@10.9.2
       - run: npm ci
       - run: npm run build
 
