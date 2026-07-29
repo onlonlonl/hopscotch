@@ -143,7 +143,7 @@ export default function MapCell({ cellRect, locations, weatherColor }) {
   return <>
     <canvas ref={bgRef} style={{ ...base, zIndex: 0, pointerEvents: "none" }} />
     <canvas ref={frontRef} style={{
-      ...base, zIndex: 1, pointerEvents: "none", pointerEvents: "none",
+      ...base, zIndex: 1, pointerEvents: "none",
       opacity: opacity,
       transition: phase === 'show' ? 'none' : 'opacity 0.5s ease',
     }} />
