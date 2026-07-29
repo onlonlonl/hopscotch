@@ -6,17 +6,17 @@
 
 ## 中文
 
-在日常的地面上画出一个只有你们看得见的世界。
+在日常的地面上画出一个只有我们看得见的世界。
 
 ### 这是什么？
 
-Hopscotch 是一块跳房子形状的共享空间。标记对你们重要的地点，看它们随天气变化，留便签，种花园，装饰一切。同一组地点，三种看法。
+Hopscotch 是一块跳房子形状的共享空间。标记重要的地点，看它们随天气变化，留便签，种花园，装饰一切。同一组地点，三种看法。
 
 灵感来自科塔萨尔的《跳房子》——同一个故事，不同的读法。
 
 **运作方式：**
 
-* 你通过网页添加地点、装饰空间、浇花留言
+* 通过网页添加地点、装饰空间、浇花留言
 * Claude 通过 Supabase MCP 读写数据、给地点起名字
 * 双方共享同一个数据库
 
@@ -88,7 +88,7 @@ npm run build
 
 #### 5. 连接 Claude
 
-把 [`CLAUDE_INSTRUCTIONS.md`](CLAUDE_INSTRUCTIONS.md) 的内容给你的 Claude，替换 Project ID。Claude 需要连接 **Supabase MCP** 才能参与。
+把 [`CLAUDE_INSTRUCTIONS.md`](CLAUDE_INSTRUCTIONS.md) 的内容给 Claude，替换 Project ID。Claude 需要连接 **Supabase MCP** 才能参与。
 
 ### 技术栈
 
@@ -104,7 +104,7 @@ npm run build
 
 ## English
 
-Draw a world only you two can see — on the ground you walk every day.
+Draw a world only two can see — on the ground you walk every day.
 
 ### What is this?
 
@@ -114,7 +114,7 @@ Inspired by Julio Cortázar's *Hopscotch* — the same story, read in different 
 
 **How it works:**
 
-* You use the web interface to add places, decorate the space, water the garden, leave notes
+* Using the web interface to add places, decorate the space, water the garden, leave notes
 * Claude uses Supabase MCP to read and write data, name places
 * Both share the same database
 
@@ -125,7 +125,7 @@ Inspired by Julio Cortázar's *Hopscotch* — the same story, read in different 
 | 🏠 **Roof** | A pattern-filled canopy at the top. Drag a pattern onto it to change the look. |
 | 🗺️ **Map** | Your places on a real map. Hand-drawn markers, each with two names — one from each person. |
 | 📝 **Notes** | A shared message board. Like a note stuck on the fridge. |
-| 🌱 **Garden** | Plant something and watch it grow. It grows when you visit new places and take trips — a quiet tamagotchi. |
+| 🌱 **Garden** | Plant something and watch it grow. It grows when visit new places and take trips — a quiet tamagotchi. |
 | 🌤️ **Weather** | Each place has its own weather, drawn in rough sketch style. Not decoration — it colors the whole board. |
 
 ### Three Views
@@ -186,7 +186,7 @@ Built files go to `dist/`. The `vite.config.js` base is set to `/hopscotch/`.
 
 #### 5. Connect Claude
 
-Give your Claude the instructions in [`CLAUDE_INSTRUCTIONS.md`](CLAUDE_INSTRUCTIONS.md) — replace the Project ID with yours. Claude needs **Supabase MCP** connected to participate.
+Give Claude the instructions in [`CLAUDE_INSTRUCTIONS.md`](CLAUDE_INSTRUCTIONS.md) — replace the Project ID with yours. Claude needs **Supabase MCP** connected to participate.
 
 ### Tech Stack
 
