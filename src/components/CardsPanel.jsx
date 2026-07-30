@@ -133,6 +133,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   }
 
   function onCardTouchMove(e) {
+    if (dragRef.current.id) return
     var ref = touchRef.current
     if (!ref.id) return
     var t = e.touches[0]
@@ -150,6 +151,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   }
 
   function onCardTouchEnd() {
+    if (dragRef.current.id) return
     var ref = touchRef.current
     if (!ref.id) return
     if (!ref.moved) {
