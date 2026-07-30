@@ -79,7 +79,9 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   /* --- edit state --- */
   var [editId, setEditId] = useState(null)
   var [editFields, setEditFields] = useState({ ink_name_iris: '', label: '' })
-  var [savedId, setSavedId] = useState(null)
+  var [dragId, setDragId] = useState(null)
+  var [dragY, setDragY] = useState(0)
+  var dragRef = useRef({ id: null, startY: 0, startIdx: 0, lastIdx: 0 })
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -203,8 +205,6 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
     })
     setEditId(null)
     cardRefs.current = {}
-    setSavedId(locId)
-    setTimeout(function(){ setSavedId(null) }, 1500)
   }
 
   if (!open) return null
@@ -254,14 +254,14 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}
             onTouchMove={onCardTouchMove} onTouchEnd={onCardTouchEnd}>
-            {locations.map(function (loc) {
+            {locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) }).map(function (loc) {
               var isSwiped = swipeId === loc.id
               var isEditing = editId === loc.id
               var tx = isSwiped ? swipeX : 0
               var cardH = isEditing ? CARD_H + 210 : CARD_H
 
               return (
-                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden',
+                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden', zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.5 : 1,
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
                   <div onClick={function () { handleDelete(loc.id) }}
                     style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
@@ -294,7 +294,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
                   </div>
 
-                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)',
+                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px)' : ''),
                     transition: touchRef.current.moved ? 'none' : 'transform 0.2s ease',
                     height: cardH, background: '#fff' }}
                     onTouchStart={function (e) { onCardTouchStart(e, loc.id) }}>
@@ -302,13 +302,54 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     <canvas ref={function (el) { if (el) cardRefs.current[loc.id] = el }}
                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: CARD_H + 'px', pointerEvents: 'none' }} />
 
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', height: CARD_H, boxSizing: 'border-box' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0, padding: '6px 4px 6px 0', height: CARD_H, boxSizing: 'border-box' }}>
+                      <div
+                        onTouchStart={function(e) {
+                          e.stopPropagation()
+                          var t = e.touches[0]
+                          var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
+                          var idx = sorted.findIndex(function(l){ return l.id === loc.id })
+                          dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx, lastIdx: idx }
+                          setDragId(loc.id)
+                          setDragY(0)
+                        }}
+                        onTouchMove={function(e) {
+                          if (dragRef.current.id !== loc.id) return
+                          e.preventDefault()
+                          var t = e.touches[0]
+                          var dy = t.clientY - dragRef.current.startY
+                          setDragY(dy)
+                          var step = CARD_H + 8
+                          var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / step)))
+                          if (newIdx !== dragRef.current.lastIdx) {
+                            dragRef.current.lastIdx = newIdx
+                            var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
+                            var item = sorted.splice(dragRef.current.startIdx, 1)[0]
+                            sorted.splice(newIdx, 0, item)
+                            var updates = sorted.map(function(l, i) { return { ...l, card_order: i } })
+                            setLocations(updates)
+                          }
+                        }}
+                        onTouchEnd={function() {
+                          if (dragRef.current.id !== loc.id) return
+                          setDragId(null); setDragY(0)
+                          dragRef.current.id = null
+                          var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
+                          sorted.forEach(function(l, i) {
+                            if (l.card_order !== i && isConnected()) supaPatch('locations', 'id=eq.' + l.id, { card_order: i })
+                          })
+                          cardRefs.current = {}
+                        }}
+                        style={{ padding: '0 8px', cursor: 'grab', color: '#C8D0D8', fontSize: 11, flexShrink: 0,
+                          touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                        ⠿
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: locColor(loc.weather), fontFamily: FONT, lineHeight: 1.3 }}>
                           {loc.ink_name_iris || <span style={{ color: '#C8D0D8', fontWeight: 400 }}>{loc.label}</span>}
                         </div>
                         <div style={{ fontSize: 10, color: '#9AAAB8', fontFamily: FONT, lineHeight: 1.3 }}>
-                          {loc.label}{savedId === loc.id && <span style={{ color: "#2E94B9", fontSize: 9, marginLeft: 6 }}>Saved</span>}
+                          {loc.label}
                         </div>
                         {loc.errands > 0 && <div style={{ fontSize: 9, color: '#B0BAC4', fontFamily: FONT }}>{loc.errands} errands</div>}
                       </div>

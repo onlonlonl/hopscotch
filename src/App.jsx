@@ -658,14 +658,14 @@ export default function App() {
   const [connections, setConnections] = useState([])
   useEffect(function () {
     if (!isConnected()) return
-    supaGet('locations', 'select=id,label,icon_type,lux_x,lux_y,scale,ink_name_iris,ink_name_lux,lat,lng,inf_t,inf_w,story,weather&order=created_at')
+    supaGet('locations', 'select=id,label,icon_type,lux_x,lux_y,scale,ink_name_iris,ink_name_lux,lat,lng,inf_t,inf_w,story,weather,card_order&order=card_order.asc.nullslast,created_at')
       .then(function(rows) {
         if (!rows || rows.length === 0) return
         var locs = rows.map(function(r) {
           return {
             id: r.id, label: r.label || r.id, icon_type: r.icon_type || 'heart',
             lux_x: r.lux_x || 50, lux_y: r.lux_y || 50,
-            scale: r.scale || 1, ink_name_iris: r.ink_name_iris || null, ink_name_lux: r.ink_name_lux || null,
+            scale: r.scale || 1, ink_name_iris: r.ink_name_iris || null, ink_name_lux: r.ink_name_lux || null, card_order: r.card_order,
             lat: parseFloat(r.lat) || 0, lng: parseFloat(r.lng) || 0,
             inf_t: r.inf_t != null ? r.inf_t : null, inf_w: r.inf_w != null ? r.inf_w : null,
             story: r.story || '', weather: r.weather || '',

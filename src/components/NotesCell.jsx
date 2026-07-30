@@ -73,6 +73,14 @@ function renderCell(cvs, note, cellW, cellH) {
   drawClip(rc, clipX, clipY, clipW, clipH, clipColor, 77)
 
   /* text on paper */
+  if (!note) {
+    ctx.fillStyle = '#D0C8C0'
+    var phSize = Math.max(7, Math.round(8 * s))
+    ctx.font = 'italic ' + phSize + "px -apple-system, 'PingFang SC', sans-serif"
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('a note will find its way here', cellW / 2, cellH / 2 + 4 * s)
+  }
   if (note) {
     ctx.fillStyle = '#6A6058'
     var fontSize = Math.max(7, Math.round(9 * s))
