@@ -1075,6 +1075,7 @@ export default function App() {
   return (
     <div onContextMenu={function(e){ e.preventDefault() }} style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: '#E0E8F0',
       overflow: 'hidden',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',

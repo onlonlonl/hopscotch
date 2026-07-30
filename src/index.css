@@ -10,12 +10,15 @@ html, body, #root {
   height: 100%;
   background: #E0E8F0;
   overflow: hidden;
+  overscroll-behavior: none;
   font-family: -apple-system, 'PingFang SC', sans-serif;
 }
 
 body {
   background: #E0E8F0;
   padding-top: env(safe-area-inset-top);
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Leaflet: warm muted tiles */
