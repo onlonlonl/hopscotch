@@ -258,7 +258,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               var isSwiped = swipeId === loc.id
               var isEditing = editId === loc.id
               var tx = isSwiped ? swipeX : 0
-              var cardH = isEditing ? CARD_H + 148 : CARD_H
+              var cardH = isEditing ? CARD_H + 210 : CARD_H
 
               return (
                 <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden',
