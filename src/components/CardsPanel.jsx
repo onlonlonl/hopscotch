@@ -80,10 +80,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   /* --- edit state --- */
   var [editId, setEditId] = useState(null)
   var [editFields, setEditFields] = useState({ ink_name_iris: '', label: '' })
-  var [dragId, setDragId] = useState(null)
-  var [dragY, setDragY] = useState(0)
-  var [dragOverIdx, setDragOverIdx] = useState(-1)
-  var dragRef = useRef({ id: null, startY: 0, startIdx: 0 })
+  var [dragState, setDragState] = useState({ id: null, y: 0, overIdx: -1 })
+  var dragRef = useRef({ id: null, startY: 0, startIdx: 0, overIdx: -1 })
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -265,9 +263,9 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               var cardH = isEditing ? CARD_H + 210 : CARD_H
 
               return (
-                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: dragId ? "visible" : "hidden", zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.7 : 1,
+                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: dragState.id ? "visible" : "hidden", zIndex: dragState.id === loc.id ? 10 : 1, opacity: dragState.id && dragState.id !== loc.id ? 0.7 : 1,
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
-                  {!dragId && <div onClick={function () { handleDelete(loc.id) }}
+                  {!dragState.id && <div onClick={function () { handleDelete(loc.id) }}
                     style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
@@ -298,8 +296,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
                   </div>}
 
-                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px) scale(1.02)' : (dragId && dragOverIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragOverIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+SLOT+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+SLOT+'px)'; return '' })() : '')),
-                    transition: dragId === loc.id ? 'none' : dragId ? 'transform 0.15s ease, opacity 0.15s' : (touchRef.current.moved ? 'none' : 'transform 0.2s ease'),
+                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragState.id === loc.id ? ' translateY(' + dragState.y + 'px) scale(1.02)' : (dragId && dragState.overIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragState.overIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+SLOT+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+SLOT+'px)'; return '' })() : '')),
+                    transition: dragState.id === loc.id ? 'none' : dragId ? 'transform 0.15s ease, opacity 0.15s' : (touchRef.current.moved ? 'none' : 'transform 0.2s ease'),
                     height: cardH, background: '#fff' }}
                     onTouchStart={function (e) { onCardTouchStart(e, loc.id) }}>
 
@@ -313,28 +311,25 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           var t = e.touches[0]
                           var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
                           var idx = sorted.findIndex(function(l){ return l.id === loc.id })
-                          dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx }
+                          dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx, overIdx: idx }
                           setSwipeId(null); setSwipeX(0)
-                          setDragId(loc.id)
-                          setDragY(0)
-                          setDragOverIdx(idx)
+                          setDragState({ id: loc.id, y: 0, overIdx: idx })
                         }}
                         onTouchMove={function(e) {
                           if (dragRef.current.id !== loc.id) return
                           e.preventDefault()
                           var t = e.touches[0]
                           var dy = t.clientY - dragRef.current.startY
-                          setDragY(dy)
-                          var step = SLOT
-                          var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / step)))
-                          setDragOverIdx(newIdx)
+                          var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / SLOT)))
+                          dragRef.current.overIdx = newIdx
+                          setDragState({ id: dragRef.current.id, y: dy, overIdx: newIdx })
                         }}
                         onTouchEnd={function() {
                           if (dragRef.current.id !== loc.id) return
                           var fromIdx = dragRef.current.startIdx
-                          var toIdx = dragOverIdx
-                          setDragId(null); setDragY(0); setDragOverIdx(-1)
-                          dragRef.current.id = null
+                          var toIdx = dragRef.current.overIdx
+                          setDragState({ id: null, y: 0, overIdx: -1 })
+                          dragRef.current = { id: null, startY: 0, startIdx: 0, overIdx: -1 }
                           if (fromIdx !== toIdx) {
                             var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
                             var item = sorted.splice(fromIdx, 1)[0]
