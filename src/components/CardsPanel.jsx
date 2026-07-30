@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import rough from 'roughjs'
 import { locColor } from '../lib/tokens'
+import PoiPicker, { poiToGeoPatch } from './PoiPicker'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from '../lib/supabase'
 
 /* === Weather-themed flat border === */
@@ -81,9 +82,6 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
-  var [poiInput, setPoiInput] = useState('')
-  var [poiResults, setPoiResults] = useState([])
-  var [poiSearching, setPoiSearching] = useState(false)
 
   /* --- draw panel border --- */
   useEffect(function () {
@@ -113,13 +111,19 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   useEffect(function () {
     if (!open) {
       setSwipeId(null); setSwipeX(0); setEditId(null)
-      setAdding(false); setPoiResults([]); setPoiInput('')
+      setAdding(false)
       cardRefs.current = {}
     }
   }, [open])
 
   /* --- swipe handlers --- */
   function onCardTouchStart(e, locId) {
+    // 编辑表单内部（输入框、按钮、POI 结果）不参与卡片的轻点/滑动手势，
+    // 否则手指抬起会被判定成「轻点卡片」而立刻收起表单，输入框拿不到焦点
+    if (e.target && e.target.closest && e.target.closest('[data-noswipe]')) {
+      touchRef.current = { id: null, startX: 0, startY: 0, moved: false }
+      return
+    }
     var t = e.touches[0]
     touchRef.current = { id: locId, startX: t.clientX, startY: t.clientY, moved: false }
     if (swipeId && swipeId !== locId) { setSwipeId(null); setSwipeX(0) }
@@ -218,53 +222,31 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
         <div style={{ position: 'relative', padding: '16px 18px', zIndex: 1, height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 13, color: '#6A7A8A', letterSpacing: 3, fontFamily: FONT }}>Places</div>
-            <div onClick={function () { setAdding(!adding); setPoiResults([]); setPoiInput('') }}
+            <div onClick={function () { setAdding(!adding) }}
               style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 16, color: adding ? '#C0C0C0' : '#2E94B9', cursor: 'pointer', fontFamily: FONT }}>+</div>
           </div>
 
           {adding && <div style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-              <input value={poiInput} onChange={function (e) { setPoiInput(e.target.value) }}
-                placeholder="search a place" style={{ flex: 1, minWidth: 0, padding: '6px 8px', fontSize: 12,
-                  border: '1.5px solid rgba(46,148,185,0.25)', background: 'rgba(240,244,248,0.6)',
-                  color: '#5A6A7A', outline: 'none', fontFamily: FONT, boxSizing: 'border-box' }} />
-              <div onClick={async function () {
-                if (!poiInput.trim() || !isConnected() || poiSearching) return
-                setPoiSearching(true)
-                await supaPost('service_requests', { service: 'amap', action: 'poi', params: { keywords: poiInput.trim(), city: cityName || '' } })
-                await new Promise(function (r) { setTimeout(r, 800) })
-                var rows = await supaGet('service_requests', 'service=eq.amap&action=eq.poi&order=id.desc&limit=1')
-                setPoiSearching(false)
-                if (rows && rows[0] && rows[0].result) {
-                  try { var d = JSON.parse(rows[0].result); if (d.pois) setPoiResults(d.pois.slice(0, 5)) } catch (e) { }
-                }
-              }} style={{ padding: '6px 10px', fontSize: 11, border: '1.5px solid rgba(46,148,185,0.25)',
-                background: 'rgba(240,244,248,0.5)', color: '#5A6A7A', cursor: 'pointer', fontFamily: FONT,
-                whiteSpace: 'nowrap' }}>{poiSearching ? '...' : 'GO'}</div>
-            </div>
-            {poiResults.map(function (poi, i) {
-              return <div key={i} onClick={async function () {
-                var loc = poi.location ? poi.location.split(',') : [0, 0]
-                var newLoc = {
-                  id: poi.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 12) + '_' + Date.now().toString(36),
-                  label: poi.name, name: poi.name, city: poi.cityname || cityName || '',
-                  address: poi.address || '', lng: loc[0], lat: loc[1],
-                  category: poi.type ? poi.type.split(';')[0] : '',
-                  ink_name_iris: null, ink_name_lux: null, story: null,
-                  weather: null, icon_type: 'house',
-                  lux_x: freeSpot(locations).lux_x, lux_y: freeSpot(locations).lux_y, inf_t: null, inf_w: null,
-                }
-                await supaPost('locations', newLoc)
-                setLocations(function (prev) { return [...prev, { ...newLoc, errands: 0, lat: parseFloat(newLoc.lat), lng: parseFloat(newLoc.lng) }] })
-                setAdding(false); setPoiResults([]); setPoiInput('')
-                cardRefs.current = {}
-              }} style={{ padding: '6px 8px', fontSize: 11, color: '#5A6A7A', fontFamily: FONT, cursor: 'pointer',
-                borderBottom: '1px solid rgba(200,210,220,0.3)', lineHeight: 1.4 }}>
-                <div style={{ fontWeight: 500 }}>{poi.name}</div>
-                <div style={{ fontSize: 10, color: '#9AAAB8' }}>{poi.address}</div>
-              </div>
-            })}
+            <PoiPicker cityName={cityName} successLabel="Added" onPick={async function (poi) {
+              var parts = poi.location ? poi.location.split(',') : [0, 0]
+              var spot = freeSpot(locations)
+              var newLoc = {
+                id: poi.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 12) + '_' + Date.now().toString(36),
+                label: poi.name, name: poi.name, city: poi.cityname || cityName || '',
+                address: poi.address || '', lng: parts[0], lat: parts[1],
+                category: poi.type ? poi.type.split(';')[0] : '',
+                ink_name_iris: null, ink_name_lux: null, story: null,
+                weather: null, icon_type: 'house',
+                lux_x: spot.lux_x, lux_y: spot.lux_y, inf_t: null, inf_w: null,
+              }
+              if (isConnected()) await supaPost('locations', newLoc)
+              setLocations(function (prev) {
+                return [...prev, { ...newLoc, errands: 0, lat: parseFloat(newLoc.lat), lng: parseFloat(newLoc.lng) }]
+              })
+              setAdding(false)
+              cardRefs.current = {}
+            }} />
           </div>}
 
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}
@@ -278,13 +260,35 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               return (
                 <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden',
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: '#E85050', borderRadius: '0 4px 4px 0' }}>
-                    <div onClick={function () { handleDelete(loc.id) }}
-                      style={{ color: '#fff', fontSize: 11, fontFamily: FONT, cursor: 'pointer', padding: '8px 12px' }}>
-                      Delete
-                    </div>
+                  <div onClick={function () { handleDelete(loc.id) }}
+                    style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                    <canvas ref={function (el) {
+                      if (!el || el._dDrawn) return; el._dDrawn = true
+                      var W = DELETE_W, H = CARD_H
+                      var dpr = Math.min(window.devicePixelRatio || 1, 3)
+                      el.width = W*dpr; el.height = H*dpr
+                      el.style.width = W+'px'; el.style.height = H+'px'
+                      var ctx = el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+                      var rc = rough.canvas(el)
+                      rc.rectangle(2, 3, W-4, H-6, {
+                        stroke: '#C86A5E', fill: '#F6E4E0', fillStyle: 'solid',
+                        strokeWidth: 1.3, roughness: 0.8, bowing: 0.7,
+                        disableMultiStroke: true, seed: 620
+                      })
+                      var o = { stroke: '#C86A5E', strokeWidth: 1.3, roughness: 0.7, disableMultiStroke: true }
+                      var cx = W/2, ty = H/2 - 7
+                      rc.line(cx-8, ty, cx+8, ty, { ...o, seed: 621 })
+                      rc.line(cx-3, ty, cx-3, ty-2.5, { ...o, seed: 622 })
+                      rc.line(cx-3, ty-2.5, cx+3, ty-2.5, { ...o, seed: 623 })
+                      rc.line(cx+3, ty-2.5, cx+3, ty, { ...o, seed: 624 })
+                      rc.line(cx-6, ty, cx-5, ty+13, { ...o, seed: 625 })
+                      rc.line(cx+6, ty, cx+5, ty+13, { ...o, seed: 626 })
+                      rc.line(cx-5, ty+13, cx+5, ty+13, { ...o, seed: 627 })
+                      rc.line(cx-2, ty+3, cx-2, ty+10, { ...o, strokeWidth: 0.8, seed: 628 })
+                      rc.line(cx+2, ty+3, cx+2, ty+10, { ...o, strokeWidth: 0.8, seed: 629 })
+                    }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
                   </div>
 
                   <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)',
@@ -306,13 +310,27 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                         {loc.errands > 0 && <div style={{ fontSize: 9, color: '#B0BAC4', fontFamily: FONT }}>{loc.errands} errands</div>}
                       </div>
                       {loc.lat != null && <div onClick={function (e) { e.stopPropagation(); onFocus(loc) }}
+                        onTouchStart={function (e) { e.stopPropagation() }}
                         style={{ fontSize: 15, color: '#2E94B9', cursor: 'pointer', flexShrink: 0, padding: '4px' }}>
                         ↗
                       </div>}
                     </div>
 
                     {isEditing && (
-                      <div style={{ padding: '4px 10px 8px', background: '#FAFCFE' }}>
+                      <div data-noswipe="1" style={{ padding: '4px 10px 8px', background: '#FAFCFE' }}>
+                        <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Re-pin location</div>
+                        <div style={{ marginBottom: 8 }}>
+                          <PoiPicker cityName={cityName} placeholder="search to move this place"
+                            successLabel="Moved"
+                            onPick={async function (poi) {
+                              var geo = poiToGeoPatch(poi)
+                              if (!geo) throw new Error('no coordinates')
+                              if (isConnected()) await supaPatch('locations', 'id=eq.' + loc.id, geo)
+                              setLocations(function (prev) {
+                                return prev.map(function (l) { return l.id === loc.id ? { ...l, ...geo } : l })
+                              })
+                            }} />
+                        </div>
                         <div style={{ marginBottom: 5 }}>
                           <div style={{ fontSize: 9, color: '#9AAAB8', fontFamily: FONT, marginBottom: 2 }}>Place</div>
                           <input value={editFields.label} onChange={function (e) { setEditFields(function (p) { return { ...p, label: e.target.value } }) }}

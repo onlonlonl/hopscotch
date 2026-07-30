@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import rough from 'roughjs'
+import PoiPicker, { poiToGeoPatch } from './PoiPicker'
 import { locColor } from '../lib/tokens'
 
 var RO = {roughness:0.8,bowing:0.5,disableMultiStroke:true,seed:2}
@@ -268,7 +269,26 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
                 e.stopPropagation()
                 setEf({ label: loc.label || '', ink_name_iris: loc.ink_name_iris || '' })
                 setEditing(true)
-              }} style={{fontSize:13,color:'#A09888',cursor:'pointer',padding:'2px 4px',lineHeight:1}}>&#9998;</div>
+              }}
+              onTouchStart={function(e){ e.stopPropagation() }}
+              style={{width:36,height:36,marginRight:-6,display:'flex',alignItems:'center',
+                justifyContent:'center',cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
+                <canvas ref={function(el){
+                  if (!el || el._pDrawn) return; el._pDrawn = true
+                  var S = 22, dpr = Math.min(window.devicePixelRatio || 1, 3)
+                  el.width = S*dpr; el.height = S*dpr
+                  el.style.width = S+'px'; el.style.height = S+'px'
+                  var ctx = el.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0)
+                  var rc = rough.canvas(el)
+                  var o = { stroke:'#A09888', strokeWidth:1.25, roughness:0.7, disableMultiStroke:true }
+                  rc.line(16.5, 4.5, 19.5, 7.5, { ...o, seed:611 })
+                  rc.line(16.5, 4.5, 6.5, 14.5, { ...o, seed:612 })
+                  rc.line(19.5, 7.5, 9.5, 17.5, { ...o, seed:613 })
+                  rc.line(6.5, 14.5, 9.5, 17.5, { ...o, seed:614 })
+                  rc.line(6.5, 14.5, 4.5, 19.5, { ...o, seed:615 })
+                  rc.line(9.5, 17.5, 4.5, 19.5, { ...o, seed:616 })
+                }} />
+              </div>
             )}
           </div>
         </div>
@@ -277,6 +297,16 @@ export default function LocationCard({ location, position, onClose, weatherDraw,
         </div>
         {editing ? (
           <div style={{flex:1,overflowY:'auto',paddingRight:4}}>
+            <div style={{fontSize:9,color:'#A09888',marginBottom:2}}>Re-pin location</div>
+            <div style={{marginBottom:8}}>
+              <PoiPicker cityName={loc.city} tone="warm" placeholder="search to move this place"
+                successLabel="Moved"
+                onPick={function(poi){
+                  var geo = poiToGeoPatch(poi)
+                  if (!geo) throw new Error('no coordinates')
+                  onSave(loc.id, geo)
+                }} />
+            </div>
             <div style={{fontSize:9,color:'#A09888',marginBottom:2}}>Place</div>
             <input value={ef.label}
               onChange={function(e){var v=e.target.value;setEf(function(p){return Object.assign({},p,{label:v})})}}
