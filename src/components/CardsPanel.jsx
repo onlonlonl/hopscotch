@@ -79,6 +79,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   /* --- edit state --- */
   var [editId, setEditId] = useState(null)
   var [editFields, setEditFields] = useState({ ink_name_iris: '', label: '' })
+  var [savedId, setSavedId] = useState(null)
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -202,6 +203,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
     })
     setEditId(null)
     cardRefs.current = {}
+    setSavedId(locId)
+    setTimeout(function(){ setSavedId(null) }, 1500)
   }
 
   if (!open) return null
@@ -302,10 +305,10 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', height: CARD_H, boxSizing: 'border-box' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: locColor(loc.weather), fontFamily: FONT, lineHeight: 1.3 }}>
-                          {loc.ink_name_iris || <span style={{ color: '#C8D0D8', fontStyle: 'italic', fontWeight: 400 }}>{loc.label}</span>}
+                          {loc.ink_name_iris || <span style={{ color: '#C8D0D8', fontWeight: 400 }}>{loc.label}</span>}
                         </div>
                         <div style={{ fontSize: 10, color: '#9AAAB8', fontFamily: FONT, lineHeight: 1.3 }}>
-                          {loc.ink_name_lux ? loc.ink_name_lux : (loc.ink_name_iris && loc.ink_name_iris !== loc.label ? loc.label : '')}
+                          {loc.label}{savedId === loc.id && <span style={{ color: "#2E94B9", fontSize: 9, marginLeft: 6 }}>Saved</span>}
                         </div>
                         {loc.errands > 0 && <div style={{ fontSize: 9, color: '#B0BAC4', fontFamily: FONT }}>{loc.errands} errands</div>}
                       </div>
