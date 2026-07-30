@@ -256,7 +256,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}
             onTouchMove={onCardTouchMove} onTouchEnd={onCardTouchEnd}>
-            {locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) }).map(function (loc, _si) {
+            {locations.slice().sort(function(a,b){ return (a.card_order==null?999:a.card_order)-(b.card_order==null?999:b.card_order) }).map(function (loc, _si) {
               var isSwiped = swipeId === loc.id
               var isEditing = editId === loc.id
               var tx = isSwiped ? swipeX : 0
@@ -309,7 +309,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                         onTouchStart={function(e) {
                           e.stopPropagation()
                           var t = e.touches[0]
-                          var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
+                          var sorted = locations.slice().sort(function(a,b){ return (a.card_order==null?999:a.card_order)-(b.card_order==null?999:b.card_order) })
                           var idx = sorted.findIndex(function(l){ return l.id === loc.id })
                           dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx, overIdx: idx }
                           setSwipeId(null); setSwipeX(0)
@@ -331,7 +331,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           setDragState({ id: null, y: 0, overIdx: -1 })
                           dragRef.current = { id: null, startY: 0, startIdx: 0, overIdx: -1 }
                           if (fromIdx !== toIdx) {
-                            var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
+                            var sorted = locations.slice().sort(function(a,b){ return (a.card_order==null?999:a.card_order)-(b.card_order==null?999:b.card_order) })
                             var item = sorted.splice(fromIdx, 1)[0]
                             sorted.splice(toIdx, 0, item)
                             var updates = sorted.map(function(l, i) { return { ...l, card_order: i } })
