@@ -44,6 +44,7 @@ function drawFlatBorder(rc, w, h, wt, c) {
 
 var FONT = "-apple-system, 'PingFang SC', sans-serif"
 var CARD_H = 56
+var SLOT = CARD_H + 8
 var DELETE_W = 64
 
 function freeSpot(locations) {
@@ -297,9 +298,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
                   </div>}
 
-                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px) scale(1.02)' : (dragId && dragOverIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragOverIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+(CARD_H+8)+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+(CARD_H+8)+'px)'; return '' })() : '')),
-                    transition: dragId === loc.id ? 'none' : (dragId ? 'transform 0.15s ease, opacity 0.15s' : 'transform 0.2s ease'),
-                    transition: touchRef.current.moved ? 'none' : 'transform 0.2s ease',
+                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px) scale(1.02)' : (dragId && dragOverIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragOverIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+SLOT+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+SLOT+'px)'; return '' })() : '')),
+                    transition: dragId === loc.id ? 'none' : dragId ? 'transform 0.15s ease, opacity 0.15s' : (touchRef.current.moved ? 'none' : 'transform 0.2s ease'),
                     height: cardH, background: '#fff' }}
                     onTouchStart={function (e) { onCardTouchStart(e, loc.id) }}>
 
@@ -325,7 +325,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           var t = e.touches[0]
                           var dy = t.clientY - dragRef.current.startY
                           setDragY(dy)
-                          var step = CARD_H * 0.8
+                          var step = SLOT
                           var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / step)))
                           setDragOverIdx(newIdx)
                         }}
