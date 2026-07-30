@@ -8,8 +8,6 @@ let HEADERS = null
 const KEY_STORE = 'hopscotch_supa_key'
 const URL_STORE = 'hopscotch_supa_url'
 
-export const DEFAULT_URL = 'https://bqzuoqeaqqhylukicvqa.supabase.co'
-
 export function saveConn(url, k) {
   try {
     localStorage.setItem(URL_STORE, url)
@@ -35,7 +33,8 @@ export function initSupabase() {
   let url = params.get('url')
   // 带 hash 打开时记住，之后裸链接也能用
   if (key) {
-    saveConn(url || DEFAULT_URL, key)
+    if (!url) return false
+    saveConn(url, key)
   } else {
     try {
       key = localStorage.getItem(KEY_STORE)
@@ -44,7 +43,8 @@ export function initSupabase() {
   }
   if (!key) return false
 
-  SUPA_URL = (url || DEFAULT_URL).replace(/\/+$/, '')
+  if (!url) return false
+  SUPA_URL = url.replace(/\/+$/, '')
   SUPA_KEY = key
   HEADERS = {
     apikey: key,
