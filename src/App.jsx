@@ -20,7 +20,8 @@ import NotesView from './components/NotesView'
 import GardenCell from './components/GardenCell'
 import GardenView from './components/GardenView'
 import { grid } from './lib/tokens'
-import { initSupabase, saveKey } from './lib/supabase'
+import { initSupabase } from './lib/supabase'
+import ConnectPage from './components/ConnectPage'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
 
 const nodeColors = ['#E8A87C','#7BA7BC','#9BB89C','#C4A6D0','#D4B896','#B8C4D0','#D0A0A0','#A8B89A']
@@ -166,41 +167,6 @@ function drawInkBrush(cvs) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText('✎', S / 2, S / 2 + 1)
-}
-
-/* === Connect Gate === */
-function ConnectGate() {
-  var [k, setK] = useState('')
-  var [err, setErr] = useState(null)
-  var font = "-apple-system, 'PingFang SC', sans-serif"
-  var box = { width: '100%', maxWidth: 320, boxSizing: 'border-box', fontFamily: font }
-  return <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
-    background: '#FAF6F0', zIndex: 500, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: font }}>
-    <div style={{ fontSize: 17, color: '#3A4A5A', marginBottom: 6 }}>{'\u672a\u8fde\u63a5'}</div>
-    <div style={{ fontSize: 12, color: '#8A9AAA', marginBottom: 18, textAlign: 'center',
-      lineHeight: 1.6, maxWidth: 300 }}>
-      {'\u623f\u95f4\u6570\u636e\u9700\u8981\u5bc6\u94a5\u624d\u80fd\u8bfb\u53d6\u3002\u7c98\u8d34 anon key\uff0c\u6216\u7528\u5e26 #key= \u7684\u5b8c\u6574\u94fe\u63a5\u6253\u5f00\u3002'}
-    </div>
-    <input value={k} onChange={function(e) { setK(e.target.value); setErr(null) }}
-      placeholder="anon key"
-      style={{ ...box, padding: '10px 12px', fontSize: 13, border: '1px solid #D8CFC4',
-        borderRadius: 6, background: '#FFF' }} />
-    <button onClick={function() {
-      var v = k.trim()
-      if (v.length < 20) { setErr('\u8fd9\u770b\u8d77\u6765\u4e0d\u50cf\u4e00\u4e2a key'); return }
-      saveKey(v)
-      window.location.reload()
-    }} style={{ ...box, marginTop: 12, padding: '10px 0', fontSize: 13,
-      border: '1px solid #3A4A5A', borderRadius: 6, background: '#3A4A5A', color: '#FFF' }}>
-      {'\u8fde\u63a5'}
-    </button>
-    {err && <div style={{ marginTop: 8, fontSize: 11, color: '#C48A7A' }}>{err}</div>}
-    <div style={{ marginTop: 16, fontSize: 10, color: '#B0BCC8', textAlign: 'center',
-      maxWidth: 300, lineHeight: 1.6 }}>
-      {'key \u53ea\u5b58\u5728\u8fd9\u53f0\u8bbe\u5907\u4e0a\u3002\u8d34\u7eb8\u548c\u7167\u7247\u5b58\u5728\u6d4f\u89c8\u5668\u672c\u5730\uff0c\u6362\u57df\u540d\u4e0d\u4e92\u901a\u3002'}
-    </div>
-  </div>
 }
 
 /* === Settings Panel === */
@@ -1066,7 +1032,7 @@ export default function App() {
             background: dragFrom === zn ? 'rgba(46,148,185,0.08)' : dragOver === zn ? 'rgba(46,148,185,0.12)' : 'transparent',
             borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' }} />
         })}
-        {!isConnected() && <ConnectGate />}
+        {!isConnected() && <ConnectPage />}
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
           cityName={cityName}
           onCityChange={function(name, lat, lng) { setCityName(name); setCityCenter([lat, lng]) }} />

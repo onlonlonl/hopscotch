@@ -6,28 +6,45 @@ let SUPA_KEY = null
 let HEADERS = null
 
 const KEY_STORE = 'hopscotch_supa_key'
+const URL_STORE = 'hopscotch_supa_url'
+
+export const DEFAULT_URL = 'https://bqzuoqeaqqhylukicvqa.supabase.co'
+
+export function saveConn(url, k) {
+  try {
+    localStorage.setItem(URL_STORE, url)
+    localStorage.setItem(KEY_STORE, k)
+  } catch (e) {}
+}
 
 export function saveKey(k) {
   try { localStorage.setItem(KEY_STORE, k) } catch (e) {}
 }
 
-export function clearKey() {
-  try { localStorage.removeItem(KEY_STORE) } catch (e) {}
+export function clearConn() {
+  try {
+    localStorage.removeItem(KEY_STORE)
+    localStorage.removeItem(URL_STORE)
+  } catch (e) {}
 }
 
 export function initSupabase() {
   const hash = window.location.hash.slice(1)
   const params = new URLSearchParams(hash)
   let key = params.get('key')
-  // 带 #key= 打开时记住它，之后不带 hash 也能用
+  let url = params.get('url')
+  // 带 hash 打开时记住，之后裸链接也能用
   if (key) {
-    saveKey(key)
+    saveConn(url || DEFAULT_URL, key)
   } else {
-    try { key = localStorage.getItem(KEY_STORE) } catch (e) { key = null }
+    try {
+      key = localStorage.getItem(KEY_STORE)
+      url = localStorage.getItem(URL_STORE)
+    } catch (e) { key = null; url = null }
   }
   if (!key) return false
 
-  SUPA_URL = 'https://bqzuoqeaqqhylukicvqa.supabase.co'
+  SUPA_URL = (url || DEFAULT_URL).replace(/\/+$/, '')
   SUPA_KEY = key
   HEADERS = {
     apikey: key,
