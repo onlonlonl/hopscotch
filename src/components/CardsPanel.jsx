@@ -264,7 +264,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               var cardH = isEditing ? CARD_H + 210 : CARD_H
 
               return (
-                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden', zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.7 : 1,
+                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: dragId ? "visible" : "hidden", zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.7 : 1,
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
                   {!dragId && <div onClick={function () { handleDelete(loc.id) }}
                     style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
