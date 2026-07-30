@@ -82,6 +82,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   var [editFields, setEditFields] = useState({ ink_name_iris: '', label: '' })
   var [dragState, setDragState] = useState({ id: null, y: 0, overIdx: -1 })
   var dragRef = useRef({ id: null, startY: 0, startIdx: 0, overIdx: -1 })
+  var justDroppedRef = useRef(false)  // 落位后短暂禁用过渡动画，防止卡片滑动时露出底下的删除图标
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -265,7 +266,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               return (
                 <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: dragState.id ? "visible" : "hidden", zIndex: dragState.id === loc.id ? 10 : 1, opacity: dragState.id && dragState.id !== loc.id ? 0.7 : 1,
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
-                  {!dragState.id && <div onClick={function () { handleDelete(loc.id) }}
+                  {!dragState.id && !justDroppedRef.current && <div onClick={function () { handleDelete(loc.id) }}
                     style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
@@ -297,7 +298,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                   </div>}
 
                   <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragState.id === loc.id ? ' translateY(' + dragState.y + 'px) scale(1.02)' : (dragState.id && dragState.overIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragState.overIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+SLOT+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+SLOT+'px)'; return '' })() : '')),
-                    transition: dragState.id === loc.id ? 'none' : dragState.id ? 'transform 0.15s ease, opacity 0.15s' : (touchRef.current.moved ? 'none' : 'transform 0.2s ease'),
+                    transition: dragState.id === loc.id ? 'none' : dragState.id ? 'transform 0.15s ease, opacity 0.15s' : ((justDroppedRef.current || touchRef.current.moved) ? 'none' : 'transform 0.2s ease'),
                     height: cardH, background: '#fff' }}
                     onTouchStart={function (e) { onCardTouchStart(e, loc.id) }}>
 
@@ -328,6 +329,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           if (dragRef.current.id !== loc.id) return
                           var fromIdx = dragRef.current.startIdx
                           var toIdx = dragRef.current.overIdx
+                          justDroppedRef.current = true
+                          setTimeout(function(){ justDroppedRef.current = false }, 350)
                           setDragState({ id: null, y: 0, overIdx: -1 })
                           dragRef.current = { id: null, startY: 0, startIdx: 0, overIdx: -1 }
                           if (fromIdx !== toIdx) {
