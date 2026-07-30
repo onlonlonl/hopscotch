@@ -349,8 +349,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                             style={{ flex: 1, textAlign: 'center', padding: '5px 0', fontSize: 11, color: '#9AAAB8', fontFamily: FONT, cursor: 'pointer',
                               border: '1px solid rgba(200,210,220,0.4)', background: '#fff' }}>Cancel</div>
                           <div onClick={function () { handleSaveEdit(loc.id) }}
-                            style={{ flex: 1, textAlign: 'center', padding: '5px 0', fontSize: 11, color: '#fff', fontFamily: FONT, cursor: 'pointer',
-                              background: '#2E94B9', border: '1px solid #2E94B9' }}>Save</div>
+                            style={{ flex: 1, textAlign: 'center', padding: '5px 0', fontSize: 11, color: '#5A6A7A', fontFamily: FONT, cursor: 'pointer',
+                              background: 'rgba(240,244,248,0.5)', border: '1.5px solid rgba(46,148,185,0.25)', color: '#5A6A7A' }}>Save</div>
                         </div>
                       </div>
                     )}

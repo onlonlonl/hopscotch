@@ -254,7 +254,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
       <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 366 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
         <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1,
-          height: 366, boxSizing: 'border-box', overflowY: 'auto',
+          height: 366, boxSizing: 'border-box', overflowY: 'auto', borderRadius: 12,
           overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
 
           <div style={{ fontSize: 14, color: '#6A7A8A', letterSpacing: 3, fontFamily: font, marginBottom: 20 }}>
@@ -312,16 +312,16 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
                 })
                 var n = Object.keys(out).length
                 setBak(JSON.stringify(out))
-                setBakMsg(n ? { ok: true, text: '\u5df2\u5bfc\u51fa ' + n + ' \u9879\uff0c\u957f\u6309\u4e0b\u65b9\u6587\u672c\u6846\u5168\u9009\u590d\u5236' }
-                             : { ok: false, text: '\u672c\u673a\u6ca1\u6709\u53ef\u5bfc\u51fa\u7684\u5185\u5bb9' })
+                setBakMsg(n ? { ok: true, text: 'Exported ' + n + ' items. Long-press the box below to copy' }
+                             : { ok: false, text: 'Nothing to export on this device' })
               }} style={{ ...btnS, flex: 1 }}>EXPORT</button>
               <button onClick={function() {
                 var raw = bak.trim()
-                if (!raw) { setBakMsg({ ok: false, text: '\u5148\u7c98\u8d34\u8981\u5bfc\u5165\u7684\u5185\u5bb9' }); return }
+                if (!raw) { setBakMsg({ ok: false, text: 'Paste backup data first' }); return }
                 var obj = null
                 try { obj = JSON.parse(raw) } catch (e) { obj = null }
                 if (!obj || typeof obj !== 'object') {
-                  setBakMsg({ ok: false, text: '\u89e3\u6790\u5931\u8d25\uff0c\u4e0d\u662f\u5408\u6cd5 JSON' }); return
+                  setBakMsg({ ok: false, text: 'Parse failed, not valid JSON' }); return
                 }
                 var n = 0
                 Object.keys(obj).forEach(function(kk) {
@@ -329,19 +329,19 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
                     localStorage.setItem(kk, obj[kk]); n++
                   }
                 })
-                if (!n) { setBakMsg({ ok: false, text: '\u6ca1\u6709\u8bc6\u522b\u5230\u53ef\u5bfc\u5165\u7684\u9879' }); return }
-                setBakMsg({ ok: true, text: '\u5df2\u5bfc\u5165 ' + n + ' \u9879\uff0c\u6b63\u5728\u91cd\u8f7d' })
+                if (!n) { setBakMsg({ ok: false, text: 'No importable items found' }); return }
+                setBakMsg({ ok: true, text: 'Imported ' + n + ' items, reloading' })
                 setTimeout(function() { window.location.reload() }, 700)
               }} style={{ ...btnS, flex: 1 }}>IMPORT</button>
             </div>
             <textarea value={bak} onChange={function(e) { setBak(e.target.value); setBakMsg(null) }}
-              placeholder="EXPORT \u540e\u5185\u5bb9\u51fa\u73b0\u5728\u8fd9\u91cc\uff1b\u6216\u7c98\u8d34\u8fdb\u6765\u540e\u6309 IMPORT"
+              placeholder="Data appears here after EXPORT; or paste and press IMPORT"
               style={{ width: '100%', height: 60, marginTop: 6, fontSize: 10, padding: 6,
                 border: '1px solid #D8CFC4', borderRadius: 4, fontFamily: font,
                 boxSizing: 'border-box', resize: 'none' }} />
             <div style={{ ...txt, fontSize: 10, marginTop: 2,
               color: bakMsg ? (bakMsg.ok ? '#4AAF5C' : '#C48A7A') : '#9AAABB' }}>
-              {bakMsg ? bakMsg.text : '\u8d34\u7eb8/\u56fe\u6848/\u7167\u7247\u5b58\u5728\u672c\u673a\uff0c\u6362\u57df\u540d\u4e0d\u4e92\u901a'}
+              {bakMsg ? bakMsg.text : 'Stickers and patterns are stored locally per domain'}
             </div>
           </div>
 
