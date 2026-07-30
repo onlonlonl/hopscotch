@@ -81,7 +81,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   var [editFields, setEditFields] = useState({ ink_name_iris: '', label: '' })
   var [dragId, setDragId] = useState(null)
   var [dragY, setDragY] = useState(0)
-  var dragRef = useRef({ id: null, startY: 0, startIdx: 0, lastIdx: 0 })
+  var [dragOverIdx, setDragOverIdx] = useState(-1)
+  var dragRef = useRef({ id: null, startY: 0, startIdx: 0 })
 
   /* --- POI search state --- */
   var [adding, setAdding] = useState(false)
@@ -256,14 +257,14 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
 
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}
             onTouchMove={onCardTouchMove} onTouchEnd={onCardTouchEnd}>
-            {locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) }).map(function (loc) {
+            {locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) }).map(function (loc, _si) {
               var isSwiped = swipeId === loc.id
               var isEditing = editId === loc.id
               var tx = isSwiped ? swipeX : 0
               var cardH = isEditing ? CARD_H + 210 : CARD_H
 
               return (
-                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden', zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.5 : 1,
+                <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden', zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.7 : 1,
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
                   <div onClick={function () { handleDelete(loc.id) }}
                     style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
@@ -296,7 +297,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
                   </div>
 
-                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px)' : ''),
+                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px) scale(1.02)' : (dragId && dragOverIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragOverIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+(CARD_H+8)+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+(CARD_H+8)+'px)'; return '' })() : '')),
+                    transition: dragId === loc.id ? 'none' : (dragId ? 'transform 0.15s ease, opacity 0.15s' : 'transform 0.2s ease'),
                     transition: touchRef.current.moved ? 'none' : 'transform 0.2s ease',
                     height: cardH, background: '#fff' }}
                     onTouchStart={function (e) { onCardTouchStart(e, loc.id) }}>
@@ -311,9 +313,10 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           var t = e.touches[0]
                           var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
                           var idx = sorted.findIndex(function(l){ return l.id === loc.id })
-                          dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx, lastIdx: idx }
+                          dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx }
                           setDragId(loc.id)
                           setDragY(0)
+                          setDragOverIdx(idx)
                         }}
                         onTouchMove={function(e) {
                           if (dragRef.current.id !== loc.id) return
@@ -323,23 +326,24 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           setDragY(dy)
                           var step = CARD_H + 8
                           var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / step)))
-                          if (newIdx !== dragRef.current.lastIdx) {
-                            dragRef.current.lastIdx = newIdx
-                            var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
-                            var item = sorted.splice(dragRef.current.startIdx, 1)[0]
-                            sorted.splice(newIdx, 0, item)
-                            var updates = sorted.map(function(l, i) { return { ...l, card_order: i } })
-                            setLocations(updates)
-                          }
+                          setDragOverIdx(newIdx)
                         }}
                         onTouchEnd={function() {
                           if (dragRef.current.id !== loc.id) return
-                          setDragId(null); setDragY(0)
+                          var fromIdx = dragRef.current.startIdx
+                          var toIdx = dragOverIdx
+                          setDragId(null); setDragY(0); setDragOverIdx(-1)
                           dragRef.current.id = null
-                          var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
-                          sorted.forEach(function(l, i) {
-                            if (l.card_order !== i && isConnected()) supaPatch('locations', 'id=eq.' + l.id, { card_order: i })
-                          })
+                          if (fromIdx !== toIdx) {
+                            var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
+                            var item = sorted.splice(fromIdx, 1)[0]
+                            sorted.splice(toIdx, 0, item)
+                            var updates = sorted.map(function(l, i) { return { ...l, card_order: i } })
+                            setLocations(updates)
+                            updates.forEach(function(l, i) {
+                              if (isConnected()) supaPatch('locations', 'id=eq.' + l.id, { card_order: i })
+                            })
+                          }
                           cardRefs.current = {}
                         }}
                         style={{ padding: '0 8px', cursor: 'grab', color: '#C8D0D8', fontSize: 11, flexShrink: 0,
