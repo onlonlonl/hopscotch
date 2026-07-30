@@ -5,10 +5,26 @@ let SUPA_URL = null
 let SUPA_KEY = null
 let HEADERS = null
 
+const KEY_STORE = 'hopscotch_supa_key'
+
+export function saveKey(k) {
+  try { localStorage.setItem(KEY_STORE, k) } catch (e) {}
+}
+
+export function clearKey() {
+  try { localStorage.removeItem(KEY_STORE) } catch (e) {}
+}
+
 export function initSupabase() {
   const hash = window.location.hash.slice(1)
   const params = new URLSearchParams(hash)
-  const key = params.get('key')
+  let key = params.get('key')
+  // 带 #key= 打开时记住它，之后不带 hash 也能用
+  if (key) {
+    saveKey(key)
+  } else {
+    try { key = localStorage.getItem(KEY_STORE) } catch (e) { key = null }
+  }
   if (!key) return false
 
   SUPA_URL = 'https://bqzuoqeaqqhylukicvqa.supabase.co'

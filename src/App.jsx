@@ -20,7 +20,7 @@ import NotesView from './components/NotesView'
 import GardenCell from './components/GardenCell'
 import GardenView from './components/GardenView'
 import { grid } from './lib/tokens'
-import { initSupabase } from './lib/supabase'
+import { initSupabase, saveKey } from './lib/supabase'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
 
 const nodeColors = ['#E8A87C','#7BA7BC','#9BB89C','#C4A6D0','#D4B896','#B8C4D0','#D0A0A0','#A8B89A']
@@ -168,6 +168,41 @@ function drawInkBrush(cvs) {
   ctx.fillText('✎', S / 2, S / 2 + 1)
 }
 
+/* === Connect Gate === */
+function ConnectGate() {
+  var [k, setK] = useState('')
+  var [err, setErr] = useState(null)
+  var font = "-apple-system, 'PingFang SC', sans-serif"
+  var box = { width: '100%', maxWidth: 320, boxSizing: 'border-box', fontFamily: font }
+  return <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
+    background: '#FAF6F0', zIndex: 500, display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: font }}>
+    <div style={{ fontSize: 17, color: '#3A4A5A', marginBottom: 6 }}>{'\u672a\u8fde\u63a5'}</div>
+    <div style={{ fontSize: 12, color: '#8A9AAA', marginBottom: 18, textAlign: 'center',
+      lineHeight: 1.6, maxWidth: 300 }}>
+      {'\u623f\u95f4\u6570\u636e\u9700\u8981\u5bc6\u94a5\u624d\u80fd\u8bfb\u53d6\u3002\u7c98\u8d34 anon key\uff0c\u6216\u7528\u5e26 #key= \u7684\u5b8c\u6574\u94fe\u63a5\u6253\u5f00\u3002'}
+    </div>
+    <input value={k} onChange={function(e) { setK(e.target.value); setErr(null) }}
+      placeholder="anon key"
+      style={{ ...box, padding: '10px 12px', fontSize: 13, border: '1px solid #D8CFC4',
+        borderRadius: 6, background: '#FFF' }} />
+    <button onClick={function() {
+      var v = k.trim()
+      if (v.length < 20) { setErr('\u8fd9\u770b\u8d77\u6765\u4e0d\u50cf\u4e00\u4e2a key'); return }
+      saveKey(v)
+      window.location.reload()
+    }} style={{ ...box, marginTop: 12, padding: '10px 0', fontSize: 13,
+      border: '1px solid #3A4A5A', borderRadius: 6, background: '#3A4A5A', color: '#FFF' }}>
+      {'\u8fde\u63a5'}
+    </button>
+    {err && <div style={{ marginTop: 8, fontSize: 11, color: '#C48A7A' }}>{err}</div>}
+    <div style={{ marginTop: 16, fontSize: 10, color: '#B0BCC8', textAlign: 'center',
+      maxWidth: 300, lineHeight: 1.6 }}>
+      {'key \u53ea\u5b58\u5728\u8fd9\u53f0\u8bbe\u5907\u4e0a\u3002\u8d34\u7eb8\u548c\u7167\u7247\u5b58\u5728\u6d4f\u89c8\u5668\u672c\u5730\uff0c\u6362\u57df\u540d\u4e0d\u4e92\u901a\u3002'}
+    </div>
+  </div>
+}
+
 /* === Settings Panel === */
 function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   var borderRef = useRef(null)
@@ -177,6 +212,8 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   var [input, setInput] = useState('')
   var [results, setResults] = useState([])
   var [searching, setSearching] = useState(false)
+  var [bak, setBak] = useState('')
+  var [bakMsg, setBakMsg] = useState(null)
 
   useEffect(function() {
     if (!open) { setInput(''); setResults([]); setSearching(false); setKeyMsg(null); setKeySaved(false) }
@@ -291,6 +328,52 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
             <div style={{ ...txt, fontSize: 10, marginTop: 4,
               color: keyMsg ? (keyMsg.ok ? '#4AAF5C' : '#C48A7A') : '#9AAABB' }}>
               {keyMsg ? keyMsg.text : 'AI key, stored on this device'}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={label}>Backup</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={function() {
+                var keys = ['hopscotch_stickers', 'hopscotch_patterns', 'hopscotch_photo_stickers',
+                  'hopscotch_ai_stickers', 'hopscotch_roof_pattern', 'hopscotch_ai_key']
+                var out = {}
+                keys.forEach(function(kk) {
+                  var v = localStorage.getItem(kk)
+                  if (v !== null) out[kk] = v
+                })
+                var n = Object.keys(out).length
+                setBak(JSON.stringify(out))
+                setBakMsg(n ? { ok: true, text: '\u5df2\u5bfc\u51fa ' + n + ' \u9879\uff0c\u957f\u6309\u4e0b\u65b9\u6587\u672c\u6846\u5168\u9009\u590d\u5236' }
+                             : { ok: false, text: '\u672c\u673a\u6ca1\u6709\u53ef\u5bfc\u51fa\u7684\u5185\u5bb9' })
+              }} style={{ ...btnS, flex: 1 }}>EXPORT</button>
+              <button onClick={function() {
+                var raw = bak.trim()
+                if (!raw) { setBakMsg({ ok: false, text: '\u5148\u7c98\u8d34\u8981\u5bfc\u5165\u7684\u5185\u5bb9' }); return }
+                var obj = null
+                try { obj = JSON.parse(raw) } catch (e) { obj = null }
+                if (!obj || typeof obj !== 'object') {
+                  setBakMsg({ ok: false, text: '\u89e3\u6790\u5931\u8d25\uff0c\u4e0d\u662f\u5408\u6cd5 JSON' }); return
+                }
+                var n = 0
+                Object.keys(obj).forEach(function(kk) {
+                  if (kk.indexOf('hopscotch_') === 0 && typeof obj[kk] === 'string') {
+                    localStorage.setItem(kk, obj[kk]); n++
+                  }
+                })
+                if (!n) { setBakMsg({ ok: false, text: '\u6ca1\u6709\u8bc6\u522b\u5230\u53ef\u5bfc\u5165\u7684\u9879' }); return }
+                setBakMsg({ ok: true, text: '\u5df2\u5bfc\u5165 ' + n + ' \u9879\uff0c\u6b63\u5728\u91cd\u8f7d' })
+                setTimeout(function() { window.location.reload() }, 700)
+              }} style={{ ...btnS, flex: 1 }}>IMPORT</button>
+            </div>
+            <textarea value={bak} onChange={function(e) { setBak(e.target.value); setBakMsg(null) }}
+              placeholder="EXPORT \u540e\u5185\u5bb9\u51fa\u73b0\u5728\u8fd9\u91cc\uff1b\u6216\u7c98\u8d34\u8fdb\u6765\u540e\u6309 IMPORT"
+              style={{ width: '100%', height: 60, marginTop: 6, fontSize: 10, padding: 6,
+                border: '1px solid #D8CFC4', borderRadius: 4, fontFamily: font,
+                boxSizing: 'border-box', resize: 'none' }} />
+            <div style={{ ...txt, fontSize: 10, marginTop: 2,
+              color: bakMsg ? (bakMsg.ok ? '#4AAF5C' : '#C48A7A') : '#9AAABB' }}>
+              {bakMsg ? bakMsg.text : '\u8d34\u7eb8/\u56fe\u6848/\u7167\u7247\u5b58\u5728\u672c\u673a\uff0c\u6362\u57df\u540d\u4e0d\u4e92\u901a'}
             </div>
           </div>
 
@@ -983,6 +1066,7 @@ export default function App() {
             background: dragFrom === zn ? 'rgba(46,148,185,0.08)' : dragOver === zn ? 'rgba(46,148,185,0.12)' : 'transparent',
             borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' }} />
         })}
+        {!isConnected() && <ConnectGate />}
         <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)}
           cityName={cityName}
           onCityChange={function(name, lat, lng) { setCityName(name); setCityCenter([lat, lng]) }} />
