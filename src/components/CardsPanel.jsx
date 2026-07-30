@@ -266,7 +266,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
               return (
                 <div key={loc.id} style={{ position: 'relative', marginBottom: 8, height: cardH, overflow: 'hidden', zIndex: dragId === loc.id ? 10 : 1, opacity: dragId && dragId !== loc.id ? 0.7 : 1,
                   transition: isEditing ? 'height 0.2s ease' : 'none' }}>
-                  <div onClick={function () { handleDelete(loc.id) }}
+                  {!dragId && <div onClick={function () { handleDelete(loc.id) }}
                     style={{ position: 'absolute', top: 0, right: 0, width: DELETE_W, height: CARD_H,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
@@ -295,7 +295,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                       rc.line(cx-2, ty+3, cx-2, ty+10, { ...o, strokeWidth: 0.8, seed: 628 })
                       rc.line(cx+2, ty+3, cx+2, ty+10, { ...o, strokeWidth: 0.8, seed: 629 })
                     }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
-                  </div>
+                  </div>}
 
                   <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragId === loc.id ? ' translateY(' + dragY + 'px) scale(1.02)' : (dragId && dragOverIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragOverIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+(CARD_H+8)+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+(CARD_H+8)+'px)'; return '' })() : '')),
                     transition: dragId === loc.id ? 'none' : (dragId ? 'transform 0.15s ease, opacity 0.15s' : 'transform 0.2s ease'),
@@ -314,6 +314,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           var sorted = locations.slice().sort(function(a,b){ return (a.card_order||999)-(b.card_order||999) })
                           var idx = sorted.findIndex(function(l){ return l.id === loc.id })
                           dragRef.current = { id: loc.id, startY: t.clientY, startIdx: idx }
+                          setSwipeId(null); setSwipeX(0)
                           setDragId(loc.id)
                           setDragY(0)
                           setDragOverIdx(idx)
