@@ -27,6 +27,11 @@ AI 生成改为浏览器直连 DeepSeek，key 在设置面板配置（存 localS
 - **Backup**：设置面板可 EXPORT / IMPORT 六个 `hopscotch_*` localStorage 键
   （换域名时搬贴纸用，浏览器 origin 隔离，VPS 与 Pages 不互通）。
 
+### 2026-07-31 补丁
+
+- 卡片聚合页拖拽排序修复：三处排序用或运算符做缺省值，card_order=0 被当成缺失排到末尾（falsy-zero），改为显式判 null（e4678a0）。VPS 构建产物已同步重建。
+- 坑：排序字段从 0 编号时，缺省值禁用或运算符，用判 null 或 ?? 。
+
 ## 下一步
 
 **待验证（2026-07-31 收口时 Iris 尚未逐项确认）**
