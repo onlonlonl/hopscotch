@@ -74,9 +74,9 @@ function renderCell(cvs, note, cellW, cellH) {
 
   /* text on paper */
   if (!note) {
-    ctx.fillStyle = '#D0C8C0'
+    ctx.fillStyle = '#E0DAD4'
     var phSize = Math.max(7, Math.round(8 * s))
-    ctx.font = 'italic ' + phSize + "px -apple-system, 'PingFang SC', sans-serif"
+    ctx.font = phSize + "px -apple-system, 'PingFang SC', sans-serif"
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('a note will find its way here', cellW / 2, cellH / 2 + 4 * s)
