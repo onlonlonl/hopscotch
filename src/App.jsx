@@ -254,7 +254,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
       <div style={{ position: 'fixed', top: 'calc(58px + env(safe-area-inset-top))', right: 12, zIndex: 201, width: 224, height: 366 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
         <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1,
-          height: 366, boxSizing: 'border-box', overflowY: 'auto', borderRadius: 12,
+          height: 366, boxSizing: 'border-box', overflowY: 'auto', borderRadius: 12, paddingBottom: 28,
           overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
 
           <div style={{ fontSize: 14, color: '#6A7A8A', letterSpacing: 3, fontFamily: font, marginBottom: 20 }}>

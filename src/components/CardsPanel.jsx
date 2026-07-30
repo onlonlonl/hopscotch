@@ -325,7 +325,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           var t = e.touches[0]
                           var dy = t.clientY - dragRef.current.startY
                           setDragY(dy)
-                          var step = CARD_H * 0.55
+                          var step = CARD_H * 0.8
                           var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / step)))
                           setDragOverIdx(newIdx)
                         }}
