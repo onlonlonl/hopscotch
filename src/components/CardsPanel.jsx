@@ -220,7 +220,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
-      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 240, height: 380 }}>
+      <div style={{ position: 'fixed', top: 'calc(58px + env(safe-area-inset-top))', right: 12, zIndex: 201, width: 240, height: 380 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
         <div style={{ position: 'relative', padding: '16px 18px', zIndex: 1, height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

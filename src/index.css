@@ -16,7 +16,6 @@ html, body, #root {
 
 body {
   background: #E0E8F0;
-  padding-top: env(safe-area-inset-top);
   min-height: 100vh;
   min-height: 100dvh;
 }

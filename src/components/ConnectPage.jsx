@@ -108,6 +108,7 @@ export default function ConnectPage() {
     }).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status)
       saveConn(u, k)
+      window.location.hash = 'url=' + encodeURIComponent(u) + '&key=' + encodeURIComponent(k)
       setMsg({ ok: true, text: 'Connected' })
       setTimeout(function () { window.location.reload() }, 400)
     }).catch(function (e) {
@@ -119,6 +120,7 @@ export default function ConnectPage() {
   return <div style={{
     position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
     background: '#FFFFFF', zIndex: 500, overflowY: 'auto',
+    paddingBottom: 'env(safe-area-inset-bottom)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '0 24px', fontFamily: FONT
   }}>

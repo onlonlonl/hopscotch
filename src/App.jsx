@@ -251,7 +251,7 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
-      <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 366 }}>
+      <div style={{ position: 'fixed', top: 'calc(58px + env(safe-area-inset-top))', right: 12, zIndex: 201, width: 224, height: 366 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
         <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1,
           height: 366, boxSizing: 'border-box', overflowY: 'auto', borderRadius: 12,
@@ -1077,6 +1077,8 @@ export default function App() {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: '#E0E8F0',
       overflow: 'hidden',
+      paddingTop: 'env(safe-area-inset-top)',
+      paddingBottom: 'env(safe-area-inset-bottom)',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
       userSelect: 'none', WebkitUserSelect: 'none',
