@@ -8,9 +8,22 @@
   <title>Hopscotch</title>
   <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAEv0lEQVR4nO3dy07cQBBGYZMgCCPYsOP9Hy47NqDhokTKwtFkYvv3YHd1dZV9PmWRmwZr+lBtD3O5ej6+d8CUb60PAHERByTigEQckIgDEnFAIg5IxAGJOCARByTigEQckIgDEnFAIg5IxAGJOCARByTigHTt82Xef/32+UI78eP6u8NXqRsHTVRyumOrVlIrDrLw0d/PlRKpcs5BGc4q3eH2cVBGEzXuduM4KKMh8zvfMg7KaM52CczioIwgDBfCJg7KCMVqOQzioIyATBaFh88hlcbB2AirfGmYHJCIA1JRHOwpwRUuEJMDEnFAIg5IxAGJOCARByTigEQckIgDEnFAIo7/PD0cWh9CIMTxT19G8z7ub2/aHsCJ08shgxsE0f/x58vR/0jilNExOTo9KpxHyP3tzamMIInsPY7zAn6+HPtfk/+6Q1cln9SU+vkcg4UfbCLz/2puclS8fnyW33LJy2h3Ojkurv18Kz6aby57nByDrcTwP5cYpGAyNrqyybGvONZtFj5bzHkcVmV0bCtftHqNfbaY14/P/leNG1+n2eR4PNx1Xfd8fFt9C4uY7A5uW4whJsecp4eD1aIOrnI3f6HrHUc/MOb/xpD56UKEqxg3rtvKqYPn49ugiRr7S9VdIMsWk+lqZXJOmJfhc33h/EDZOpnOOcYdJC1jfMvb22KcJscXTyzKQ2ky7SNvMZkmRz2GVyVLbfUqZiPnHBG2/wjHMJZmcpxfrUz+/TrjH7uX3Npq2/txv18ck2Wcfr+uj4ZbibKlLcYvjr4DdbWyYmeJOca7DV3FZP3ZyqJ73OdxjibHcFGmB8HK5f1G7FokkuaEtFzqMrpsx5/spQkrvvOqrkecE50aksVRwnAhcw2A1ZJtK/BEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJB29DTBnTy3z1CyOKIt8IrjSfScZLYVSMkmxzpL32903fuTbk/WOCIM50XHkLEkthVIxAGJOCARByTigEQckIgDEnFAIg5IxAGJOCARByTigEQckLL+yH4nHD7sbAZxBDX5SQHOn7eaNY4I7zte7/k785898ni48+kj2XufZ3w+1cDFUi+Oh0XzY0fvfb5544V/PNxNnnlU/TzeXrJtZVfvfe6w/POSxVEi/nufT+4Xk9tH/6nNtU8+2FaCcr4wmUQcmYzPP6ra0bYS36I54TBUmBxBjS9J/DcaJkd0Da9ZiCOuwfDwPzkljugaXrBwzgGJOCARByTigEQckIgDUrg47m9vWh8C/oryOMd5E/3vXz8+2x0Oui7g5EAcceNgf2kuyrbiYANPTnYWNA5OOCKIuK1QRhDJXreCpXjdCqogDkjEAYk4IBEHJOKARByQiAMScUAqiqPk0Tc4KFwgJgck4oBUGgc7S1jlS8PkgGQQB8MjIJNFsZkc9BGK1XKYbSv0EYThQliec9BHc7ZLYHxCSh8Nmd/59lcr9NFEjbu9yqUsfTirdIfXet1Kf7g8Pb22qt+HdV/UdDp0KrHlM5udXvHGRpMRD59DIg5IxAGJOCARByTigEQckIgDEnFAIg5IxAGJOCARByTigEQckIgDEnFAIg5IxAHpDxOHx3wniyCKAAAAAElFTkSuQmCC">
   <link rel="manifest" href="/hopscotch/manifest.json">
+  <style>
+    html, body { margin: 0; background: #FAF6F0; }
+    #boot {
+      position: fixed; inset: 0; background: #FAF6F0;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity .35s ease;
+    }
+    #boot img { width: 96px; height: 96px; border-radius: 20px; opacity: .55; }
+    @keyframes bootPulse { 0%,100% { opacity:.35 } 50% { opacity:.7 } }
+    #boot img { animation: bootPulse 1.4s ease-in-out infinite; }
+    #root:not(:empty) + #boot { opacity: 0; pointer-events: none; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
+  <div id="boot"><img src="./icon-180.png" alt="" /></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

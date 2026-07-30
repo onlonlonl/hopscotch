@@ -1,24 +1,24 @@
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, lazy } from 'react'
 import rough from 'roughjs'
 import HopscotchCanvas from './components/HopscotchCanvas'
 import HandDrawnMap from './components/HandDrawnMap'
-import StampsPanel from "./components/StampsPanel"
+const StampsPanel = lazy(() => import('./components/StampsPanel'))
 import { stickerRecipes } from './components/StickerRecipes'
 import { renderPatternFill } from './components/PatternLib'
-import MapStampsPanel from "./components/MapStampsPanel"
+const MapStampsPanel = lazy(() => import('./components/MapStampsPanel'))
 import { recipes } from './components/IconGallery'
-import ThreadView from './components/ThreadView'
-import CompassView from './components/CompassView'
+const ThreadView = lazy(() => import('./components/ThreadView'))
+const CompassView = lazy(() => import('./components/CompassView'))
 import LocationCard from './components/LocationCard'
 import WeatherCell from './components/WeatherCell'
-import CardsPanel from './components/CardsPanel'
+const CardsPanel = lazy(() => import('./components/CardsPanel'))
 import NotesCell from './components/NotesCell'
 import MapCell from './components/MapCell'
 import RoofCell from './components/RoofCell'
-import NotesView from './components/NotesView'
+const NotesView = lazy(() => import('./components/NotesView'))
 import GardenCell from './components/GardenCell'
-import GardenView from './components/GardenView'
+const GardenView = lazy(() => import('./components/GardenView'))
 import { grid } from './lib/tokens'
 import { initSupabase } from './lib/supabase'
 import ConnectPage from './components/ConnectPage'
@@ -253,7 +253,9 @@ function SettingsPanel({ open, onClose, cityName, onCityChange }) {
       <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }} />
       <div style={{ position: 'fixed', top: 58, right: 12, zIndex: 201, width: 224, height: 366 }}>
         <canvas ref={borderRef} style={{ position: 'absolute', top: 0, left: 0 }} />
-        <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1 }}>
+        <div style={{ position: 'relative', padding: '18px 20px', zIndex: 1,
+          height: 366, boxSizing: 'border-box', overflowY: 'auto',
+          overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
 
           <div style={{ fontSize: 14, color: '#6A7A8A', letterSpacing: 3, fontFamily: font, marginBottom: 20 }}>
             Settings
