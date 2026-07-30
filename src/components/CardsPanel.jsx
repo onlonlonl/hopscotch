@@ -296,8 +296,8 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                     }} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
                   </div>}
 
-                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragState.id === loc.id ? ' translateY(' + dragState.y + 'px) scale(1.02)' : (dragId && dragState.overIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragState.overIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+SLOT+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+SLOT+'px)'; return '' })() : '')),
-                    transition: dragState.id === loc.id ? 'none' : dragId ? 'transform 0.15s ease, opacity 0.15s' : (touchRef.current.moved ? 'none' : 'transform 0.2s ease'),
+                  <div style={{ position: 'relative', transform: 'translateX(' + tx + 'px)' + (dragState.id === loc.id ? ' translateY(' + dragState.y + 'px) scale(1.02)' : (dragState.id && dragState.overIdx >= 0 ? (function(){ var fi=dragRef.current.startIdx,ti=dragState.overIdx; if(fi<ti&&_si>fi&&_si<=ti) return ' translateY(-'+SLOT+'px)'; if(fi>ti&&_si<fi&&_si>=ti) return ' translateY('+SLOT+'px)'; return '' })() : '')),
+                    transition: dragState.id === loc.id ? 'none' : dragState.id ? 'transform 0.15s ease, opacity 0.15s' : (touchRef.current.moved ? 'none' : 'transform 0.2s ease'),
                     height: cardH, background: '#fff' }}
                     onTouchStart={function (e) { onCardTouchStart(e, loc.id) }}>
 
