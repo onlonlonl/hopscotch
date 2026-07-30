@@ -1060,7 +1060,7 @@ export default function App() {
           var W = window.innerWidth, H = window.innerHeight
           setPlacedPatterns(function(prev) { return prev.concat([{ id: 'p_' + Date.now(), patternId: pid, colorId: cid, offset_x: cx / W, offset_y: cy / H }]) })
         }} supaGet={supaGet} supaPost={supaPost} supaPatch={supaPatch} />
-        <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
+        <div style={{ position: 'absolute', top: 'calc(14px + env(safe-area-inset-top))', right: 14, zIndex: 10, display: 'flex', gap: 8 }}>
           <canvas ref={el => { if (el && !el._drawn) { drawGear(el); el._drawn = true } }}
             onClick={() => { setSettingsOpen(!settingsOpen); setCardsOpen(false) }} style={{ cursor: 'pointer' }} />
           <canvas ref={el => { if (el && !el._drawn) { drawCards(el); el._drawn = true } }}
@@ -1132,7 +1132,7 @@ export default function App() {
 
       {/* Back button */}
       <canvas ref={backRef} onClick={exitInk} style={{
-        position: 'fixed', top: 14, left: 12,
+        position: 'fixed', top: 'calc(14px + env(safe-area-inset-top))', left: 12,
         zIndex: 110, cursor: 'pointer',
         display: panelOpen ? 'none' : 'block',
       }} />
@@ -1160,7 +1160,7 @@ export default function App() {
         <canvas ref={el => { if (el && !el._drawn) { drawInkBrush(el); el._drawn = true } }}
           onClick={() => setPanelOpen(true)}
           style={{
-            position:'fixed', top:14, right:14,
+            position:'fixed', top:'calc(14px + env(safe-area-inset-top))', right:14,
             zIndex:101, cursor:'pointer',
             filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.15))',
           }} />

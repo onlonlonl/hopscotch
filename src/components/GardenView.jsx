@@ -518,7 +518,7 @@ export default function GardenView({ onExit }) {
     }}>
       {/* back button */}
       <canvas ref={backRef} onClick={onExit} style={{
-        position: 'fixed', top: 14, left: 12, cursor: 'pointer', zIndex: 301
+        position: 'fixed', top: 'calc(14px + env(safe-area-inset-top))', left: 12, cursor: 'pointer', zIndex: 301
       }} />
 
       {loading ? (
