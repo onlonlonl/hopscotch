@@ -146,14 +146,12 @@ export default function ConnectPage() {
     </div>
 
     <div style={{
-      paddingBottom: 34, maxWidth: 300, textAlign: 'center',
-      fontSize: 10, color: '#C2CBD3', lineHeight: 1.9
+      paddingBottom: 34, fontSize: 10, color: '#C2CBD3',
+      lineHeight: 1.9, textAlign: 'left'
     }}>
-      <div>Your connection details stay on this device and are never uploaded.</div>
-      <div style={{ marginTop: 6 }}>
-        Stickers and photos live in this browser, so they don't follow you across addresses.
-        Export them from the old one in Settings, then import here.
-      </div>
+      <div>{'\u00b7 Details stay on this device, never uploaded.'}</div>
+      <div>{'\u00b7 Stickers and photos live in this browser only.'}</div>
+      <div>{'\u00b7 Move them across with Export and Import.'}</div>
     </div>
   </div>
 }
