@@ -325,7 +325,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           var t = e.touches[0]
                           var dy = t.clientY - dragRef.current.startY
                           setDragY(dy)
-                          var step = CARD_H + 8
+                          var step = CARD_H * 0.55
                           var newIdx = Math.max(0, Math.min(locations.length - 1, dragRef.current.startIdx + Math.round(dy / step)))
                           setDragOverIdx(newIdx)
                         }}
@@ -347,7 +347,7 @@ export default function CardsPanel({ open, onClose, locations, onFocus, setLocat
                           }
                           cardRefs.current = {}
                         }}
-                        style={{ padding: '0 8px', cursor: 'grab', color: '#C8D0D8', fontSize: 11, flexShrink: 0,
+                        style={{ padding: '0 10px', cursor: 'grab', color: '#C8D0D8', fontSize: 14, flexShrink: 0, display: 'flex', alignItems: 'center', height: '100%',
                           touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}>
                         ⠿
                       </div>
