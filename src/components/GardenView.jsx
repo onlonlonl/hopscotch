@@ -511,7 +511,7 @@ export default function GardenView({ onExit }) {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: HOPSCOTCH_BG, zIndex: 300,
+      background: '#FAF6F0', zIndex: 300,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center',
       animation: 'gardenFadeIn 0.3s ease',

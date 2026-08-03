@@ -19,7 +19,7 @@ import RoofCell from './components/RoofCell'
 const NotesView = lazy(() => import('./components/NotesView'))
 import GardenCell from './components/GardenCell'
 const GardenView = lazy(() => import('./components/GardenView'))
-import { grid } from './lib/tokens'
+import { grid, locColor } from './lib/tokens'
 import { initSupabase } from './lib/supabase'
 import ConnectPage from './components/ConnectPage'
 import { supaGet, supaPost, supaPatch, supaDelete, isConnected } from './lib/supabase'
@@ -1075,10 +1075,8 @@ export default function App() {
   return (
     <div onContextMenu={function(e){ e.preventDefault() }} style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: '#E0E8F0',
+      background: '#FAF6F0',
       overflow: 'hidden',
-      paddingTop: 'env(safe-area-inset-top)',
-      paddingBottom: 'env(safe-area-inset-bottom)',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
       userSelect: 'none', WebkitUserSelect: 'none',
@@ -1149,7 +1147,7 @@ export default function App() {
               : [Math.min(card.x, window.innerWidth - 120), Math.max(card.y, 130)]
             }
             onClose={() => setCard(null)}
-            weatherColor={card.color}
+            weatherColor={locColor(card.weather)}
             weatherType={card.weather || 'sun'} activeDim={dimIndex}
             onSave={handleLocationSave}
           />

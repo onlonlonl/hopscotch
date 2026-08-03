@@ -52,7 +52,7 @@ const LINE_PASSES = [
   { seed: 13, rough: 0.8, sw: 1.4, yOff: 0, alpha: 0.7 },
   { seed: 25, rough: 1.0, sw: 1.05, yOff: 3.5, alpha: 0.5 },
 ]
-const BASE_RGB = [188, 176, 162]
+const BASE_RGB = [218, 210, 200]
 
 function drawInfinity(canvas, locs, sc, ox, oy) {
   const ctx = canvas.getContext('2d')
@@ -108,19 +108,30 @@ function drawHighlight(canvas, locs, idx, sc, ox, oy) {
   }
 }
 
+function nearestColor(t, locs, alpha) {
+  if (locs.length === 0) return 'rgba('+BASE_RGB[0]+','+BASE_RGB[1]+','+BASE_RGB[2]+','+alpha+')'
+  let minD = Infinity, nearest = locs[0]
+  for (const loc of locs) {
+    const d = Math.abs(t - loc.inf_t)
+    if (d < minD) { minD = d; nearest = loc }
+  }
+  const [r, g, b] = parseHex(locColor(nearest.weather))
+  return 'rgba('+r+','+g+','+b+','+alpha+')'
+}
+
 function drawTrack(canvas, locs, trackPad, trackW) {
   const rc = rough.canvas(canvas)
   const trackPasses = [
-    { seed: 100, rough: 1.0, sw: 0.9, yOff: -2, alpha: 0.3 },
-    { seed: 110, rough: 0.7, sw: 1.1, yOff: 0, alpha: 0.4 },
-    { seed: 120, rough: 0.9, sw: 0.8, yOff: 2.5, alpha: 0.25 },
+    { seed: 100, rough: 1.2, sw: 1.0, yOff: -2.5, alpha: 0.45 },
+    { seed: 110, rough: 0.8, sw: 1.3, yOff: 0, alpha: 0.6 },
+    { seed: 120, rough: 1.0, sw: 0.9, yOff: 2.5, alpha: 0.4 },
   ]
   for (const pass of trackPasses) {
     for (let s = 0; s < 100; s += 8) {
       const pts = []
       for (let i = s; i <= Math.min(s + 8, 100); i++) pts.push([trackPad + (i/100)*trackW, 16 + pass.yOff])
       if (pts.length >= 2)
-        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw, stroke: getColor((s+4)/100, pass.alpha, locs, BASE_RGB), disableMultiStroke: true, bowing: 0.3 })
+        rc.curve(pts, { seed: pass.seed + s, roughness: pass.rough, strokeWidth: pass.sw, stroke: nearestColor((s+4)/100, locs, pass.alpha), disableMultiStroke: true, bowing: 0.3 })
     }
   }
 }

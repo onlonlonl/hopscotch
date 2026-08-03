@@ -149,18 +149,18 @@ export default function NotesView({ onExit }) {
 
   return (
     <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-      background: HOPSCOTCH_BG, zIndex: 200,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: '#FAF6F0', zIndex: 200,
       display: 'flex', flexDirection: 'column',
     }}>
       {/* back button */}
-      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 210 }}>
+      <div style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top))', left: 12, zIndex: 210 }}>
         <canvas ref={backRef} onClick={onExit} style={{ cursor: 'pointer' }} />
       </div>
 
       {/* title */}
       <div style={{
-        textAlign: 'center', paddingTop: 18, paddingBottom: 8,
+        textAlign: 'center', paddingTop: 'calc(18px + env(safe-area-inset-top))', paddingBottom: 8,
         fontSize: 11, letterSpacing: 3, color: '#B0A898',
         fontFamily: "-apple-system, 'PingFang SC', sans-serif",
       }}>
