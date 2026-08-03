@@ -17,23 +17,17 @@ function parseHex(h) {
 }
 
 function getColor(t, alpha, locations, baseRGB) {
-  let tw = 0, r = 0, g = 0, b = 0
+  if (locations.length === 0) {
+    const [br, bg, bb] = baseRGB
+    return 'rgba('+br+','+bg+','+bb+','+alpha+')'
+  }
+  let minD = Infinity, nearest = locations[0]
   for (const loc of locations) {
     const d = Math.min(Math.abs(t - loc.inf_t), Math.abs(t - loc.inf_t + 1), Math.abs(t - loc.inf_t - 1))
-    const sp = 0.005 + (loc.inf_w || 0.5) * 0.012
-    if (d < sp) {
-      const raw = 1 - d / sp, w = raw * raw * (3 - 2 * raw)
-      const [cr, cg, cb] = parseHex(locColor(loc.weather))
-      r += cr * w; g += cg * w; b += cb * w; tw += w
-    }
+    if (d < minD) { minD = d; nearest = loc }
   }
-  const [br, bg, bb] = baseRGB
-  if (tw > 0) {
-    r /= tw; g /= tw; b /= tw
-    const bl = Math.min(tw, 1)
-    r = br*(1-bl) + r*bl; g = bg*(1-bl) + g*bl; b = bb*(1-bl) + b*bl
-  } else { r = br; g = bg; b = bb }
-  return 'rgba('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+','+alpha+')'
+  const [r, g, b] = parseHex(locColor(nearest.weather))
+  return 'rgba('+r+','+g+','+b+','+alpha+')'
 }
 
 function getTimeBg() {
@@ -159,7 +153,7 @@ const PANEL_H = 100, NODE_W = 72
 
 export default function ThreadView({ locations = [], onNodeTap }) {
   const infRef = useRef(null), hlRef = useRef(null), trackRef = useRef(null)
-  const wrapRef = useRef(null), containerRef = useRef(null), labelsRef = useRef(null)
+  const wrapRef = useRef(null), containerRef = useRef(null)
   const [activeIdx, setActiveIdx] = useState(0)
   const activeIdxRef = useRef(0)
   const [dims, setDims] = useState({ w: 0, h: 0 })
@@ -212,7 +206,8 @@ export default function ThreadView({ locations = [], onNodeTap }) {
     }
   }, [locs, getSnapX, onNodeTap, dims])
 
-  useEffect(() => { if (locs.length > 0 && dims.w) { const sx = getSnapX(0); scrollRef.current.target = sx; scrollRef.current.x = sx } }, [locs.length, dims.w, getSnapX])
+  const didInitScroll = useRef(false)
+  useEffect(() => { if (locs.length > 0 && dims.w && !didInitScroll.current) { const sx = getSnapX(0); scrollRef.current.target = sx; scrollRef.current.x = sx; didInitScroll.current = true } }, [locs.length, dims.w, getSnapX])
 
   const onInfDown = useCallback(e => { rotRef.current.dragging = true; rotRef.current.px = e.clientX; rotRef.current.py = e.clientY; rotRef.current.dist = 0; e.preventDefault() }, [])
 
@@ -240,7 +235,6 @@ export default function ThreadView({ locations = [], onNodeTap }) {
       if (hlRef.current) hlRef.current.style.opacity = String(0.25 + 0.25 * (0.5 + 0.5 * Math.sin(t * 1.5)))
       const s = scrollRef.current; s.x += (s.target - s.x) * 0.14; if (Math.abs(s.target - s.x) < 0.5) s.x = s.target
       if (trackRef.current) trackRef.current.style.transform = 'translateX('+ (-s.x) +'px)'
-      if (labelsRef.current) { const ch = labelsRef.current.children; for (let i = 0; i < ch.length && i < locs.length; i++) ch[i].style.left = (trackPad + locs[i].inf_t * trackW - s.x) + 'px' }
     }; tick(); return () => { running = false }
   }, [locs, trackPad, trackW])
 
@@ -263,19 +257,7 @@ export default function ThreadView({ locations = [], onNodeTap }) {
         </div>
         <div onTouchStart={onTrackDown} onMouseDown={onTrackDown} style={{ position: 'absolute', top: 38, left: 0, right: 0, height: 50, overflow: 'hidden', touchAction: 'pan-x' }}>
           <canvas ref={trackRef} style={{ position: 'absolute', top: 0, left: 0, height: 50 }} />
-          <div ref={labelsRef}>
-            {locs.map((loc, i) => (
-              <div key={loc.id || i} onClick={e => { e.stopPropagation(); selectLocation(i) }} style={{
-                position: 'absolute', top: 26, transform: 'translateX(-50%)',
-                fontSize: 10, whiteSpace: 'nowrap', cursor: 'pointer', padding: '6px 8px', zIndex: 103,
-                fontFamily: "-apple-system,'PingFang SC',sans-serif",
-                color: i === activeIdx ? locColor(loc.weather) : '#A09888',
-                fontWeight: i === activeIdx ? 600 : 400, transition: 'color 0.2s ease',
-              }}>
-                {loc.ink_name_iris || loc.label || loc.id}
-              </div>
-            ))}
-          </div>
+
         </div>
       </div>
     </div>

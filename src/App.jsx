@@ -1075,7 +1075,6 @@ export default function App() {
   return (
     <div onContextMenu={function(e){ e.preventDefault() }} style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: '#FAF6F0',
       overflow: 'hidden',
       opacity: collapsing ? 0 : 1,
       transition: 'opacity 0.35s ease',
@@ -1106,6 +1105,7 @@ export default function App() {
           position: 'absolute', width: '100%', height: '100%',
           backfaceVisibility: 'hidden',
           transform: 'rotateY(120deg)',
+          background: '#FAF6F0',
         }}>
           {dimIndex === 1 && <ThreadView locations={locations} onNodeTap={handleLocationTap} />}
         </div>
@@ -1115,6 +1115,7 @@ export default function App() {
           backfaceVisibility: 'hidden',
           transform: 'rotateY(240deg)',
           overflow: 'hidden',
+          background: '#DDE6EE',
         }}>
           {dimIndex === 2 && <CompassView locations={locations} center={cityCenter} onSave={handleLocationSave} />}
         </div>
